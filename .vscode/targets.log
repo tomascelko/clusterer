@@ -1,0 +1,570 @@
+make all --print-data-base --no-builtin-variables --no-builtin-rules --question
+# GNU Make 4.2.1
+# Built for x86_64-pc-linux-gnu
+# Copyright (C) 1988-2016 Free Software Foundation, Inc.
+# License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+# This is free software: you are free to change and redistribute it.
+# There is NO WARRANTY, to the extent permitted by law.
+
+# Make data base, printed on Tue Aug 30 13:12:10 2022
+
+# Variables
+
+# automatic
+<D = $(patsubst %/,%,$(dir $<))
+# environment
+G4ABLADATA = /home/tomas/MFF/DT/geant4/install/share/Geant4-11.0.2/data/G4ABLA3.1
+# automatic
+?F = $(notdir $?)
+# environment
+DESKTOP_SESSION = mate
+# environment
+JUPYTER_PATH = /home/tomas/MFF/DT/root/install/etc/notebook
+# default
+.SHELLFLAGS := -c
+# environment
+XDG_SESSION_CLASS = user
+# environment
+XDG_SESSION_TYPE = x11
+# environment
+QT_FONT_DPI = 96
+# environment
+GTK3_MODULES = xapp-gtk3-module
+# automatic
+?D = $(patsubst %/,%,$(dir $?))
+# automatic
+@D = $(patsubst %/,%,$(dir $@))
+# environment
+XAUTHORITY = /home/tomas/.Xauthority
+# environment
+GDMSESSION = mate
+# default
+MAKE_VERSION := 4.2.1
+# makefile
+CURDIR := /home/tomas/MFF/DT/clusterer
+# makefile (from 'Makefile', line 39)
+SHELL = /bin/sh
+# makefile (from 'Makefile', line 45)
+RM = /usr/bin/cmake -E remove -f
+# environment
+GDM_LANG = en_US
+# environment
+VTE_VERSION = 6003
+# environment
+VSCODE_NLS_CONFIG = {"locale":"en-us","availableLanguages":{},"_languagePackSupport":true}
+# environment
+_ = /usr/bin/code
+# environment
+CLHEP_INCLUDE_DIR = /home/tomas/MFF/DT/CLHEP/2.3.3.2/CLHEP/install//include/
+# environment
+XDG_CONFIG_DIRS = /etc/xdg/xdg-mate:/etc/xdg
+# makefile (from 'Makefile', line 54)
+CMAKE_BINARY_DIR = /home/tomas/MFF/DT/clusterer
+# environment
+GTK_OVERLAY_SCROLLING = 0
+# makefile (from 'Makefile', line 1)
+MAKEFILE_LIST :=  Makefile
+# automatic
+@F = $(notdir $@)
+# 'override' directive
+GNUMAKEFLAGS := 
+# environment
+XDG_DATA_DIRS = /usr/share/mate:/home/tomas/.local/share/flatpak/exports/share:/var/lib/flatpak/exports/share:/usr/local/share:/usr/share
+# environment
+ROOTSYS = /home/tomas/MFF/DT/root/install
+# environment
+DBUS_SESSION_BUS_ADDRESS = unix:path=/run/user/1000/bus
+# environment
+G4PIIDATA = /home/tomas/MFF/DT/geant4/install/share/Geant4-11.0.2/data/G4PII1.3
+# environment
+QT_SCALE_FACTOR = 1
+# environment
+LESSOPEN = | /usr/bin/lesspipe %s
+# environment
+LC_NAME = sk_SK.UTF-8
+# environment
+VSCODE_CWD = /home/tomas
+# environment
+XDG_SESSION_PATH = /org/freedesktop/DisplayManager/Session0
+# default
+MAKE_HOST := x86_64-pc-linux-gnu
+# environment
+PATH = /home/tomas/MFF/DT/poormansprofiler/:/home/tomas/MFF/DT/allpix/install/bin:/home/tomas/MFF/DT/root/install/bin:/home/tomas/MFF/DT/geant4/install/bin:/home/tomas/MFF/DT/CLHEP/2.3.3.2/CLHEP/install//bin/:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
+# environment
+GPG_AGENT_INFO = /run/user/1000/gnupg/S.gpg-agent:0:1
+# environment
+C_INCLUDE_PATH = /home/tomas/MFF/DT/allpix/install/include:
+# environment
+SESSION_MANAGER = local/tomas-VirtualBox:@/tmp/.ICE-unix/829,unix/tomas-VirtualBox:/tmp/.ICE-unix/829
+# environment
+G4INCLDATA = /home/tomas/MFF/DT/geant4/install/share/Geant4-11.0.2/data/G4INCL1.0
+# environment
+XDG_RUNTIME_DIR = /run/user/1000
+# environment
+LIBRARY_PATH = /home/tomas/MFF/DT/allpix/install/lib:
+# environment
+WINDOWID = 52428806
+# environment
+ELECTRON_RUN_AS_NODE = 1
+# default
+.FEATURES := target-specific order-only second-expansion else-if shortest-stem undefine oneshell archives jobserver output-sync check-symlink load
+# environment
+CMAKE_PREFIX_PATH = /home/tomas/MFF/DT/allpix/install/share/cmake:/home/tomas/MFF/DT/root/install
+# environment
+CLHEP_LIBRARY = /home/tomas/MFF/DT/CLHEP/2.3.3.2/CLHEP/install//lib/
+# environment
+XDG_GREETER_DATA_DIR = /var/lib/lightdm-data/tomas
+# environment
+LS_COLORS = rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:
+# environment
+SHLIB_PATH = /home/tomas/MFF/DT/root/install/lib
+# environment
+XDG_SESSION_DESKTOP = mate
+# environment
+SSH_AUTH_SOCK = /run/user/1000/keyring/ssh
+# environment
+CPLUS_INCLUDE_PATH = /home/tomas/MFF/DT/allpix/install/include:
+# environment
+CLING_STANDARD_PCH = none
+# automatic
+%F = $(notdir $%)
+# environment
+DISPLAY = :0
+# environment
+G4PARTICLEXSDATA = /home/tomas/MFF/DT/geant4/install/share/Geant4-11.0.2/data/G4PARTICLEXS4.0
+# environment
+JUPYTER_CONFIG_DIR = /home/tomas/MFF/DT/root/install/etc/notebook
+# environment
+PWD = /home/tomas/MFF/DT/clusterer
+# environment
+QT_QPA_PLATFORMTHEME = qt5ct
+# default
+.LOADED := 
+# environment
+XDG_SEAT = seat0
+# environment
+SSH_AGENT_PID = 973
+# environment
+ORIGINAL_XDG_CURRENT_DESKTOP = MATE
+# environment
+GTK_MODULES = gail:atk-bridge
+# environment
+MANPATH = /home/tomas/MFF/DT/root/install/man:/usr/local/man:/usr/local/share/man:/usr/share/man
+# environment
+VSCODE_AMD_ENTRYPOINT = vs/workbench/api/node/extensionHostProcess
+# environment
+HOME = /home/tomas
+# environment
+LD_LIBRARY_PATH = /home/MFF/DT/allpix/install/lib:/home/tomas/Qt/5.15.2/gcc_64/lib/:/home/tomas/MFF/DT/allpix/install/lib:/home/tomas/MFF/DT/root/install/lib:/home/tomas/MFF/DT/geant4/install/lib:/home/tomas/MFF/DT/CLHEP/2.3.3.2/CLHEP/install//lib/::/usr/lib/x86_64-linux-gnu
+# environment
+LESSCLOSE = /usr/bin/lesspipe %s %s
+# environment
+VSCODE_CLI = 1
+# environment
+VSCODE_CODE_CACHE_PATH = /home/tomas/.config/Code/CachedData/da76f93349a72022ca4670c1b84860304616aaa2
+# environment
+LOGNAME = tomas
+# environment
+APPLICATION_INSIGHTS_NO_DIAGNOSTIC_CHANNEL = 1
+# makefile (from 'Makefile', line 48)
+EQUALS = =
+# automatic
++F = $(notdir $+)
+# environment
+ELECTRON_NO_ATTACH_CONSOLE = 1
+# environment
+VSCODE_HANDLES_UNCAUGHT_ERRORS = true
+# automatic
+^D = $(patsubst %/,%,$(dir $^))
+# environment
+XDG_VTNR = 7
+# environment
+CLUTTER_BACKEND = x11
+# environment
+MAKELEVEL := 0
+# environment
+G4NEUTRONHPDATA = /home/tomas/MFF/DT/geant4/install/share/Geant4-11.0.2/data/G4NDL4.6
+# environment
+COLORTERM = truecolor
+# default
+MAKE = $(MAKE_COMMAND)
+# default
+MAKECMDGOALS := all
+# environment
+SHLVL = 1
+# environment
+CLHEP_DIR = /home/tomas/MFF/DT/CLHEP/2.3.3.2/CLHEP/install/
+# environment
+LIBPATH = /home/tomas/MFF/DT/root/install/lib
+# environment
+COMPIZ_CONFIG_PROFILE = mint
+# environment
+XDG_SESSION_ID = c1
+# environment
+USER = tomas
+# environment
+LC_MONETARY = sk_SK.UTF-8
+# makefile
+.DEFAULT_GOAL := default_target
+# environment
+XDG_CURRENT_DESKTOP = MATE
+# makefile (from 'Makefile', line 51)
+CMAKE_SOURCE_DIR = /home/tomas/MFF/DT/clusterer
+# automatic
+%D = $(patsubst %/,%,$(dir $%))
+# environment
+LC_TELEPHONE = sk_SK.UTF-8
+# environment
+G4LEVELGAMMADATA = /home/tomas/MFF/DT/geant4/install/share/Geant4-11.0.2/data/PhotonEvaporation5.7
+# default
+MAKE_COMMAND := make
+# environment
+G4SAIDXSDATA = /home/tomas/MFF/DT/geant4/install/share/Geant4-11.0.2/data/G4SAIDDATA2.0
+# default
+.VARIABLES := 
+# automatic
+*F = $(notdir $*)
+# environment
+LANGUAGE = en_US
+# environment
+XDG_SEAT_PATH = /org/freedesktop/DisplayManager/Seat0
+# environment
+VSCODE_IPC_HOOK = /run/user/1000/vscode-4e534ead-1.70.0-main.sock
+# environment
+PYTHONPATH = /home/tomas/MFF/DT/root/install/lib
+# makefile
+MAKEFLAGS = pqrRs
+# environment
+MFLAGS = -pqrRs
+# automatic
+*D = $(patsubst %/,%,$(dir $*))
+# automatic
++D = $(patsubst %/,%,$(dir $+))
+# environment
+GDK_BACKEND = x11
+# environment
+LC_PAPER = sk_SK.UTF-8
+# makefile (from 'Makefile', line 21)
+SUFFIXES = 
+# environment
+QT_ACCESSIBILITY = 1
+# default
+MAKEFILES := 
+# environment
+LC_NUMERIC = sk_SK.UTF-8
+# automatic
+<F = $(notdir $<)
+# environment
+QT_DIRECTORY_PATH = /home/tomas/Qt/5.15.2/gcc_64/lib/
+# environment
+LC_MEASUREMENT = sk_SK.UTF-8
+# environment
+G4REALSURFACEDATA = /home/tomas/MFF/DT/geant4/install/share/Geant4-11.0.2/data/RealSurface2.2
+# environment
+LC_ALL = C
+# makefile (from 'Makefile', line 42)
+CMAKE_COMMAND = /usr/bin/cmake
+# automatic
+^F = $(notdir $^)
+# environment
+G4RADIOACTIVEDATA = /home/tomas/MFF/DT/geant4/install/share/Geant4-11.0.2/data/RadioactiveDecay5.6
+# environment
+CHROME_DESKTOP = code-url-handler.desktop
+# environment
+MATE_DESKTOP_SESSION_ID = this-is-deprecated
+# default
+.INCLUDE_DIRS = /usr/include /usr/local/include /usr/include
+# environment
+ 
+LC_IDENTIFICATION = sk_SK.UTF-8
+# environment
+G4LEDATA = /home/tomas/MFF/DT/geant4/install/share/Geant4-11.0.2/data/G4EMLOW8.0
+# default
+.RECIPEPREFIX := 
+# environment
+LC_ADDRESS = sk_SK.UTF-8
+# environment
+LANG = C
+# environment
+TERM = xterm-256color
+# environment
+VSCODE_PID = 6057
+# environment
+DYLD_LIBRARY_PATH = /home/tomas/MFF/DT/root/install/lib
+# environment
+G4ENSDFSTATEDATA = /home/tomas/MFF/DT/geant4/install/share/Geant4-11.0.2/data/G4ENSDFSTATE2.3
+# variable set hash-table stats:
+# Load=141/1024=14%, Rehash=0, Collisions=21/175=12%
+
+# Pattern-specific Variable Values
+
+# No pattern-specific variable values.
+
+# Directories
+
+# . (device 2053, inode 860492): 14 files, no impossibilities.
+
+# 14 files, no impossibilities in 1 directories.
+
+# Implicit Rules
+
+%.hpux_make_needs_suffix_list:
+
+# 1 implicit rules, 0 (0.0%) terminal.
+
+# Files
+
+cmake_force:
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+
+edit_cache:
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from 'Makefile', line 72):
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "No interactive CMake dialog available..."
+	/usr/bin/cmake -E echo No\ interactive\ CMake\ dialog\ available.
+
+src/main.cpp.s:
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from 'Makefile', line 150):
+	$(MAKE) -f CMakeFiles/cclusterer.dir/build.make CMakeFiles/cclusterer.dir/src/main.cpp.s
+
+all: cmake_check_build_system
+#  Phony target (prerequisite of .PHONY).
+#  Command line target.
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has been updated.
+#  Needs to be updated (-q is set).
+# variable set hash-table stats:
+# Load=0/32=0%, Rehash=0, Collisions=0/6=0%
+#  recipe to execute (from 'Makefile', line 83):
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/tomas/MFF/DT/clusterer/CMakeFiles /home/tomas/MFF/DT/clusterer/CMakeFiles/progress.marks
+	$(MAKE) -f CMakeFiles/Makefile2 all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/tomas/MFF/DT/clusterer/CMakeFiles 0
+
+.PHONY: default_target cmake_force rebuild_cache rebuild_cache/fast edit_cache edit_cache/fast all clean clean/fast preinstall preinstall/fast depend cclusterer cclusterer/fast src/main.o src/main.cpp.o src/main.i src/main.cpp.i src/main.s src/main.cpp.s help cmake_check_build_system
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+src/main.i: src/main.cpp.i
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+
+src/main.o: src/main.cpp.o
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+
+preinstall/fast:
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from 'Makefile', line 105):
+	$(MAKE) -f CMakeFiles/Makefile2 preinstall
+
+.SUFFIXES: .hpux_make_needs_suffix_list
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+# Not a target:
+Makefile:
+#  Implicit rule search has been done.
+#  Last modified 2022-08-25 15:42:41.186192712
+#  File has been updated.
+#  Successfully updated.
+
+.NOTPARALLEL:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+clean/fast: clean
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+
+cmake_check_build_system:
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  Implicit/static pattern stem: ''
+#  File does not exist.
+#  File has been updated.
+#  Needs to be updated (-q is set).
+# automatic
+# @ := cmake_check_build_system
+# automatic
+# % := 
+# automatic
+# * := 
+# automatic
+# + := 
+# automatic
+# | := 
+# automatic
+# < := 
+# automatic
+# ^ := 
+# automatic
+# ? := 
+# variable set hash-table stats:
+# Load=8/32=25%, Rehash=0, Collisions=3/14=21%
+#  recipe to execute (from 'Makefile', line 176):
+	$(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
+
+help:
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from 'Makefile', line 155):
+	@echo "The following are some of the valid targets for this Makefile:"
+	@echo "... all (the default if no target is provided)"
+	@echo "... clean"
+	@echo "... depend"
+	@echo "... rebuild_cache"
+	@echo "... edit_cache"
+	@echo "... cclusterer"
+	@echo "... src/main.o"
+	@echo "... src/main.i"
+	@echo "... src/main.s"
+
+preinstall: all
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from 'Makefile', line 100):
+	$(MAKE) -f CMakeFiles/Makefile2 preinstall
+
+src/main.s: src/main.cpp.s
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+
+.SILENT:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+depend:
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from 'Makefile', line 110):
+	$(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
+
+# Not a target:
+.DEFAULT:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+default_target: all
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+
+cclusterer/fast:
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from 'Makefile', line 123):
+	$(MAKE) -f CMakeFiles/cclusterer.dir/build.make CMakeFiles/cclusterer.dir/build
+
+clean:
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from 'Makefile', line 90):
+	$(MAKE) -f CMakeFiles/Makefile2 clean
+
+rebuild_cache/fast: rebuild_cache
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+
+edit_cache/fast: edit_cache
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+
+src/main.cpp.i:
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from 'Makefile', line 141):
+	$(MAKE) -f CMakeFiles/cclusterer.dir/build.make CMakeFiles/cclusterer.dir/src/main.cpp.i
+
+src/main.cpp.o:
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from 'Makefile', line 132):
+	$(MAKE) -f CMakeFiles/cclusterer.dir/build.make CMakeFiles/cclusterer.dir/src/main.cpp.o
+
+# Not a target:
+.hpux_make_needs_suffix_list:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+cclusterer: cmake_check_build_system
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from 'Makefile', line 118):
+	$(MAKE) -f CMakeFiles/Makefile2 cclusterer
+
+rebuild_cache:
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from 'Makefile', line 61):
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running CMake to regenerate build system..."
+	/usr/bin/cmake -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
+
+# files hash-table stats:
+# Load=29/1024=3%, Rehash=0, Collisions=3/101=3%
+# VPATH Search Paths
+
+# No 'vpath' search paths.
+
+# No general ('VPATH' variable) search path.
+ 
+
+# strcache buffers: 1 (0) / strings = 45 / storage = 531 B / avg = 11 B
+# current buf: size = 8162 B / used = 531 B / count = 45 / avg = 11 B
+
+# strcache performance: lookups = 154 / hit rate = 70%
+# hash-table stats:
+# Load=45/8192=1%, Rehash=0, Collisions=2/154=1%
+# Finished Make data base on Tue Aug 30 13:12:10 2022
+
+ 

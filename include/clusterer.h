@@ -231,6 +231,7 @@ class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_produ
 
         //update the pixel list
     }
+    uint32_t clusters_processed_ = 0;
     void write_old_clusters(const mm_hit& last_hit)
     {
         auto top = toa_ordered_time_ids_.begin();
@@ -336,6 +337,7 @@ class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_produ
     virtual void start() override
     {
         mm_hit hit;
+        
         while(!reader_.read(hit));
         while(hit.is_valid())
         { 
@@ -344,6 +346,7 @@ class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_produ
             while(!reader_.read(hit));
         }
         writer_.write(cluster<mm_hit>{}); //write empty cluster as end token
+        writer_.flush();
         std::cout << "CLUSTER ENDED -------------------" << std::endl;
     }
 

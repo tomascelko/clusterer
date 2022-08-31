@@ -34,7 +34,7 @@ public:
     template <typename data_type>
     pipe<data_type>* connect_nodes(i_data_producer<data_type>* producer, i_data_consumer<data_type>* consumer)
     {
-        pipe<data_type>* connecting_pipe = new pipe<data_type>();
+        pipe<data_type>* connecting_pipe = new pipe<data_type>(pipes_.size());
         return connect_nodes<data_type>(producer, consumer, connecting_pipe);
 
 

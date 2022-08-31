@@ -32,6 +32,5 @@ int main(int argc, char** argv)
     controller.connect_nodes(clusterer, printer);
     controller.start_all();
     print_stream.close();
-
     //TODO add virtual destructors
 }

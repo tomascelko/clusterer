@@ -78,6 +78,7 @@ class burda_to_mm_hit_adapter : public i_data_consumer<burda_hit>, public i_data
             reader_.read(hit);
         }
         writer_.write(mm_hit_type::end_token());
+        writer_.flush();
         std::cout << "ADAPTER ENDED ---------------------" << std::endl;
     }
 };

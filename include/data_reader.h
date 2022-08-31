@@ -76,7 +76,8 @@ public:
         ready_buffer_ = buffer_b_.get();
         reading_buffer_= buffer_a_.get();
         while(read_next()); //reads while buffer is filled completely everytime
-        writer.write_bulk(ready_buffer_);    
+        writer.write_bulk(ready_buffer_);
+        writer.flush();   
     }
     bool read_next()
     {

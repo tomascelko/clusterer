@@ -25,4 +25,9 @@ class pipe_writer
         pipe_->blocking_enqueue(std::move(hit));
         return true;
     }
+    void flush()
+    {
+        if (pipe_ != nullptr)
+            pipe_->flush();
+    }
 };

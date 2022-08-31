@@ -85,6 +85,7 @@ public:
             }
         //write last (invalid) hit
         writer_.write(std::move(hit));
+        writer_.flush();
         std::cout << "HIT SORTER ENDED ---------------------" << std::endl;
         
 

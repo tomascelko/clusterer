@@ -11,7 +11,7 @@ class data_block
     int32_t to_delete_index_;
     uint32_t max_capacity_;
     public:
-    data_block(uint64_t size = 512) :
+    data_block(uint64_t size) :
     max_capacity_(size),
     to_delete_index_(0)
     {
@@ -55,11 +55,11 @@ private:
     data_block<data_type> out_block_;
     uint32_t id_;
 public: 
-    static constexpr uint32_t MAX_Q_LEN = 2 << 16;
+    static constexpr uint32_t MAX_Q_LEN = 2 << 18;
     pipe(uint32_t id) :
     id_(id),
-    in_block_(2 << 8),
-    out_block_(2 << 8),
+    in_block_(2 << 5),
+    out_block_(2 << 5),
     queue_(MAX_Q_LEN){}
     uint64_t processed_counter = 0;
     void enqueue_bulk(std::vector<data_type>&& new_data)
@@ -76,7 +76,6 @@ public:
             if(processed_counter % 100 == 0)
                 while(queue_.size_approx() > MAX_Q_LEN)
                 {
-                    std::cout << "PIPE " << id_ << "FULL";
                     std::this_thread::sleep_for(std::chrono::milliseconds(500));
                 }
             flush();

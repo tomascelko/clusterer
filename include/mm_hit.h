@@ -22,11 +22,8 @@ public:
     }
         //e_(e){}
     //TODO try to get rid of default constructor -> and prevent copying
-    mm_hit() : 
-        coord_(0, 0),
-        toa_(0.),
-        e_(0.)
-        {}
+    mm_hit()
+    {}
         //e_(0.){}
     bool is_valid()
     {

@@ -32,11 +32,8 @@ public:
         burda_hit end_token(0,-1,0,0);
         return end_token;
     }
-    burda_hit() : 
-    linear_coord_(0),
-    toa_(0),
-    fast_toa_(0),
-    tot_(0){}
+    burda_hit()
+    {}
     bool is_valid()
     {
         return toa_ >= 0;

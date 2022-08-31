@@ -6,7 +6,7 @@ project(cclusterer)
 # add the executable
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-set(CMAKE_CXX_FLAGS "-pthread")
+set(CMAKE_CXX_FLAGS "-pthread -pg")
 AUX_SOURCE_DIRECTORY(./src SOURCES)
 #set(SOURCES ./src/main.cpp)
 add_executable(cclusterer ${SOURCES})

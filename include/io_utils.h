@@ -59,6 +59,7 @@ struct coord
         static constexpr uint16_t MAX_VALUE = 256;
         short x_; 
         short y_;
+        coord(){}
         coord(short x, short y):
         x_(x),
         y_(y){}

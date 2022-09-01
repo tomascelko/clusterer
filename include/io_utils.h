@@ -57,6 +57,8 @@ class io_utils
 struct coord
     {
         static constexpr uint16_t MAX_VALUE = 256;
+        static constexpr uint16_t MIN_VALUE = 0;
+        
         short x_; 
         short y_;
         coord(){}
@@ -75,4 +77,12 @@ struct coord
         {
             return MAX_VALUE * x_ + y_;
         }
+        bool is_valid()
+        {
+            return x_ >= MIN_VALUE && x_ < MAX_VALUE && y_ >= MIN_VALUE && y_ < MAX_VALUE;
+        }
     };
+        coord operator + (const coord & left, const coord & right)
+        {
+            return coord(left.x() + right.x(), left.y() + right.y());
+        }

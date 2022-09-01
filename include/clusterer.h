@@ -36,8 +36,7 @@ class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_produ
         std::vector<cluster_it_list::iterator> pixel_iterators;
         cluster_it self;
         bool selected = false;
-        unfinished_cluster(cluster_it self) :
-        self(self)
+        unfinished_cluster()
         {
         }
         void select()
@@ -104,34 +103,43 @@ class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_produ
     }
     //TODO update = instead of unordered set for uniqueness (requires lookup in neighbor_ID table - smaller), 
     //store bit in the cluster (requires lookup in ID table) but saves allocation of unordered set per processed pixel
-    std::vector<cluster_it> find_neighboring_clusters(const coord& coord, double toa, cluster_it& biggest_cluster)
+    std::vector<cluster_it> find_neighboring_clusters(const coord& base_coord, double toa, cluster_it& biggest_cluster)
     {
         std::vector<cluster_it> uniq_neighbor_cluster_its;
         uint32_t max_cluster_size = 0; 
         for (auto & neighbor_offset : EIGHT_NEIGHBORS)   //check all neighbor indexes
         {
-            int32_t neighbor_index = coord.linearize() + neighbor_offset.linearize();
-            if(neighbor_index >= 0 && neighbor_index < MAX_PIXEL_COUNT)  //we check neighbor is not outside of the board
-            {           
+            
+            coord neighbor_coord = base_coord + neighbor_offset;
+            if(!neighbor_coord.is_valid())
+                continue;
+            uint32_t neighbor_index = neighbor_coord.linearize();
+            //if(neighbor_index >= 0 && neighbor_index < MAX_PIXEL_COUNT)  //we check neighbor is not outside of the board
+            //{           
                 for (auto & neighbor_cl_it : pixel_lists_[neighbor_index])  //iterate over each cluster neighbor pixel can be in
                 {
                     if(toa - CLUSTER_DIFF_DT < neighbor_cl_it->cl.last_toa() && !neighbor_cl_it->selected) //TODO order
                     {                                                                     //which of conditions is more likely to fail?
                         neighbor_cl_it->select();
-                        uniq_neighbor_cluster_its.emplace_back(neighbor_cl_it);
+                        uniq_neighbor_cluster_its.push_back(neighbor_cl_it);
                         if(neighbor_cl_it->cl.hits().size() > max_cluster_size)   //find biggest cluster for possible merging
                         {
                             max_cluster_size = neighbor_cl_it->cl.hits().size();
+                            //std::cout << "before" << std::endl;
                             biggest_cluster = neighbor_cl_it;
+                            //std::cout << "after" << std::endl;
                         }
                     }
+                    //std::cout << "returned_if" << neighbor_index << std::endl;
                 }
-            }
+          //  }
         }
+        //std::cout << "almost_returned" << std::endl;
         for (auto& neighbor_cluster_it : uniq_neighbor_cluster_its)
         {
             neighbor_cluster_it->unselect();    //unselect to prepare clusters for next neighbor search
         }
+        //std::cout << "returning " << std::endl;
         return uniq_neighbor_cluster_its;    
     }
     void add_new_hit(mm_hit & hit, cluster_it & cluster_iterator)
@@ -149,6 +157,13 @@ class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_produ
         //old clusters should be at the end of the list
         while (unfinished_clusters_.begin() != unfinished_clusters_.end() && is_old(last_hit.toa(), unfinished_clusters_.back().cl))
         {
+            unfinished_cluster<mm_hit> & current = unfinished_clusters_.back();
+            auto & current_hits = current.cl.hits(); 
+            for(uint32_t i = 0; i < current.pixel_iterators.size(); i++) //update iterator
+            {
+                auto & pixel_list_row = pixel_lists_[current_hits[i].coordinates().linearize()];
+                pixel_list_row.erase(current.pixel_iterators[i]); //FIXME pixel_list_rows should be appended in other direction
+            }
             writer_.write(std::move(unfinished_clusters_.back().cl));
             unfinished_clusters_.pop_back();
             --unfinished_clusters_count_;
@@ -161,8 +176,8 @@ class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_produ
         switch(neighboring_clusters.size())
         {
             case 0:
-                unfinished_clusters_.emplace_front(unfinished_cluster<mm_hit>{unfinished_clusters_.begin()});
-                unfinished_clusters_.begin();
+                unfinished_clusters_.emplace_front(unfinished_cluster<mm_hit>{});
+                unfinished_clusters_.begin()->self = unfinished_clusters_.begin();
                 ++unfinished_clusters_count_;
                 target_cluster = unfinished_clusters_.begin();
                 break;
@@ -176,18 +191,25 @@ class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_produ
                 // TODO  merge clusters and then add pixel to it
                     if(neighboring_cluster_it != target_cluster)
                     {
+
                         merge_clusters(*target_cluster, *neighboring_cluster_it);
                     }
                 }
                 break;
         }
+        if(processed_hit_count_ == 1293)
+        {
+            //std::cout << "";
+        }
         add_new_hit(hit, target_cluster);
         ++processed_hit_count_;
+        //std::cout << processed_hit_count_ << std::endl;
     }
     public:
     pixel_list_clusterer(uint64_t buffer_size) :
-    pixel_lists_(MAX_PIXEL_COUNT)
-
+    pixel_lists_(MAX_PIXEL_COUNT),
+    unfinished_clusters_count_(0),
+    processed_hit_count_(0)
     //hit_buffer_(std::make_unique<buffer_type>(buffer_size))
     {
         //hit_buffer_->reserve(buffer_size);

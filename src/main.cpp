@@ -24,12 +24,12 @@ int main(int argc, char** argv)
     controller.add_node(converter);
     controller.add_node(sorter);
     controller.add_node(clusterer);
-    controller.add_node(printer);
+    //controller.add_node(printer);
 
     controller.connect_nodes(burda_reader, converter);
     controller.connect_nodes(converter, sorter);
     controller.connect_nodes(sorter, clusterer);
-    controller.connect_nodes(clusterer, printer);
+    //controller.connect_nodes(clusterer, printer);
     controller.start_all();
     print_stream.close();
     //TODO add virtual destructors

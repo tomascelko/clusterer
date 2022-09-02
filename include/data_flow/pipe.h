@@ -76,7 +76,7 @@ public:
             if(processed_counter % 100 == 0)
                 while(queue_.size_approx() > MAX_Q_LEN)
                 {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                    std::this_thread::sleep_for(std::chrono::milliseconds(200));
                 }
             flush();
         }
@@ -86,7 +86,7 @@ public:
         while(!out_block_.try_remove_hit(new_hit))
         {
             while(!queue_.try_dequeue(out_block_)){
-                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
         }
         }
         return true;

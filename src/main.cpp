@@ -5,6 +5,7 @@
 #include "../include/data_nodes/data_printer.h"
 #include "../include/data_nodes/clusterer.h"
 #include "../include/data_nodes/burda_to_mm_hit_adapter.h"
+#include "../include/data_nodes/filtering_clusterer.h"
 #include "../include/data_structs/cluster.h"
 #include "../include/mm_stream.h"
 int main(int argc, char** argv)
@@ -16,9 +17,10 @@ int main(int argc, char** argv)
     hit_sorter<mm_hit>* sorter = new hit_sorter<mm_hit>();
     
     //std::ofstream print_stream("printed_hits.txt");
-    mm_write_stream print_stream("/home/tomas/MFF/DT/clusterer/output/outputclustered_test");
+    mm_write_stream print_stream("/home/tomas/MFF/DT/clusterer/output/filtered_clustering_100keV");
     data_printer<cluster<mm_hit>, mm_write_stream>* printer = new data_printer<cluster<mm_hit>, mm_write_stream>(&print_stream);
-    pixel_list_clusterer* clusterer = new pixel_list_clusterer(1024);
+    //pixel_list_clusterer* clusterer = new pixel_list_clusterer();
+    energy_filtering_clusterer<mm_hit>* clusterer = new energy_filtering_clusterer<mm_hit>();
     dataflow_controller controller;
     controller.add_node(burda_reader);
     controller.add_node(converter);

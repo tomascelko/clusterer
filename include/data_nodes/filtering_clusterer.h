@@ -1,38 +1,22 @@
-
-#include <iostream>
-#include <fstream>
-#include <vector>
-#include <memory>
-#include <utility>
-#include <unordered_set>
-#include <set>
-#include <map>
-#include <queue>
-#include "../data_flow/dataflow_package.h"
-#include "../utils.h"
-#include "../data_structs/cluster.h"
-#include "../data_structs/mm_hit.h"
-#include "../utils.h"
-#include <deque>
-#include <list>
+#include "clusterer.h"
 #pragma once
-class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_producer<cluster<mm_hit>>
-{   
-
+//#include "../data_structs/mm_hit.h"
+template <typename mm_hit>// care, about unfinished energz cluster scope 
+class energy_filtering_clusterer : public i_data_consumer<mm_hit>, public i_data_producer<cluster<mm_hit>>
+{
     protected:    
-    template <typename mm_hit>
-    struct unfinished_cluster;
-    using cluster_list = std::list<unfinished_cluster<mm_hit>>;
-    using cluster_it = cluster_list::iterator;
-    using cluster_it_list = std::list<cluster_it>;
-    template <typename mm_hit>
-    struct unfinished_cluster
+    struct unfinished_energy_cluster;
+    using cluster_list = std::list<unfinished_energy_cluster>;
+    using cluster_it = typename cluster_list::iterator;
+    using cluster_it_list = typename std::list<cluster_it>;
+    struct unfinished_energy_cluster
     {
         cluster<mm_hit> cl;
-        std::vector<cluster_it_list::iterator> pixel_iterators;
+        std::vector<typename cluster_it_list::iterator> pixel_iterators;
         cluster_it self;
         bool selected = false;
-        unfinished_cluster()
+        bool has_high_energy = false;
+        unfinished_energy_cluster()
         {
         }
         void select()
@@ -44,10 +28,13 @@ class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_produ
             selected = false;
         }
     };
-
     const double CLUSTER_CLOSING_DT = 200;   //time after which the cluster is closed (> DIFF_DT, because of delays in the datastream)
     const double CLUSTER_DIFF_DT = 200;     //time that marks the max difference of cluster last_toa()
     const uint32_t MAX_PIXEL_COUNT = 2 << 15;
+    const uint32_t BUFFER_CHECK_INTERVAL = 16;
+    const uint32_t WRITE_INTERVAL = 2 << 6;
+    const double BUFFER_FORGET_DT = 500;
+    const double CRITICAL_ENERGY = 100; //keV
     const std::vector<coord> EIGHT_NEIGHBORS = {{-1, -1}, {-1, 0}, {-1, 1},
                                                 { 0, -1}, { 0, 0}, { 0, 1},
                                                 { 1, -1}, { 1, 0}, { 1, 1}};
@@ -57,18 +44,21 @@ class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_produ
     uint32_t unfinished_clusters_count_;
     //how many clusters can be open at a time ?
     protected:
-    const uint32_t WRITE_INTERVAL = 2 << 6;
     uint64_t processed_hit_count_;
     pipe_reader<mm_hit> reader_;
     pipe_writer<cluster<mm_hit>> writer_;
-    bool is_old(double last_toa, const cluster<mm_hit> & cluster)
+    using buffer_type = std::deque<mm_hit>;
+    //const uint32_t expected_buffer_size = 2 << ;
+    buffer_type hit_buffer_;
+    //double toa_crit_interval_end_ = 0;
+    uint32_t hi_e_cl_count = 0; 
+    enum class clusterer_state
     {
-        return cluster.last_toa() < last_toa - CLUSTER_CLOSING_DT; 
-    }
-    void merge_clusters(unfinished_cluster<mm_hit> & bigger_cluster, unfinished_cluster<mm_hit> & smaller_cluster) 
-    //merging clusters to biggest cluster will however disrupt time orderedness - after merging bigger cluster can lower its first toa
-    //which causes time unorderedness, can hovewer improve performance
-    //TODO try always merging to left (smaller toa)
+        processing,
+        ignoring
+    };
+    clusterer_state current_state;
+    void merge_clusters(unfinished_energy_cluster & bigger_cluster, unfinished_energy_cluster & smaller_cluster) 
     {
         
         for(auto & pix_it : smaller_cluster.pixel_iterators) //update iterator
@@ -88,13 +78,16 @@ class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_produ
         //update first and last toa
         bigger_cluster.cl.set_first_toa(std::min(bigger_cluster.cl.first_toa(), smaller_cluster.cl.first_toa()));
         bigger_cluster.cl.set_last_toa(std::max(bigger_cluster.cl.last_toa(), smaller_cluster.cl.last_toa()));
-
+        //update bool saying if cluster has high energy pixel and number of such clusters
+        if(bigger_cluster.has_high_energy && smaller_cluster.has_high_energy)
+        {
+            --hi_e_cl_count;
+        }
+        bigger_cluster.has_high_energy = bigger_cluster.has_high_energy || smaller_cluster.has_high_energy;
         unfinished_clusters_.erase(smaller_cluster.self);
         --unfinished_clusters_count_;
         
     }
-    //TODO update = instead of unordered set for uniqueness (requires lookup in neighbor_ID table - smaller), 
-    //store bit in the cluster (requires lookup in ID table) but saves allocation of unordered set per processed pixel
     std::vector<cluster_it> find_neighboring_clusters(const coord& base_coord, double toa, cluster_it& biggest_cluster)
     {
         std::vector<cluster_it> uniq_neighbor_cluster_its;
@@ -135,32 +128,48 @@ class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_produ
     void add_new_hit(mm_hit & hit, cluster_it & cluster_iterator)
     {
         //update cluster itself, assumes the cluster exists
+        if(hit.e() > CRITICAL_ENERGY)
+        {
+            if(!cluster_iterator->has_high_energy)
+            {
+                ++hi_e_cl_count;
+                cluster_iterator->has_high_energy = true;
+            }
+        }
         auto &  target_pixel_list = pixel_lists_[hit.coordinates().linearize()];
+        
         target_pixel_list.push_front(cluster_iterator);
         cluster_iterator->pixel_iterators.push_back(target_pixel_list.begin()); //beware, we need to push in the same order,
                                                                                 //as we push hits in addhit and in merging
         cluster_iterator->cl.add_hit(std::move(hit));
         //update the pixel list
     }
-    
+    bool is_old(double last_toa, const cluster<mm_hit> & cluster)
+    {
+        return cluster.last_toa() < last_toa - CLUSTER_CLOSING_DT; 
+    }
     void write_old_clusters(const mm_hit& last_hit)
     {
         //old clusters should be at the end of the list
         while (unfinished_clusters_count_ > 0  && is_old(last_hit.toa(), unfinished_clusters_.back().cl))
         {
-            unfinished_cluster<mm_hit> & current = unfinished_clusters_.back();
+            unfinished_energy_cluster & current = unfinished_clusters_.back();
             auto & current_hits = current.cl.hits(); 
             for(uint32_t i = 0; i < current.pixel_iterators.size(); i++) //update iterator
             {
                 auto & pixel_list_row = pixel_lists_[current_hits[i].coordinates().linearize()];
                 pixel_list_row.erase(current.pixel_iterators[i]); //FIXME pixel_list_rows should be appended in other direction
             }
-            writer_.write(std::move(unfinished_clusters_.back().cl));
+            if (unfinished_clusters_.back().has_high_energy)
+            {
+                writer_.write(std::move(unfinished_clusters_.back().cl));
+                --hi_e_cl_count;
+            }
             unfinished_clusters_.pop_back();
             --unfinished_clusters_count_;
-        }
-    } 
-    void process_hit(mm_hit & hit)
+        }    
+    }
+    void clusterize_hit(mm_hit & hit) //does actual pixel_pointer_clusterer-like processing
     {
         cluster_it target_cluster = unfinished_clusters_.end();
         const auto neighboring_clusters = find_neighboring_clusters(hit.coordinates(), hit.toa(), target_cluster);
@@ -168,7 +177,7 @@ class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_produ
         {
             case 0:
                 
-                unfinished_clusters_.emplace_front(unfinished_cluster<mm_hit>{});
+                unfinished_clusters_.emplace_front(unfinished_energy_cluster{});
                 unfinished_clusters_.begin()->self = unfinished_clusters_.begin();
                 ++unfinished_clusters_count_;
                 target_cluster = unfinished_clusters_.begin();
@@ -193,39 +202,75 @@ class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_produ
         ++processed_hit_count_;
         //std::cout << processed_hit_count_ << std::endl;
     }
+    void process_hit(mm_hit & hit) //used for benchmarking
+    {
+        hit_buffer_.push_back(hit);
+            if(processed_hit_count_ % WRITE_INTERVAL == 0) 
+                write_old_clusters(hit);
+            if(hi_e_cl_count == 0)                          //we written out all high energy clusters for now, 
+                current_state = clusterer_state::ignoring;  //so we can start ignoring again
+            if(processed_hit_count_ % BUFFER_CHECK_INTERVAL == 0)
+                forget_old_hits(hit.toa());
+            
+            if(is_good_hit(hit) && current_state == clusterer_state::ignoring) //we just found interesting hit
+            {                                                      //and we were in forgetting phase
+                process_all_buffered();                            //so we look into the buffer backward in time
+            }                                                      //and process all hits retrospectively
+            if(current_state == clusterer_state::processing)
+                clusterize_hit(hit);
+    }
+    void forget_old_hits(double current_toa)
+    {
+        while(hit_buffer_.size() > 0 && hit_buffer_.front().toa() <  current_toa - BUFFER_FORGET_DT)
+        {
+            hit_buffer_.pop_back();
+        }
+    }
+    bool is_good_hit(const mm_hit & hit)
+    {
+        return hit.e() > CRITICAL_ENERGY;
+    }
+    void process_all_buffered()
+    {
+        current_state = clusterer_state::processing;
+        for(uint32_t i = 0; i < hit_buffer_.size(); ++i)
+        {
+            clusterize_hit(hit_buffer_[i]);
+            hit_buffer_.pop_front(); //we can remove the hit from buffer, 
+        }                            //as it is now located inside of a unfinished clusters data structure
+
+        //TODO when to start ignoring again ? set toa_crit_interval_end_
+        //TODO try buffered printer
+    }
     public:
-    pixel_list_clusterer() :
+    virtual void start() override
+    {
+        mm_hit hit;
+        reader_.read(hit);
+        int num_hits = 0;
+        while(hit.is_valid())
+        {
+            process_hit(hit);
+            num_hits++;
+            reader_.read(hit);
+        }
+        writer_.write(cluster<mm_hit>::end_token()); //write empty cluster as end token
+        writer_.flush();
+        std::cout << "CLUSTERER ENDED -------------------" << std::endl;    
+    }
+    virtual void connect_input(pipe<mm_hit>* in_pipe) override
+    {
+        reader_ = pipe_reader<mm_hit>(in_pipe);
+    }
+    virtual void connect_output(pipe<cluster<mm_hit>>* out_pipe) override
+    {
+        writer_ = pipe_writer<cluster<mm_hit>>(out_pipe);
+    }
+    energy_filtering_clusterer() :
     pixel_lists_(MAX_PIXEL_COUNT),
     unfinished_clusters_count_(0),
     processed_hit_count_(0)
     
-    {
-
-        
+    {   
     }
-    virtual void connect_input(pipe<mm_hit>* input_pipe) override
-    {
-        reader_ = pipe_reader<mm_hit>(input_pipe);
-    }
-    virtual void connect_output(pipe<cluster<mm_hit>>* output_pipe) override
-    {
-        writer_ = pipe_writer<cluster<mm_hit>>(output_pipe);
-    }
-    virtual void start() override
-    {
-        mm_hit hit;
-        
-        while(!reader_.read(hit));
-        while(hit.is_valid())
-        {
-            if(processed_hit_count_ % WRITE_INTERVAL == 0) 
-                write_old_clusters(hit);
-            process_hit(hit);
-            while(!reader_.read(hit));
-        }
-        writer_.write(cluster<mm_hit>::end_token()); //write empty cluster as end token
-        writer_.flush();
-        std::cout << "CLUSTERER ENDED -------------------" << std::endl;
-    }
-
 };

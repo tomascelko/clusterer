@@ -17,7 +17,7 @@ class mm_write_stream
     void open_streams(const std::string& ini_file)
     {
         std::string path_suffix = ini_file.substr(ini_file.find_last_of("\\/") + 1);
-        std::string path_prefix = ini_file.substr(0, ini_file.find_last_of("\\/"));
+        std::string path_prefix = ini_file.substr(0, ini_file.find_last_of("\\/") + 1);
         if(ini_file.find_last_of("\\/") == std::string::npos)
         {
             //handle special case where no path is given
@@ -33,7 +33,7 @@ class mm_write_stream
         std::string cl_file_name = sstream.str() + std::string(CL_SUFFIX);
         
 
-        std::ofstream ini_filestream(ini_file_name);
+        std::ofstream ini_filestream(path_prefix + ini_file_name);
         ini_filestream << "[Measurement]" << std::endl;
         ini_filestream << "PxFile=" << px_file_name << std::endl;
         ini_filestream << "ClFile=" << cl_file_name << std::endl;

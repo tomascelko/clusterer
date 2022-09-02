@@ -34,11 +34,11 @@ class energy_filtering_clusterer : public i_data_consumer<mm_hit>, public i_data
     const uint32_t BUFFER_CHECK_INTERVAL = 16;
     const uint32_t WRITE_INTERVAL = 2 << 6;
     const double BUFFER_FORGET_DT = 500;
-    const double CRITICAL_ENERGY = 100; //keV
+    const double CRITICAL_ENERGY = 70; //keV
     const std::vector<coord> EIGHT_NEIGHBORS = {{-1, -1}, {-1, 0}, {-1, 1},
                                                 { 0, -1}, { 0, 0}, { 0, 1},
                                                 { 1, -1}, { 1, 0}, { 1, 1}};
-
+    bool finished_ = false;
     std::vector<cluster_it_list> pixel_lists_; 
     cluster_list unfinished_clusters_;
     uint32_t unfinished_clusters_count_;
@@ -148,10 +148,10 @@ class energy_filtering_clusterer : public i_data_consumer<mm_hit>, public i_data
     {
         return cluster.last_toa() < last_toa - CLUSTER_CLOSING_DT; 
     }
-    void write_old_clusters(const mm_hit& last_hit)
+    void write_old_clusters(double last_toa = 0)
     {
         //old clusters should be at the end of the list
-        while (unfinished_clusters_count_ > 0  && is_old(last_hit.toa(), unfinished_clusters_.back().cl))
+        while (unfinished_clusters_count_ > 0  && (is_old(last_toa, unfinished_clusters_.back().cl) || finished_))
         {
             unfinished_energy_cluster & current = unfinished_clusters_.back();
             auto & current_hits = current.cl.hits(); 
@@ -206,7 +206,7 @@ class energy_filtering_clusterer : public i_data_consumer<mm_hit>, public i_data
     {
         hit_buffer_.push_back(hit);
             if(processed_hit_count_ % WRITE_INTERVAL == 0) 
-                write_old_clusters(hit);
+                write_old_clusters(hit.toa());
             if(hi_e_cl_count == 0)                          //we written out all high energy clusters for now, 
                 current_state = clusterer_state::ignoring;  //so we can start ignoring again
             if(processed_hit_count_ % BUFFER_CHECK_INTERVAL == 0)
@@ -219,7 +219,7 @@ class energy_filtering_clusterer : public i_data_consumer<mm_hit>, public i_data
             if(current_state == clusterer_state::processing)
                 clusterize_hit(hit);
     }
-    void forget_old_hits(double current_toa)
+    void forget_old_hits(double current_toa) //removes old hits from buffer
     {
         while(hit_buffer_.size() > 0 && hit_buffer_.front().toa() <  current_toa - BUFFER_FORGET_DT)
         {
@@ -242,6 +242,11 @@ class energy_filtering_clusterer : public i_data_consumer<mm_hit>, public i_data
         //TODO when to start ignoring again ? set toa_crit_interval_end_
         //TODO try buffered printer
     }
+    void write_remaining_clusters()
+    {
+        finished_ = true;
+        write_old_clusters();
+    }
     public:
     virtual void start() override
     {
@@ -254,6 +259,7 @@ class energy_filtering_clusterer : public i_data_consumer<mm_hit>, public i_data
             num_hits++;
             reader_.read(hit);
         }
+        write_remaining_clusters();
         writer_.write(cluster<mm_hit>::end_token()); //write empty cluster as end token
         writer_.flush();
         std::cout << "CLUSTERER ENDED -------------------" << std::endl;    

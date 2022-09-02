@@ -11,9 +11,13 @@ class mm_write_stream
     static constexpr std::string_view INI_SUFFIX = ".ini";
     static constexpr std::string_view CL_SUFFIX = "_cl.txt";
     static constexpr std::string_view PX_SUFFIX = "_px.txt";
+    static constexpr uint32_t FLUSH_INTERVAL = 2 << 14;
     uint64_t current_line = 0;
     uint64_t current_byte = 0;
-
+    uint64_t clusters_written_ = 0;
+    uint64_t new_pixels_written_ = 0;
+    std::stringstream px_buffer_;
+    std::stringstream cl_buffer_;
     void open_streams(const std::string& ini_file)
     {
         std::string path_suffix = ini_file.substr(ini_file.find_last_of("\\/") + 1);
@@ -52,21 +56,38 @@ class mm_write_stream
     }  
     void close()
     {
+        *cl_file_ << cl_buffer_.str();
+        *px_file_ << px_buffer_.str();
         cl_file_->close();
         px_file_->close();
     }
     template <typename cluster_type>
     mm_write_stream& operator <<(const cluster_type& cluster)
     {
-        (*cl_file_) << std::fixed << std::setprecision(6) << cluster.first_toa() << " "; 
-        (*cl_file_) << cluster.hit_count() << " " << current_line << " " << current_byte << std::endl;
+        cl_buffer_ << std::fixed << std::setprecision(6) << cluster.first_toa() << " "; 
+        cl_buffer_ << cluster.hit_count() << " " << current_line << " " << current_byte << std::endl;
+        ++clusters_written_;
         for(auto & hit : cluster.hits())
         {
-            *px_file_ << hit;
+            px_buffer_ << hit;
         }
-        *px_file_ << "#" << std::endl;
+        px_buffer_ << "#" << std::endl;
         current_line += cluster.hit_count() + 1;
-        current_byte = px_file_->tellp();
+        new_pixels_written_ += cluster.hit_count() + 1;
+        current_byte = px_buffer_.tellp();
+        if(clusters_written_ % FLUSH_INTERVAL == 0)
+        {
+            *cl_file_ << cl_buffer_.str();
+            cl_buffer_.str("");
+            cl_buffer_.clear();
+        }
+        if(new_pixels_written_ > FLUSH_INTERVAL)
+        {
+            *px_file_ << px_buffer_.str();
+            new_pixels_written_ = 0;
+            px_buffer_.str("");
+            px_buffer_.clear();
+        }
         return *this;
     }    
 

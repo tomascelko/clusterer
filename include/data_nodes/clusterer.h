@@ -55,6 +55,7 @@ class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_produ
     std::vector<cluster_it_list> pixel_lists_; 
     cluster_list unfinished_clusters_;
     uint32_t unfinished_clusters_count_;
+    bool finished_ = false;
     //how many clusters can be open at a time ?
     protected:
     const uint32_t WRITE_INTERVAL = 2 << 6;
@@ -143,10 +144,10 @@ class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_produ
         //update the pixel list
     }
     
-    void write_old_clusters(const mm_hit& last_hit)
+    void write_old_clusters(double hit_toa = 0)
     {
         //old clusters should be at the end of the list
-        while (unfinished_clusters_count_ > 0  && is_old(last_hit.toa(), unfinished_clusters_.back().cl))
+        while (unfinished_clusters_count_ > 0  && (is_old(hit_toa, unfinished_clusters_.back().cl) || finished_))
         {
             unfinished_cluster<mm_hit> & current = unfinished_clusters_.back();
             auto & current_hits = current.cl.hits(); 
@@ -193,12 +194,16 @@ class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_produ
         ++processed_hit_count_;
         //std::cout << processed_hit_count_ << std::endl;
     }
+    void write_remaining_clusters()
+    {
+        finished_ = true;
+        write_old_clusters();
+    }
     public:
     pixel_list_clusterer() :
     pixel_lists_(MAX_PIXEL_COUNT),
     unfinished_clusters_count_(0),
-    processed_hit_count_(0)
-    
+    processed_hit_count_(0)   
     {
 
         
@@ -219,10 +224,11 @@ class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_produ
         while(hit.is_valid())
         {
             if(processed_hit_count_ % WRITE_INTERVAL == 0) 
-                write_old_clusters(hit);
+                write_old_clusters(hit.toa());
             process_hit(hit);
             while(!reader_.read(hit));
-        }
+        }   
+        write_remaining_clusters();
         writer_.write(cluster<mm_hit>::end_token()); //write empty cluster as end token
         writer_.flush();
         std::cout << "CLUSTERER ENDED -------------------" << std::endl;

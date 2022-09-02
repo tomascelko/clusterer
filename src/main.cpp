@@ -17,7 +17,8 @@ int main(int argc, char** argv)
     hit_sorter<mm_hit>* sorter = new hit_sorter<mm_hit>();
     
     //std::ofstream print_stream("printed_hits.txt");
-    mm_write_stream print_stream("/home/tomas/MFF/DT/clusterer/output/filtered_clustering_100keV");
+    mm_write_stream print_stream("/home/tomas/MFF/DT/clusterer/output/buffered_write");
+    //mm_write_stream print_stream("/home/tomas/MFF/DT/clusterer/output/filtered_clustering_100keV");
     data_printer<cluster<mm_hit>, mm_write_stream>* printer = new data_printer<cluster<mm_hit>, mm_write_stream>(&print_stream);
     //pixel_list_clusterer* clusterer = new pixel_list_clusterer();
     energy_filtering_clusterer<mm_hit>* clusterer = new energy_filtering_clusterer<mm_hit>();
@@ -26,12 +27,12 @@ int main(int argc, char** argv)
     controller.add_node(converter);
     controller.add_node(sorter);
     controller.add_node(clusterer);
-    controller.add_node(printer);
+    //controller.add_node(printer);
 
     controller.connect_nodes(burda_reader, converter);
     controller.connect_nodes(converter, sorter);
     controller.connect_nodes(sorter, clusterer);
-    controller.connect_nodes(clusterer, printer);
+    //controller.connect_nodes(clusterer, printer);
     controller.start_all();
     print_stream.close();
     //TODO add virtual destructors

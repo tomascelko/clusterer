@@ -1,10 +1,7 @@
 #include <algorithm>
-#include "pipe_writer.h"
-#include "pipe_reader.h"
+#include "../data_flow/dataflow_package.h"
 #include <queue>
-#include "i_data_consumer.h"
-#include "i_data_producer.h"
-#include "burda_hit.h"
+#include "../data_structs/burda_hit.h"
 
 template <typename data_type>
 
@@ -42,9 +39,10 @@ class hit_sorter : public i_data_consumer<data_type>, public i_data_producer<dat
     pipe_writer<data_type> writer_;
     std::priority_queue<data_type, std::vector<data_type>, toa_comparer> priority_queue_;
     
-    const double DEQUEUE_TIME = 500000.; // in nanoseconds
+    const double DEQUEUE_TIME = 500000.; // in 
+    const uint32_t DEQUEUE_CHECK_INTEVAL = 512;
 public:
-    hit_sorter()
+    hit_sorter()   
     {
         toa_comparer less_comparer;
         priority_queue_ = std::priority_queue<data_type, std::vector<data_type>, toa_comparer> (less_comparer);
@@ -67,12 +65,13 @@ public:
             processed ++;
             priority_queue_.push(hit);
             
-            while (priority_queue_.top().toa() < hit.toa() - DEQUEUE_TIME)
-            {
-                data_type old_hit = priority_queue_.top();
-                writer_.write(std::move(old_hit));
-                priority_queue_.pop();
-            }
+            if(processed % DEQUEUE_CHECK_INTEVAL == 0)
+                while (priority_queue_.top().toa() < hit.toa() - DEQUEUE_TIME)
+                {
+                    data_type old_hit = priority_queue_.top();
+                    writer_.write(std::move(old_hit));
+                    priority_queue_.pop();
+                }
             reader_.read(hit);
 
         

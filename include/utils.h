@@ -77,10 +77,11 @@ struct coord
         {
             return MAX_VALUE * x_ + y_;
         }
-        bool is_valid()
+        bool is_valid_neighbor(const coord& neighbor) const
         {
-            return x_ >= MIN_VALUE && x_ < MAX_VALUE && y_ >= MIN_VALUE && y_ < MAX_VALUE;
+            return x_ + neighbor.x_ >= MIN_VALUE && x_ + neighbor.x_ < MAX_VALUE && y_ + neighbor.y_ >= MIN_VALUE && y_ + neighbor.y_ < MAX_VALUE;
         }
+        
     };
         coord operator + (const coord & left, const coord & right)
         {

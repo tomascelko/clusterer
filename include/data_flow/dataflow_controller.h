@@ -57,7 +57,9 @@ public:
         for (uint32_t i = 0; i < nodes_.size(); i++)
         {
             threads_.emplace_back(std::move(std::thread([this, i](){nodes_[i]->start();})));
+            //nodes_[i]->start();
         }
+        //nodes_[0]->start();
         for (uint32_t i = 0; i < nodes_.size(); i++)
         {
             threads_[i].join();

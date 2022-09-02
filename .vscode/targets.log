@@ -6,7 +6,7 @@ make all --print-data-base --no-builtin-variables --no-builtin-rules --question
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Thu Sep  1 12:56:44 2022
+# Make data base, printed on Thu Sep  1 19:26:37 2022
 
 # Variables
 
@@ -95,7 +95,7 @@ GPG_AGENT_INFO = /run/user/1000/gnupg/S.gpg-agent:0:1
 # environment
 C_INCLUDE_PATH = /home/tomas/MFF/DT/allpix/install/include:
 # environment
-SESSION_MANAGER = local/tomas-VirtualBox:@/tmp/.ICE-unix/831,unix/tomas-VirtualBox:/tmp/.ICE-unix/831
+SESSION_MANAGER = local/tomas-VirtualBox:@/tmp/.ICE-unix/827,unix/tomas-VirtualBox:/tmp/.ICE-unix/827
 # environment
 G4INCLDATA = /home/tomas/MFF/DT/geant4/install/share/Geant4-11.0.2/data/G4INCL1.0
 # environment
@@ -103,7 +103,7 @@ XDG_RUNTIME_DIR = /run/user/1000
 # environment
 LIBRARY_PATH = /home/tomas/MFF/DT/allpix/install/lib:
 # environment
-WINDOWID = 52428806
+WINDOWID = 54525958
 # environment
 ELECTRON_RUN_AS_NODE = 1
 # default
@@ -143,7 +143,7 @@ QT_QPA_PLATFORMTHEME = qt5ct
 # environment
 XDG_SEAT = seat0
 # environment
-SSH_AGENT_PID = 976
+SSH_AGENT_PID = 971
 # environment
 ORIGINAL_XDG_CURRENT_DESKTOP = MATE
 # environment
@@ -276,6 +276,7 @@ CHROME_DESKTOP = code-url-handler.desktop
 MATE_DESKTOP_SESSION_ID = this-is-deprecated
 # default
 .INCLUDE_DIRS = /usr/include /usr/local/include /usr/include
+ 
 # environment
 LC_IDENTIFICATION = sk_SK.UTF-8
 # environment
@@ -289,13 +290,12 @@ LANG = C
 # environment
 TERM = xterm-256color
 # environment
-VSCODE_PID = 5455
+VSCODE_PID = 1508
 # environment
 DYLD_LIBRARY_PATH = /home/tomas/MFF/DT/root/install/lib
 # environment
 G4ENSDFSTATEDATA = /home/tomas/MFF/DT/geant4/install/share/Geant4-11.0.2/data/G4ENSDFSTATE2.3
 # variable set hash-table stats:
- 
 # Load=142/1024=14%, Rehash=0, Collisions=21/176=12%
 
 # Pattern-specific Variable Values
@@ -304,9 +304,9 @@ G4ENSDFSTATEDATA = /home/tomas/MFF/DT/geant4/install/share/Geant4-11.0.2/data/G4
 
 # Directories
 
-# . (device 2053, inode 860492): 15 files, no impossibilities.
+# . (device 2053, inode 860492): 65 files, no impossibilities.
 
-# 15 files, no impossibilities in 1 directories.
+# 65 files, no impossibilities in 1 directories.
 
 # Implicit Rules
 
@@ -558,14 +558,15 @@ rebuild_cache:
 
 # No 'vpath' search paths.
 
+ 
 # No general ('VPATH' variable) search path.
 
-# strcache buffers: 1 (0) / strings = 46 / storage = 543 B / avg = 11 B
-# current buf: size = 8162 B / used = 543 B / count = 46 / avg = 11 B
+# strcache buffers: 1 (0) / strings = 96 / storage = 3193 B / avg = 33 B
+# current buf: size = 8162 B / used = 3193 B / count = 96 / avg = 33 B
 
-# strcache performance: lookups = 155 / hit rate = 70%
+# strcache performance: lookups = 205 / hit rate = 53%
 # hash-table stats:
-# Load=46/8192=1%, Rehash=0, Collisions=2/155=1%
-# Finished Make data base on Thu Sep  1 12:56:44 2022
+# Load=96/8192=1%, Rehash=0, Collisions=2/205=1%
+# Finished Make data base on Thu Sep  1 19:26:37 2022
 
  

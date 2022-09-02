@@ -1,11 +1,11 @@
-#include "../include/data_reader.h"
-#include "../include/burda_hit.h"
-#include "../include/hit_sorter.h"
-#include "../include/dataflow_controller.h"
-#include "../include/data_printer.h"
-#include "../include/clusterer.h"
-#include "../include/burda_to_mm_hit_adapter.h"
-#include "../include/cluster.h"
+#include "../include/data_nodes/data_reader.h"
+#include "../include/data_structs/burda_hit.h"
+#include "../include/data_nodes/hit_sorter.h"
+#include "../include/data_flow/dataflow_controller.h"
+#include "../include/data_nodes/data_printer.h"
+#include "../include/data_nodes/clusterer.h"
+#include "../include/data_nodes/burda_to_mm_hit_adapter.h"
+#include "../include/data_structs/cluster.h"
 #include "../include/mm_stream.h"
 int main(int argc, char** argv)
 {
@@ -16,7 +16,7 @@ int main(int argc, char** argv)
     hit_sorter<mm_hit>* sorter = new hit_sorter<mm_hit>();
     
     //std::ofstream print_stream("printed_hits.txt");
-    mm_write_stream print_stream("clustered_test");
+    mm_write_stream print_stream("/home/tomas/MFF/DT/clusterer/output/outputclustered_test");
     data_printer<cluster<mm_hit>, mm_write_stream>* printer = new data_printer<cluster<mm_hit>, mm_write_stream>(&print_stream);
     pixel_list_clusterer* clusterer = new pixel_list_clusterer(1024);
     dataflow_controller controller;

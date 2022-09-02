@@ -58,8 +58,8 @@ public:
     static constexpr uint32_t MAX_Q_LEN = 2 << 18;
     pipe(uint32_t id) :
     id_(id),
-    in_block_(2 << 5),
-    out_block_(2 << 5),
+    in_block_(2 << 7),
+    out_block_(2 << 7),
     queue_(MAX_Q_LEN){}
     uint64_t processed_counter = 0;
     void enqueue_bulk(std::vector<data_type>&& new_data)

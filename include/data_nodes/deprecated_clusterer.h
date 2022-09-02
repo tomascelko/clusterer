@@ -7,16 +7,10 @@
 #include <set>
 #include <map>
 #include <queue>
-#include "data_buffer.h"
-#include "pipe_writer.h"
-#include "pipe_reader.h"
-#include "i_data_producer.h"
-#include "io_utils.h"
-#include "cluster.h"
-#include "priority_queue.h"
-#include "pipe.h"
-#include "mm_hit.h"
-#include "io_utils.h"
+#include "../data_flow/dataflow_package.h"
+#include "../utils.h"
+#include "../data_structs/cluster.h"
+#include "../data_structs/mm_hit.h"
 #include <deque>
 /*template <typename hit_type, typename cluster>
 

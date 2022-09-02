@@ -8,16 +8,11 @@
 #include <set>
 #include <map>
 #include <queue>
-#include "data_buffer.h"
-#include "pipe_writer.h"
-#include "pipe_reader.h"
-#include "i_data_producer.h"
-#include "io_utils.h"
-#include "cluster.h"
-#include "priority_queue.h"
-#include "pipe.h"
-#include "mm_hit.h"
-#include "io_utils.h"
+#include "../data_flow/dataflow_package.h"
+#include "../utils.h"
+#include "../data_structs/cluster.h"
+#include "../data_structs/mm_hit.h"
+#include "../utils.h"
 #include <deque>
 #include <list>
 class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_producer<cluster<mm_hit>>
@@ -49,13 +44,11 @@ class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_produ
         }
     };
 
-    //TODO possible update = only use cluster id instead of timestamp, and get last toa from map (avoids duplication 
-    //= saves memory but requires more time -> O(1) lookup with come constant)
     private:
-    const double CLUSTER_CLOSING_DT = 300;   //time after which the cluster is closed (> DIFF_DT, because of delays in the datastream)
-    const double CLUSTER_DIFF_DT = 300;     //time that marks the max difference of cluster last_toa()
+    const double CLUSTER_CLOSING_DT = 200;   //time after which the cluster is closed (> DIFF_DT, because of delays in the datastream)
+    const double CLUSTER_DIFF_DT = 200;     //time that marks the max difference of cluster last_toa()
     const uint32_t MAX_PIXEL_COUNT = 2 << 15;
-    const uint32_t WRITE_INTERVAL = 2 << 5;
+    const uint32_t WRITE_INTERVAL = 2 << 6;
     const std::vector<coord> EIGHT_NEIGHBORS = {{-1, -1}, {-1, 0}, {-1, 1},
                                                 { 0, -1}, { 0, 0}, { 0, 1},
                                                 { 1, -1}, { 1, 0}, { 1, 1}};
@@ -107,13 +100,11 @@ class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_produ
     {
         std::vector<cluster_it> uniq_neighbor_cluster_its;
         uint32_t max_cluster_size = 0; 
-        for (auto & neighbor_offset : EIGHT_NEIGHBORS)   //check all neighbor indexes
-        {
-            
-            coord neighbor_coord = base_coord + neighbor_offset;
-            if(!neighbor_coord.is_valid())
+        for (auto neighbor_offset : EIGHT_NEIGHBORS)   //check all neighbor indexes
+        {       
+            if(!base_coord.is_valid_neighbor(neighbor_offset))
                 continue;
-            uint32_t neighbor_index = neighbor_coord.linearize();
+            uint32_t neighbor_index = neighbor_offset.linearize() + base_coord.linearize();
             //if(neighbor_index >= 0 && neighbor_index < MAX_PIXEL_COUNT)  //we check neighbor is not outside of the board
             //{           
                 for (auto & neighbor_cl_it : pixel_lists_[neighbor_index])  //iterate over each cluster neighbor pixel can be in
@@ -147,7 +138,8 @@ class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_produ
         //update cluster itself, assumes the cluster exists
         auto &  target_pixel_list = pixel_lists_[hit.coordinates().linearize()];
         target_pixel_list.push_front(cluster_iterator);
-        cluster_iterator->pixel_iterators.push_back(target_pixel_list.begin());
+        cluster_iterator->pixel_iterators.push_back(target_pixel_list.begin()); //beware, we need to push in the same order,
+                                                                                //as we push hits in addhit and in merging
         cluster_iterator->cl.add_hit(std::move(hit));
         //update the pixel list
     }
@@ -155,7 +147,7 @@ class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_produ
     void write_old_clusters(const mm_hit& last_hit)
     {
         //old clusters should be at the end of the list
-        while (unfinished_clusters_.begin() != unfinished_clusters_.end() && is_old(last_hit.toa(), unfinished_clusters_.back().cl))
+        while (unfinished_clusters_count_ > 0  && is_old(last_hit.toa(), unfinished_clusters_.back().cl))
         {
             unfinished_cluster<mm_hit> & current = unfinished_clusters_.back();
             auto & current_hits = current.cl.hits(); 
@@ -172,10 +164,12 @@ class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_produ
     void process_hit(mm_hit & hit)
     {
         cluster_it target_cluster = unfinished_clusters_.end();
-        auto neighboring_clusters = find_neighboring_clusters(hit.coordinates(), hit.toa(), target_cluster);
+        //const auto 
+        const auto neighboring_clusters = find_neighboring_clusters(hit.coordinates(), hit.toa(), target_cluster);
         switch(neighboring_clusters.size())
         {
             case 0:
+                
                 unfinished_clusters_.emplace_front(unfinished_cluster<mm_hit>{});
                 unfinished_clusters_.begin()->self = unfinished_clusters_.begin();
                 ++unfinished_clusters_count_;

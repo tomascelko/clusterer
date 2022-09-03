@@ -1,14 +1,11 @@
 #include <algorithm>
-#include "pipe_writer.h"
-#include "pipe_reader.h"
 #include <queue>
-#include "i_data_consumer.h"
-#include "i_data_producer.h"
-#include "mm_hit.h"
-#include "mm_hit_tot.h"
-#include "burda_hit.h"
-#include "io_utils.h"
-#include "calibration.h"
+#include "../data_flow/dataflow_package.h"
+#include "../data_structs/mm_hit.h"
+#include "../data_structs/mm_hit_tot.h"
+#include "../data_structs/burda_hit.h"
+#include "../utils.h"
+#include "../data_structs/calibration.h"
 #include <type_traits>
 #include <cassert>
 

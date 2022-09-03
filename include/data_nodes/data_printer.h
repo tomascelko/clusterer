@@ -1,8 +1,4 @@
-#include "pipe_reader.h"
-#include "pipe_writer.h"
-#include "burda_hit.h"
-#include "i_data_producer.h"
-#include "i_data_consumer.h"
+#include "../data_flow/dataflow_package.h"
 
 template <typename data_type, typename stream_type>
 class data_printer : public i_data_consumer<data_type>, public i_data_producer<data_type>
@@ -18,7 +14,6 @@ class data_printer : public i_data_consumer<data_type>, public i_data_producer<d
     }
     virtual void start() override
     {
-        bool start = true;
         data_type hit;
         while(!reader_.read(hit));
         while(hit.is_valid())

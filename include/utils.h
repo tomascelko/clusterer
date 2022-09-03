@@ -57,8 +57,11 @@ class io_utils
 struct coord
     {
         static constexpr uint16_t MAX_VALUE = 256;
+        static constexpr uint16_t MIN_VALUE = 0;
+        
         short x_; 
         short y_;
+        coord(){}
         coord(short x, short y):
         x_(x),
         y_(y){}
@@ -74,4 +77,13 @@ struct coord
         {
             return MAX_VALUE * x_ + y_;
         }
+        bool is_valid_neighbor(const coord& neighbor) const
+        {
+            return x_ + neighbor.x_ >= MIN_VALUE && x_ + neighbor.x_ < MAX_VALUE && y_ + neighbor.y_ >= MIN_VALUE && y_ + neighbor.y_ < MAX_VALUE;
+        }
+        
     };
+        coord operator + (const coord & left, const coord & right)
+        {
+            return coord(left.x() + right.x(), left.y() + right.y());
+        }

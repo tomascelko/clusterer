@@ -19,6 +19,10 @@ protected:
 
     
 public:
+    static cluster<data_type> end_token()
+    {
+        return cluster<data_type>{};
+    }
     cluster() :
     hit_count_(0)
     { }

@@ -7,16 +7,10 @@
 #include <set>
 #include <map>
 #include <queue>
-#include "data_buffer.h"
-#include "pipe_writer.h"
-#include "pipe_reader.h"
-#include "i_data_producer.h"
-#include "io_utils.h"
-#include "cluster.h"
-#include "priority_queue.h"
-#include "pipe.h"
-#include "mm_hit.h"
-#include "io_utils.h"
+#include "../data_flow/dataflow_package.h"
+#include "../utils.h"
+#include "../data_structs/cluster.h"
+#include "../data_structs/mm_hit.h"
 #include <deque>
 /*template <typename hit_type, typename cluster>
 
@@ -115,6 +109,36 @@ class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_produ
         }
 
     };
+    template <typename mm_hit>
+    class cluster_with_bit
+    {
+        cluster<mm_hit> cluster_;
+        bool was_selected_ = false;
+        public:
+        cluster_with_bit()
+        {}
+        cluster_with_bit(cluster<mm_hit> && cluster):
+            cluster_(std::move(cluster))
+        {
+        }
+        void select()
+        {
+            was_selected_ = true;
+        }
+        void restore()
+        {
+            was_selected_ = false;
+        }
+        bool is_selected()
+        {
+            return was_selected_;
+        }
+
+        cluster<mm_hit> & cl()
+        {
+            return cluster_;
+        }
+    };
     struct last_toa_id_comparer
     {
         auto operator() (const cluster_time_id& left, const pixel_list_clusterer::cluster_time_id& right) const 
@@ -151,19 +175,19 @@ class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_produ
     //lets actually move items out of priority queue on delete, custom priority queue employed
     std::set<cluster_time_id, last_toa_id_comparer> toa_ordered_time_ids_; //delete and insert cluster after each pixelhit
     //how many clusters can be open at a time ?
-    std::unordered_map<cluster_id, cluster<mm_hit>> cluster_ids_map_;
+    std::unordered_map<cluster_id, cluster_with_bit<mm_hit>> cluster_ids_map_;
     bool is_old(double last_toa, cluster_id id)
     {
-        return cluster_ids_map_[id].last_toa() < last_toa - CLUSTER_CLOSING_DT; 
+        return cluster_ids_map_[id].cl().last_toa() < last_toa - CLUSTER_CLOSING_DT; 
     }
     void merge_clusters(cluster_id bigger_cluster_id, cluster_id smaller_cluster_id)
     {
-        cluster<mm_hit> & bigger_cluster = cluster_ids_map_.at(bigger_cluster_id);
-        cluster<mm_hit> & smaller_cluster = cluster_ids_map_.at(smaller_cluster_id);
+        cluster<mm_hit> & bigger_cluster = cluster_ids_map_.at(bigger_cluster_id).cl();
+        cluster<mm_hit> & smaller_cluster = cluster_ids_map_.at(smaller_cluster_id).cl();
 
         for (auto & hit : smaller_cluster.hits())
         {
-            auto coord_linear = coord(hit.x(), hit.y()).linearize(); 
+            auto coord_linear = hit.coordinates().linearize(); 
             pixel_lists_[coord_linear].erase(smaller_cluster_id);
             pixel_lists_[coord_linear].insert(bigger_cluster_id);
         }
@@ -181,27 +205,31 @@ class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_produ
     }
     //TODO update = instead of unordered set for uniqueness (requires lookup in neighbor_ID table - smaller), 
     //store bit in the cluster (requires lookup in ID table) but saves allocation of unordered set per processed pixel
-    std::unordered_set<cluster_id> find_neighboring_cluster_ids(const coord& coord, double toa)
+    std::vector<cluster_id> find_neighboring_cluster_ids(const coord& coord, double toa)
     {
 
-        std::unordered_set<cluster_id> neighbor_cluster_ids;
+        std::vector<cluster_id> neighbor_cluster_ids;
         for (auto & neighbor_offset : EIGHT_NEIGHBORS)
         {
             int32_t neighbor_index = coord.linearize() + neighbor_offset.linearize();
             if(neighbor_index >= 0 && neighbor_index < MAX_PIXEL_COUNT) 
             {           
-                for (auto & cluster_index : pixel_lists_[neighbor_index])
+                for (auto cluster_index : pixel_lists_[neighbor_index])
                 {
-                    //we check that cluster is not 
-                    if(cluster_index == 16)
-                    {
-                        std::cout << " ";
-                    }
-                    if(toa - CLUSTER_DIFF_DT < cluster_ids_map_[cluster_index].last_toa())
-                        neighbor_cluster_ids.insert(cluster_index);
-
+                    //we check that cluster is not
+                    cluster_with_bit<mm_hit> & neighbor_cluster_bit =  cluster_ids_map_[cluster_index]; 
+                    if(toa - CLUSTER_DIFF_DT < neighbor_cluster_bit.cl().last_toa())
+                        if(!neighbor_cluster_bit.is_selected())
+                        {
+                            neighbor_cluster_bit.select();
+                            neighbor_cluster_ids.push_back(cluster_index);
+                        }
                 }
             }
+        }
+        for (auto cluster_index : neighbor_cluster_ids)
+        {
+             cluster_ids_map_[cluster_index].restore();    
         }
         //std::vector<cluster_id> pixel_vector; 
         //pixel_vector.reserve(neighbor_cluster_ids.size());
@@ -215,7 +243,7 @@ class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_produ
     }
     void update_time_id(mm_hit & hit, cluster_id id)
     {
-        double last_toa = cluster_ids_map_[id].last_toa();
+        double last_toa = cluster_ids_map_[id].cl().last_toa();
         if(hit.toa() > last_toa)
         {
             //we need to update position of time_id in the priority queue
@@ -227,7 +255,7 @@ class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_produ
     {
         //update cluster itself, assumes the cluster exists
         pixel_lists_[hit.coordinates().linearize()].insert(id);
-        cluster_ids_map_.at(id).add_hit(std::move(hit));
+        cluster_ids_map_.at(id).cl().add_hit(std::move(hit));
 
         //update the pixel list
     }
@@ -237,52 +265,39 @@ class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_produ
         auto top = toa_ordered_time_ids_.begin();
         while (toa_ordered_time_ids_.size() > 0 && is_old(last_hit.toa(), top->id()))
         {
-            for(const auto & hit : cluster_ids_map_.at(top->id()).hits())
+            for(const auto & hit : cluster_ids_map_.at(top->id()).cl().hits())
             {
                 pixel_lists_[hit.coordinates().linearize()].erase(top->id());
             }
 
-            writer_.write(std::move(cluster_ids_map_.at(top->id()))); //TODO check if unordered map can move
+            writer_.write(std::move(cluster_ids_map_.at(top->id()).cl())); //TODO check if unordered map can move
             
             cluster_ids_map_.erase(top->id());
 
             toa_ordered_time_ids_.erase(top);
-            if(toa_ordered_time_ids_.size() != cluster_ids_map_.size())
-            {
-                std::cout << "ERROR" << std::endl;
-            }
             top = toa_ordered_time_ids_.begin();
         }
     } 
     void process_hit(mm_hit & hit)
     {
-        coord hit_coord (hit.x(), hit.y());
-        auto neighboring_cluster_ids = find_neighboring_cluster_ids(hit_coord, hit.toa()); //copy elision should take place
+        auto neighboring_cluster_ids = find_neighboring_cluster_ids(hit.coordinates(), hit.toa()); //copy elision should take place
         
         cluster_id clstr_id;
         switch(neighboring_cluster_ids.size())
         {
             case 0:
                 clstr_id = get_new_cluster_id();
-                if(clstr_id == 42)
-                {
-                    std::cout << " ";
-                }
                 //insert new cluster to priority queue
                 toa_ordered_time_ids_.emplace(std::move(cluster_time_id{hit.toa(), clstr_id}));
                 
                 //create new cluster itself
-                cluster_ids_map_.emplace(clstr_id, cluster<mm_hit>{});
+                cluster_ids_map_.emplace(clstr_id, cluster_with_bit<mm_hit>{});
                 
                 add_new_hit(hit, clstr_id);
                 break;
             case 1:
                 //add pixel to cluster
                 clstr_id = *neighboring_cluster_ids.begin();
-                if (clstr_id == 16)
-                    {
-                        std::cout << " ";
-                    }
                 update_time_id(hit, clstr_id);
                 add_new_hit(hit, clstr_id);         
                 break;
@@ -290,15 +305,11 @@ class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_produ
                 // we find the largest cluster and move hits from smaller clusters to the biggest one
                 clstr_id = *(std::max_element(neighboring_cluster_ids.begin(), neighboring_cluster_ids.end(),[this](cluster_id left, cluster_id right)
                     {
-                        return cluster_ids_map_[left].hits().size() < cluster_ids_map_[right].hits().size();
+                        return cluster_ids_map_[left].cl().hits().size() < cluster_ids_map_[right].cl().hits().size();
                     }));
                 for (auto & neighbor_id : neighboring_cluster_ids)
                 {   
                 // TODO  merge clusters and then add pixel to it
-                    if (neighbor_id == 16)
-                    {
-                        std::cout << " ";
-                    }
                     if(neighbor_id != clstr_id)
                     {
                         merge_clusters(clstr_id, neighbor_id);
@@ -310,10 +321,6 @@ class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_produ
 
 
         }
-        if(toa_ordered_time_ids_.size() != cluster_ids_map_.size())
-            {
-                std::cout << "ERROR" << std::endl;
-            }
     }
     public:
     pixel_list_clusterer(uint64_t buffer_size) :

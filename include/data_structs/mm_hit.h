@@ -3,30 +3,31 @@
 #include <iostream>
 #include <fstream>
 #include <iomanip>
-#include "io_utils.h"
+#include "../utils.h"
 #pragma once
-//uncalibrated
-class mm_hit_tot
+class mm_hit
 {
     coord coord_;
-    double toa_, tot_; 
+    double toa_, e_; 
 public:
-    mm_hit_tot(short x, short y, double toa, double tot) :
+    mm_hit(short x, short y, double toa, double e) :
         coord_(x, y),
         toa_(toa),
-        tot_(tot)
+        e_(e)
         {}
+    static mm_hit end_token()
+    {
+        mm_hit end_token(0,0,-1, 0);
+        return end_token;
+    }
         //e_(e){}
     //TODO try to get rid of default constructor -> and prevent copying
-    mm_hit_tot() : 
-        coord_(0, 0),
-        toa_(0.),
-        tot_(0.)
-        {}
+    mm_hit()
+    {}
         //e_(0.){}
     bool is_valid()
     {
-        return tot_ >= 0.;
+        return toa_ >= 0;
     }
     /*double e() const
     {
@@ -48,15 +49,15 @@ public:
     {
         return toa_;
     }
-    double tot() const
+    double e() const
     {
-        return tot_;
+        return e_;
     }
 
 };
-std::ostream& operator<<(std::ostream& os, const mm_hit_tot& hit)
+std::ostream& operator<<(std::ostream& os, const mm_hit& hit)
 {
     os << hit.x() << " " << hit.y() << " " << std::fixed << std::setprecision(6) << hit.toa() << " ";
-    os << hit.tot() << std::endl;
+    os << hit.e() << std::endl;
     return os;
 }

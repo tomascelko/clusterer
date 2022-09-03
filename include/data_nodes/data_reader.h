@@ -2,10 +2,8 @@
 #include <fstream>
 #include <vector>
 #include <memory>
-#include "data_buffer.h"
-#include "pipe_writer.h"
-#include "i_data_producer.h"
-#include "io_utils.h"
+#include "../data_flow/dataflow_package.h"
+#include "../utils.h"
 template <typename data_type>
 class data_reader : public i_data_producer<data_type>
 {
@@ -77,7 +75,8 @@ public:
         reading_buffer_= buffer_a_.get();
         while(read_next()); //reads while buffer is filled completely everytime
         writer.write_bulk(ready_buffer_);
-        writer.flush();   
+        writer.flush(); 
+        std::cout << "READER ENDED ----------" << std::endl;  
     }
     bool read_next()
     {

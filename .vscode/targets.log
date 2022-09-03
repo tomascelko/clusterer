@@ -6,7 +6,7 @@ make all --print-data-base --no-builtin-variables --no-builtin-rules --question
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Tue Aug 30 13:12:10 2022
+# Make data base, printed on Thu Sep  1 19:26:37 2022
 
 # Variables
 
@@ -95,7 +95,7 @@ GPG_AGENT_INFO = /run/user/1000/gnupg/S.gpg-agent:0:1
 # environment
 C_INCLUDE_PATH = /home/tomas/MFF/DT/allpix/install/include:
 # environment
-SESSION_MANAGER = local/tomas-VirtualBox:@/tmp/.ICE-unix/829,unix/tomas-VirtualBox:/tmp/.ICE-unix/829
+SESSION_MANAGER = local/tomas-VirtualBox:@/tmp/.ICE-unix/827,unix/tomas-VirtualBox:/tmp/.ICE-unix/827
 # environment
 G4INCLDATA = /home/tomas/MFF/DT/geant4/install/share/Geant4-11.0.2/data/G4INCL1.0
 # environment
@@ -103,7 +103,7 @@ XDG_RUNTIME_DIR = /run/user/1000
 # environment
 LIBRARY_PATH = /home/tomas/MFF/DT/allpix/install/lib:
 # environment
-WINDOWID = 52428806
+WINDOWID = 54525958
 # environment
 ELECTRON_RUN_AS_NODE = 1
 # default
@@ -143,7 +143,7 @@ QT_QPA_PLATFORMTHEME = qt5ct
 # environment
 XDG_SEAT = seat0
 # environment
-SSH_AGENT_PID = 973
+SSH_AGENT_PID = 971
 # environment
 ORIGINAL_XDG_CURRENT_DESKTOP = MATE
 # environment
@@ -161,7 +161,7 @@ LESSCLOSE = /usr/bin/lesspipe %s %s
 # environment
 VSCODE_CLI = 1
 # environment
-VSCODE_CODE_CACHE_PATH = /home/tomas/.config/Code/CachedData/da76f93349a72022ca4670c1b84860304616aaa2
+VSCODE_CODE_CACHE_PATH = /home/tomas/.config/Code/CachedData/e4503b30fc78200f846c62cf8091b76ff5547662
 # environment
 LOGNAME = tomas
 # environment
@@ -229,7 +229,7 @@ LANGUAGE = en_US
 # environment
 XDG_SEAT_PATH = /org/freedesktop/DisplayManager/Seat0
 # environment
-VSCODE_IPC_HOOK = /run/user/1000/vscode-4e534ead-1.70.0-main.sock
+VSCODE_IPC_HOOK = /run/user/1000/vscode-4e534ead-1.70.2-main.sock
 # environment
 PYTHONPATH = /home/tomas/MFF/DT/root/install/lib
 # makefile
@@ -257,6 +257,8 @@ LC_NUMERIC = sk_SK.UTF-8
 # environment
 QT_DIRECTORY_PATH = /home/tomas/Qt/5.15.2/gcc_64/lib/
 # environment
+PS1 = \u@\h \[\033[32m\]\w - $(parse_git_branch)\[\033[00m\] $ 
+# environment
 LC_MEASUREMENT = sk_SK.UTF-8
 # environment
 G4REALSURFACEDATA = /home/tomas/MFF/DT/geant4/install/share/Geant4-11.0.2/data/RealSurface2.2
@@ -274,8 +276,8 @@ CHROME_DESKTOP = code-url-handler.desktop
 MATE_DESKTOP_SESSION_ID = this-is-deprecated
 # default
 .INCLUDE_DIRS = /usr/include /usr/local/include /usr/include
-# environment
  
+# environment
 LC_IDENTIFICATION = sk_SK.UTF-8
 # environment
 G4LEDATA = /home/tomas/MFF/DT/geant4/install/share/Geant4-11.0.2/data/G4EMLOW8.0
@@ -288,13 +290,13 @@ LANG = C
 # environment
 TERM = xterm-256color
 # environment
-VSCODE_PID = 6057
+VSCODE_PID = 1508
 # environment
 DYLD_LIBRARY_PATH = /home/tomas/MFF/DT/root/install/lib
 # environment
 G4ENSDFSTATEDATA = /home/tomas/MFF/DT/geant4/install/share/Geant4-11.0.2/data/G4ENSDFSTATE2.3
 # variable set hash-table stats:
-# Load=141/1024=14%, Rehash=0, Collisions=21/175=12%
+# Load=142/1024=14%, Rehash=0, Collisions=21/176=12%
 
 # Pattern-specific Variable Values
 
@@ -302,9 +304,9 @@ G4ENSDFSTATEDATA = /home/tomas/MFF/DT/geant4/install/share/Geant4-11.0.2/data/G4
 
 # Directories
 
-# . (device 2053, inode 860492): 14 files, no impossibilities.
+# . (device 2053, inode 860492): 65 files, no impossibilities.
 
-# 14 files, no impossibilities in 1 directories.
+# 65 files, no impossibilities in 1 directories.
 
 # Implicit Rules
 
@@ -556,15 +558,15 @@ rebuild_cache:
 
 # No 'vpath' search paths.
 
-# No general ('VPATH' variable) search path.
  
+# No general ('VPATH' variable) search path.
 
-# strcache buffers: 1 (0) / strings = 45 / storage = 531 B / avg = 11 B
-# current buf: size = 8162 B / used = 531 B / count = 45 / avg = 11 B
+# strcache buffers: 1 (0) / strings = 96 / storage = 3193 B / avg = 33 B
+# current buf: size = 8162 B / used = 3193 B / count = 96 / avg = 33 B
 
-# strcache performance: lookups = 154 / hit rate = 70%
+# strcache performance: lookups = 205 / hit rate = 53%
 # hash-table stats:
-# Load=45/8192=1%, Rehash=0, Collisions=2/154=1%
-# Finished Make data base on Tue Aug 30 13:12:10 2022
+# Load=96/8192=1%, Rehash=0, Collisions=2/205=1%
+# Finished Make data base on Thu Sep  1 19:26:37 2022
 
  

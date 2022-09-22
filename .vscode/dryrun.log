@@ -10,13 +10,34 @@ cd /home/tomas/MFF/DT/clusterer && /usr/bin/cmake -E cmake_depends "Unix Makefil
 make[2]: Leaving directory '/home/tomas/MFF/DT/clusterer'
 make -f CMakeFiles/cclusterer.dir/build.make CMakeFiles/cclusterer.dir/build
 make[2]: Entering directory '/home/tomas/MFF/DT/clusterer'
-/usr/bin/cmake -E cmake_echo_color --switch= --green --progress-dir=/home/tomas/MFF/DT/clusterer/CMakeFiles --progress-num=1 "Building CXX object CMakeFiles/cclusterer.dir/src/main.cpp.o"
-/usr/bin/c++    -pthread   -std=gnu++17 -o CMakeFiles/cclusterer.dir/src/main.cpp.o -c /home/tomas/MFF/DT/clusterer/src/main.cpp
-/usr/bin/cmake -E cmake_echo_color --switch= --green --bold --progress-dir=/home/tomas/MFF/DT/clusterer/CMakeFiles --progress-num=2 "Linking CXX executable bin/cclusterer"
-/usr/bin/cmake -E cmake_link_script CMakeFiles/cclusterer.dir/link.txt --verbose=
 make[2]: Leaving directory '/home/tomas/MFF/DT/clusterer'
-/usr/bin/cmake -E cmake_echo_color --switch= --progress-dir=/home/tomas/MFF/DT/clusterer/CMakeFiles --progress-num=1,2 "Built target cclusterer"
 make[1]: Leaving directory '/home/tomas/MFF/DT/clusterer'
-/usr/bin/cmake -E cmake_progress_start /home/tomas/MFF/DT/clusterer/CMakeFiles 0
 make: Leaving directory '/home/tomas/MFF/DT/clusterer'
  
+make[2]: *** No rule to make target 'include/abstract_pipe.h', needed by 'CMakeFiles/cclusterer.dir/src/main.cpp.o'.
+make[2]: *** No rule to make target 'include/atomicops.h', needed by 'CMakeFiles/cclusterer.dir/src/main.cpp.o'.
+make[2]: *** No rule to make target 'include/burda_hit.h', needed by 'CMakeFiles/cclusterer.dir/src/main.cpp.o'.
+make[2]: *** No rule to make target 'include/burda_to_mm_hit_adapter.h', needed by 'CMakeFiles/cclusterer.dir/src/main.cpp.o'.
+make[2]: *** No rule to make target 'include/calibration.h', needed by 'CMakeFiles/cclusterer.dir/src/main.cpp.o'.
+make[2]: *** No rule to make target 'include/cluster.h', needed by 'CMakeFiles/cclusterer.dir/src/main.cpp.o'.
+make[2]: *** No rule to make target 'include/clusterer.h', needed by 'CMakeFiles/cclusterer.dir/src/main.cpp.o'.
+make[2]: *** No rule to make target 'include/concurrentqueue.h', needed by 'CMakeFiles/cclusterer.dir/src/main.cpp.o'.
+make[2]: *** No rule to make target 'include/data_buffer.h', needed by 'CMakeFiles/cclusterer.dir/src/main.cpp.o'.
+make[2]: *** No rule to make target 'include/data_printer.h', needed by 'CMakeFiles/cclusterer.dir/src/main.cpp.o'.
+make[2]: *** No rule to make target 'include/data_reader.h', needed by 'CMakeFiles/cclusterer.dir/src/main.cpp.o'.
+make[2]: *** No rule to make target 'include/dataflow_controller.h', needed by 'CMakeFiles/cclusterer.dir/src/main.cpp.o'.
+make[2]: *** No rule to make target 'include/hit_sorter.h', needed by 'CMakeFiles/cclusterer.dir/src/main.cpp.o'.
+make[2]: *** No rule to make target 'include/i_data_consumer.h', needed by 'CMakeFiles/cclusterer.dir/src/main.cpp.o'.
+make[2]: *** No rule to make target 'include/i_data_node.h', needed by 'CMakeFiles/cclusterer.dir/src/main.cpp.o'.
+make[2]: *** No rule to make target 'include/i_data_producer.h', needed by 'CMakeFiles/cclusterer.dir/src/main.cpp.o'.
+make[2]: *** No rule to make target 'include/io_utils.h', needed by 'CMakeFiles/cclusterer.dir/src/main.cpp.o'.
+make[2]: *** No rule to make target 'include/mm_hit.h', needed by 'CMakeFiles/cclusterer.dir/src/main.cpp.o'.
+make[2]: *** No rule to make target 'include/mm_hit_tot.h', needed by 'CMakeFiles/cclusterer.dir/src/main.cpp.o'.
+make[2]: *** No rule to make target 'include/pipe.h', needed by 'CMakeFiles/cclusterer.dir/src/main.cpp.o'.
+make[2]: *** No rule to make target 'include/pipe_reader.h', needed by 'CMakeFiles/cclusterer.dir/src/main.cpp.o'.
+make[2]: *** No rule to make target 'include/pipe_writer.h', needed by 'CMakeFiles/cclusterer.dir/src/main.cpp.o'.
+make[2]: *** No rule to make target 'include/priority_queue.h', needed by 'CMakeFiles/cclusterer.dir/src/main.cpp.o'.
+make[2]: *** No rule to make target 'include/readerwriterqueue.h', needed by 'CMakeFiles/cclusterer.dir/src/main.cpp.o'.
+make[1]: *** [CMakeFiles/Makefile2:76: CMakeFiles/cclusterer.dir/all] Error 2
+make: *** [Makefile:84: all] Error 2
+

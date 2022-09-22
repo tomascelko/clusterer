@@ -19,9 +19,32 @@ protected:
 
     
 public:
+    struct first_toa_comparer
+    {
+        auto operator() (const cluster& left, const cluster& right) const
+        {
+            if(left.first_toa() < right.first_toa())
+                return false;
+            if(right.first_toa() < left.first_toa())
+                return true;
+            return false;   
+        
+        }
+        auto operator() (cluster& left, cluster& right) const
+        {
+            if(left.first_toa() < right.first_toa())
+                return false;
+            if(right.first_toa() < left.first_toa())
+                return true;
+            return false;   
+        
+        }
+    };
     static cluster<data_type> end_token()
     {
-        return cluster<data_type>{};
+        cluster<data_type>cl{};
+        cl.first_toa_ = LONG_MAX;
+        return cl;
     }
     cluster() :
     hit_count_(0)
@@ -92,7 +115,7 @@ public:
     }
     void set_last_toa(double toa)
     {
-        first_toa_ = toa;
+        last_toa_ = toa;
     }
     virtual void write(std::ofstream* cl_stream, std::ofstream* px_stream) const
     {
@@ -116,5 +139,13 @@ public:
             mean_y += hits_[i].y();    
         } 
         return std::make_pair<double, double>(mean_x / hits_.size(), mean_y / hits_.size());
+    }
+    void merge_with(cluster<data_type> && other)
+    {
+        hits().reserve(hits().size() + other.hits().size());
+        hits().insert(hits().end(), std::make_move_iterator(other.hits().begin()),
+        std::make_move_iterator(other.hits().end()));
+        set_first_toa(std::min(first_toa(), other.first_toa()));
+        set_last_toa(std::max(last_toa(), other.last_toa()));
     }
 };

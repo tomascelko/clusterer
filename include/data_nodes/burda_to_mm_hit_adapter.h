@@ -17,15 +17,15 @@ class burda_to_mm_hit_adapter : public i_data_consumer<burda_hit>, public i_data
     bool calibrate_;
     uint16_t chip_width_;
     uint16_t chip_height_;
-    const double fast_clock_dt = 1.5635; //nanoseconds
+    const double fast_clock_dt = 1.5625; //nanoseconds
     const double slow_clock_dt = 25.;
     std::unique_ptr<calibration> calibrator_;
     private:
     mm_hit_type convert_hit(const burda_hit & in_hit)
     {
         double toa = slow_clock_dt * in_hit.toa() - fast_clock_dt * in_hit.fast_toa(); 
-        short x = in_hit.linear_coord() / chip_width_;
-        short y = in_hit.linear_coord() % chip_width_;
+        short y = in_hit.linear_coord() / chip_width_;
+        short x = in_hit.linear_coord() % chip_width_;
         if(calibrate_)
             return mm_hit_type(x, y, toa, calibrator_->compute_energy(x, y, (in_hit.tot())));
         else
@@ -66,9 +66,8 @@ class burda_to_mm_hit_adapter : public i_data_consumer<burda_hit>, public i_data
         while(hit.is_valid())
         {
             mm_hit_type converted_hit = convert_hit(hit);
-            if(converted_hit.e() >= 0)
-                writer_.write(convert_hit(hit));
-            else
+            writer_.write(convert_hit(hit));
+            if(converted_hit.e() < 0)
             {
                 std::cout << "negative energy found" << std::endl;
             }

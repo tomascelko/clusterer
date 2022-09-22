@@ -29,11 +29,13 @@ private:
         reading_buffer_->set_state(buffer_type::state::processing);
         uint64_t processed_count = 0;
         data_type hit = data_type(input_stream_.get());
-        while (hit.is_valid() && reading_buffer_->state() != buffer_type::state::full)
+        while (hit.is_valid())
         {
             //std::cout << "reading_next" << sstd::endl;
             reading_buffer_->emplace_back(std::move(hit));
             ++processed_count;
+            if(reading_buffer_->state() == buffer_type::state::full)
+                break;
             hit = data_type(input_stream_.get());
         }
         if(!hit.is_valid())

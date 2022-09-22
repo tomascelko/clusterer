@@ -6,7 +6,6 @@
 template <typename data_type>
 class data_block
 {
-    //try with vector
     std::vector<data_type> data_block_;
     int32_t to_delete_index_;
     uint32_t max_capacity_;
@@ -45,49 +44,51 @@ class data_block
     
 };
 
-template <typename data_type>
+
+template <typename data_type, template<typename> typename queue_type = moodycamel::ConcurrentQueue>
 class pipe : public abstract_pipe
 {
     //todo use simple one producer one consumer queue and create multi pipe : public pipe with this multi concurrent queue
 private:
-    moodycamel::ReaderWriterQueue<data_block<data_type>> queue_;
-    data_block<data_type> in_block_;
-    data_block<data_type> out_block_;
+    const uint32_t CHECK_FULL_PIPE_INTERVAL = 500;
+    queue_type<data_block<data_type>> queue_;
     uint32_t id_;
+    void emplace_impl(data_block<data_type> && block, moodycamel::ReaderWriterQueue<data_block<data_type>> & queue)
+    {
+        queue_.emplace(block);
+    }
+    void emplace_impl(data_block<data_type> && block, moodycamel::ConcurrentQueue<data_block<data_type>> & queue)
+    {
+        queue_.enqueue(block);
+    }
 public: 
     static constexpr uint32_t MAX_Q_LEN = 2 << 18;
     pipe(uint32_t id) :
     id_(id),
-    in_block_(2 << 7),
-    out_block_(2 << 7),
     queue_(MAX_Q_LEN){}
-    uint64_t processed_counter = 0;
-    void enqueue_bulk(std::vector<data_type>&& new_data)
-    {
-        //TODO FIX
-    }
-    void blocking_enqueue(data_type&& new_hit)
+    uint64_t processed_counter = 1;
+    //not thread safe TODO move in block and out block to writer and reader so we can use the buffering with multiple writers
+    //WILL be called from multiple threads on a same pipe
+    void blocking_enqueue(data_block<data_type> && new_block)
     {
         //if(new_hit.tot() < 0)
         //    std::cout << "Enqueued last hit";
-        if(!in_block_.try_add_hit(std::move(new_hit)))
-        {
-            ++processed_counter;
-            if(processed_counter % 100 == 0)
-                while(queue_.size_approx() > MAX_Q_LEN)
-                {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(200));
-                }
-            flush();
-        }
+        ++processed_counter; //potentially rally condition
+        if(processed_counter % CHECK_FULL_PIPE_INTERVAL == 0)
+            while(is_full())
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(200));
+            }
+        emplace_impl(std::move(new_block), queue_); //TODO or call enqueue when using multi queue
+        
     }
-    bool blocking_dequeue(data_type & new_hit)
+    //not thread safe TODO move in block and out block to writer and reader so we can use the buffering with multiple writers
+    //WILL NOT be called from multiple threads on a same pipe
+    bool blocking_dequeue(data_block<data_type> & out_block)
     {
-        while(!out_block_.try_remove_hit(new_hit))
+        while(!queue_.try_dequeue(out_block))
         {
-            while(!queue_.try_dequeue(out_block_)){
-                std::this_thread::sleep_for(std::chrono::milliseconds(50));
-        }
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
         }
         return true;
     }
@@ -95,11 +96,11 @@ public:
     {
         return queue_.size_approx();
     }
-    void flush()
+    bool is_full()
     {
-            queue_.emplace(std::move(in_block_));
-            in_block_.clear(); 
+        return queue_.size_approx() > MAX_Q_LEN;
     }
+    
 
 
 

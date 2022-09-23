@@ -7,6 +7,39 @@ class not_implemented : public std::logic_error
     public:
     not_implemented() : std::logic_error("not yet implemented"){}
 };
+class path
+{
+    protected:
+    std::string path_;
+    public:
+    path(const std::string& path) :
+    path_(path){}
+    std::string as_absolute()
+    {
+
+    }
+    std::string as_relative()
+    {
+
+    }
+    std::string parent_folder()
+    {
+        
+    }
+};
+class file_path : path
+{
+
+    public:
+    file_path(const std::string& path) :
+    path(path){}
+    std::string filename()
+    {
+
+    }
+
+
+};
 class io_utils
 {
     static constexpr int CR = 13;

@@ -63,6 +63,7 @@ class sync_pixel_list_clusterer : public pixel_list_clusterer<produced_cluster>
             reader_.read(hit);
         }   
         write_remaining_clusters();
+        
         writer_.write(produced_cluster<mm_hit>::end_token(id_)); //write empty cluster as end token
         writer_.flush();
         std::cout << "CLUSTERER ENDED ---------- " << processed_hit_count_ <<" hits processed" <<std::endl;

@@ -19,8 +19,8 @@ private:
     {
         nodes_.emplace_back(std::move(std::unique_ptr<i_data_node>(item)));
     }
-    template <typename data_type>
-    void register_pipe(pipe<data_type>* pipe)
+    //template <typename data_type>
+    void register_pipe(abstract_pipe* pipe)
     {
         pipes_.emplace_back(std::move(std::unique_ptr<abstract_pipe>(pipe)));
     }
@@ -43,11 +43,21 @@ public:
     {
         //todo save map with name of node
         register_node(data_node);
+        //adding internal sub-nodes of a node
+        for(auto & int_node : data_node->internal_nodes())
+        {
+            register_node(int_node);
+        }
+        //adding internal pipes inside of a node
+        for(auto & int_pipe : data_node->internal_pipes())
+        {
+            register_pipe(int_pipe);
+        }
     }
     template <typename data_type>
     pipe<data_type>* connect_nodes(i_data_producer<data_type>* producer, i_data_consumer<data_type>* consumer, pipe<data_type>* pipe)
     {         
-        register_pipe<data_type>(pipe);
+        register_pipe(pipe);
         producer->connect_output(pipe);
         consumer->connect_input(pipe);
         return pipe;

@@ -74,7 +74,7 @@ class mm_write_stream
         px_buffer_ << "#" << std::endl;
         current_line += cluster.hit_count() + 1;
         new_pixels_written_ += cluster.hit_count() + 1;
-        current_byte = px_buffer_.tellp();
+        current_byte = px_buffer_.tellp() + px_file_->tellp();
         if(clusters_written_ % FLUSH_INTERVAL == 0)
         {
             *cl_file_ << cl_buffer_.str();

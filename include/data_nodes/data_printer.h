@@ -15,14 +15,17 @@ class data_printer : public i_data_consumer<data_type>, public i_data_producer<d
     virtual void start() override
     {
         data_type hit;
-        while(!reader_.read(hit));
+        uint64_t processed = 0;
+        reader_.read(hit);
         while(hit.is_valid())
         {
             writer_.write(std::move(hit));
+            ++processed; 
             (*out_stream_) << hit;
-            while(!reader_.read(hit));
+            reader_.read(hit);
 
         }
+        
         std::cout << "PRINTER ENDED ----------------" << std::endl;
     }
     virtual void connect_input(pipe<data_type>* in_pipe) override

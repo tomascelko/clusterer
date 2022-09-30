@@ -44,16 +44,16 @@ class calibration
         load_calib_vector(calib_folder + std::string(t_suffix), chip_size, t_);        
     }
    
-    double compute_energy(short x, short y, double tot_micro_sec)
+    double compute_energy(short x, short y, double tot)
     {
-        double a = a_[x][y];
-        double c = c_[x][y];
-        double t = t_[x][y];
-        double b = b_[x][y];
+        double a = a_[y][x];
+        double c = c_[y][x];
+        double t = t_[y][x];
+        double b = b_[y][x];
 
         double a2 = a;
-        double b2 = (-a*t+b-tot_micro_sec);
-        double c2 = tot_micro_sec*t - b*t - c;
-        return (-b2 + std::sqrt(b2*b2 - 4*a2*c2))/2*a2; //positive root of quad formula
+        double b2 = (-a*t+b-tot);
+        double c2 = tot*t - b*t - c;
+        return (-b2 + std::sqrt(b2*b2 - 4*a2*c2))/(2*a2); //greater root of quad formula
     }
 };

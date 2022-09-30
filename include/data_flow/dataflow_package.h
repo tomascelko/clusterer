@@ -4,3 +4,5 @@
 #include "../data_flow/i_data_producer.h"
 #include "../data_flow/i_data_consumer.h"
 #include "../data_flow/pipe.h"
+#include "../data_flow/pipe_descriptor.h"
+#include "../data_flow/i_synchronizer_node.h"

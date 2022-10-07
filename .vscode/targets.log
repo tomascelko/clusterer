@@ -6,7 +6,7 @@ make all --print-data-base --no-builtin-variables --no-builtin-rules --question
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Tue Sep 20 12:53:01 2022
+# Make data base, printed on Fri Oct  7 12:16:06 2022
 
 # Variables
 
@@ -95,7 +95,7 @@ GPG_AGENT_INFO = /run/user/1000/gnupg/S.gpg-agent:0:1
 # environment
 C_INCLUDE_PATH = /home/tomas/MFF/DT/allpix/install/include:
 # environment
-SESSION_MANAGER = local/tomas-VirtualBox:@/tmp/.ICE-unix/828,unix/tomas-VirtualBox:/tmp/.ICE-unix/828
+SESSION_MANAGER = local/tomas-VirtualBox:@/tmp/.ICE-unix/835,unix/tomas-VirtualBox:/tmp/.ICE-unix/835
 # environment
 G4INCLDATA = /home/tomas/MFF/DT/geant4/install/share/Geant4-11.0.2/data/G4INCL1.0
 # environment
@@ -103,7 +103,7 @@ XDG_RUNTIME_DIR = /run/user/1000
 # environment
 LIBRARY_PATH = /home/tomas/MFF/DT/allpix/install/lib:
 # environment
-WINDOWID = 56623110
+WINDOWID = 52428806
 # environment
 ELECTRON_RUN_AS_NODE = 1
 # default
@@ -143,7 +143,7 @@ QT_QPA_PLATFORMTHEME = qt5ct
 # environment
 XDG_SEAT = seat0
 # environment
-SSH_AGENT_PID = 973
+SSH_AGENT_PID = 980
 # environment
 ORIGINAL_XDG_CURRENT_DESKTOP = MATE
 # environment
@@ -161,7 +161,7 @@ LESSCLOSE = /usr/bin/lesspipe %s %s
 # environment
 VSCODE_CLI = 1
 # environment
-VSCODE_CODE_CACHE_PATH = /home/tomas/.config/Code/CachedData/e4503b30fc78200f846c62cf8091b76ff5547662
+VSCODE_CODE_CACHE_PATH = /home/tomas/.config/Code/CachedData/64bbfbf67ada9953918d72e1df2f4d8e537d340e
 # environment
 LOGNAME = tomas
 # environment
@@ -229,7 +229,7 @@ LANGUAGE = en_US
 # environment
 XDG_SEAT_PATH = /org/freedesktop/DisplayManager/Seat0
 # environment
-VSCODE_IPC_HOOK = /run/user/1000/vscode-4e534ead-1.70.2-main.sock
+VSCODE_IPC_HOOK = /run/user/1000/vscode-4e534ead-1.72.0-main.sock
 # environment
 PYTHONPATH = /home/tomas/MFF/DT/root/install/lib
 # makefile
@@ -274,6 +274,7 @@ G4RADIOACTIVEDATA = /home/tomas/MFF/DT/geant4/install/share/Geant4-11.0.2/data/R
 CHROME_DESKTOP = code-url-handler.desktop
 # environment
 MATE_DESKTOP_SESSION_ID = this-is-deprecated
+ 
 # default
 .INCLUDE_DIRS = /usr/include /usr/local/include /usr/include
 # environment
@@ -282,7 +283,6 @@ LC_IDENTIFICATION = sk_SK.UTF-8
 G4LEDATA = /home/tomas/MFF/DT/geant4/install/share/Geant4-11.0.2/data/G4EMLOW8.0
 # default
 .RECIPEPREFIX := 
- 
 # environment
 LC_ADDRESS = sk_SK.UTF-8
 # environment
@@ -290,7 +290,7 @@ LANG = C
 # environment
 TERM = xterm-256color
 # environment
-VSCODE_PID = 2315
+VSCODE_PID = 23550
 # environment
 DYLD_LIBRARY_PATH = /home/tomas/MFF/DT/root/install/lib
 # environment
@@ -304,9 +304,9 @@ G4ENSDFSTATEDATA = /home/tomas/MFF/DT/geant4/install/share/Geant4-11.0.2/data/G4
 
 # Directories
 
-# . (device 2053, inode 860492): 16 files, no impossibilities.
+# . (device 2053, inode 860492): 17 files, no impossibilities.
 
-# 16 files, no impossibilities in 1 directories.
+# 17 files, no impossibilities in 1 directories.
 
 # Implicit Rules
 
@@ -386,7 +386,7 @@ preinstall/fast:
 # Not a target:
 Makefile:
 #  Implicit rule search has been done.
-#  Last modified 2022-09-20 12:44:24.661078869
+#  Last modified 2022-10-07 12:13:16.111653551
 #  File has been updated.
 #  Successfully updated.
 
@@ -555,18 +555,18 @@ rebuild_cache:
 # files hash-table stats:
 # Load=29/1024=3%, Rehash=0, Collisions=3/101=3%
 # VPATH Search Paths
+ 
 
 # No 'vpath' search paths.
 
 # No general ('VPATH' variable) search path.
 
-# strcache buffers: 1 (0) / strings = 47 / storage = 547 B / avg = 11 B
-# current buf: size = 8162 B / used = 547 B / count = 47 / avg = 11 B
+# strcache buffers: 1 (0) / strings = 48 / storage = 557 B / avg = 11 B
+# current buf: size = 8162 B / used = 557 B / count = 48 / avg = 11 B
 
- 
-# strcache performance: lookups = 156 / hit rate = 69%
+# strcache performance: lookups = 157 / hit rate = 69%
 # hash-table stats:
-# Load=47/8192=1%, Rehash=0, Collisions=2/156=1%
-# Finished Make data base on Tue Sep 20 12:53:01 2022
+# Load=48/8192=1%, Rehash=0, Collisions=2/157=1%
+# Finished Make data base on Fri Oct  7 12:16:06 2022
 
  

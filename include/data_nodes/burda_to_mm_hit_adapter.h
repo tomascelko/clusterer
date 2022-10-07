@@ -77,4 +77,5 @@ class burda_to_mm_hit_adapter : public i_data_consumer<burda_hit>, public i_data
         writer_.flush();
         std::cout << "ADAPTER ENDED ---------------------" << std::endl;
     }
+    virtual ~burda_to_mm_hit_adapter() = default;
 };

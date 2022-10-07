@@ -62,7 +62,7 @@ private:
         queue_.enqueue(block);
     }
 public: 
-    static constexpr uint32_t MAX_Q_LEN = 2 << 18;
+    static constexpr uint32_t MAX_Q_LEN = 2 << 17;
     pipe(uint32_t id) :
     id_(id),
     queue_(MAX_Q_LEN){}
@@ -77,7 +77,8 @@ public:
         if(processed_counter % CHECK_FULL_PIPE_INTERVAL == 0)
             while(is_full())
             {
-                std::this_thread::sleep_for(std::chrono::milliseconds(200));
+            
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
             }
         emplace_impl(std::move(new_block), queue_); //TODO or call enqueue when using multi queue
         
@@ -100,7 +101,7 @@ public:
     {
         return queue_.size_approx() > MAX_Q_LEN;
     }
-    
+    virtual ~pipe() = default;
 
 
 

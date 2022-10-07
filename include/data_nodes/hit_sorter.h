@@ -88,6 +88,7 @@ public:
         std::cout << "HIT SORTER ENDED ---------------------" << std::endl;
         
 
-
     }
+    
+    virtual ~hit_sorter() = default;
 };

@@ -1,41 +1,55 @@
 #include <iostream>
 #include <fstream>
 #include <memory>
+#include <filesystem>
+#include <sstream>
 #pragma once
 class not_implemented : public std::logic_error
 {
     public:
     not_implemented() : std::logic_error("not yet implemented"){}
 };
-class path
+class basic_path
 {
     protected:
-    std::string path_;
+    std::filesystem::path path_;
+    std::filesystem::path current_path_ = std::filesystem::current_path();
     public:
-    path(const std::string& path) :
-    path_(path){}
-    std::string as_absolute()
+    basic_path(){}
+    basic_path(const std::string& path) :
+    path_(path)
     {
 
     }
-    std::string as_relative()
+
+    std::string as_absolute() const
     {
+        return std::filesystem::absolute(path_).string();
+    }
+    std::string as_relative() const
+    {
+       return std::filesystem::relative(current_path_, path_).string(); 
 
     }
-    std::string parent_folder()
+    std::string last_folder() const
     {
-        
+        const uint32_t sep_position = path_.string().find_last_of("/\\");
+        std::string temp =  path_.string().substr(sep_position + 1);
+
+        return temp;
     }
 };
-class file_path : path
+class file_path : public basic_path
 {
 
     public:
+    file_path()
+    {}
     file_path(const std::string& path) :
-    path(path){}
-    std::string filename()
+    basic_path(path){}
+    std::string filename() const
     {
-
+        return path_.filename().string();
     }
 
 

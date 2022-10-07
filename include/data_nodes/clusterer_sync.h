@@ -68,5 +68,5 @@ class sync_pixel_list_clusterer : public pixel_list_clusterer<produced_cluster>
         writer_.flush();
         std::cout << "CLUSTERER ENDED ---------- " << processed_hit_count_ <<" hits processed" <<std::endl;
     }
-
+    virtual ~sync_pixel_list_clusterer() = default;
 };

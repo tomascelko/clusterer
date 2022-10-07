@@ -13,4 +13,5 @@ class i_data_node
     {
         return std::vector<abstract_pipe*>();
     }
+    virtual ~i_data_node() = default;
 };

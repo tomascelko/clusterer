@@ -87,6 +87,7 @@ public:
         swap_buffers();
         return should_continue;
     }
+    virtual ~data_reader() = default;
 
 };
 

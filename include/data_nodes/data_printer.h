@@ -36,4 +36,5 @@ class data_printer : public i_data_consumer<data_type>, public i_data_producer<d
     {
         writer_ = pipe_writer<data_type>(out_pipe);
     }
+    virtual ~data_printer() = default;
 };

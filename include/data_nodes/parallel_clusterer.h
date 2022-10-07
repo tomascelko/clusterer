@@ -4,6 +4,7 @@
 #include "../data_structs/produced_cluster.h"
 #include "../utils.h"
 #include "../devices/current_device.h"
+#include "../benchmark/i_time_measurable.h"
 struct bbox
 {
     coord left_top;
@@ -94,7 +95,7 @@ class cluster_merging : public i_data_consumer<produced_cluster<hit_type>>,
     const uint32_t DEQUEUE_CHECK_INTERVAL = 20; //time when to check for dequeing from sorting queue 
     const double MERGE_TIME = 300.; //max time difference between cluster to be merged
     //const double SORTING_DEQUEUE_TIME = 1000000000.; //max unorderednes caused by parallelization
-    const double MAX_CL_UNORD_TIME = 10000; //maximum unorderedness caused by clustering itself (merging to bigger cluster)
+    const double MAX_CL_UNORD_TIME = 0; //maximum unorderedness caused by clustering itself (merging to bigger cluster)
     const std::vector<coord> NINE_NEIGHBORS = { {-1, -1}, {-1, 0}, {-1, 1},
                                                 { 0, -1}, { 0, 0}, { 0, 1},
                                                 { 1, -1}, { 1, 0}, { 1, 1},
@@ -110,6 +111,7 @@ class cluster_merging : public i_data_consumer<produced_cluster<hit_type>>,
     uint64_t processed_non_border_count = 0;
     uint64_t processed_border_count = 0;
     i_sync_node* sync_node_;
+    measuring_clock* clock_;
     bool are_spatially_neighboring(const bb_cluster<hit_type> & bb_cl_1, const bb_cluster<hit_type> & bb_cl_2)
     {
         const bb_cluster<hit_type> & bigger_bb_cl = bb_cl_1.cl.hits().size() < bb_cl_2.cl.hits().size() ? bb_cl_2 : bb_cl_1;
@@ -264,6 +266,10 @@ public:
     {
         return priority_queue_.size();
     }
+    void prepare_clock( measuring_clock * clock)
+    {
+        clock_ = clock;
+    }
     virtual void start() override
     {
         uint64_t processed = 0;
@@ -278,7 +284,9 @@ public:
             ++processed;
             if(processed % DEQUEUE_CHECK_INTERVAL == 0)
                 process_old_clusters();
+            //clock_->pause(); 
             reader_.read(new_cl);
+            //clock_->start();
             while(!new_cl.is_valid())
             {
                 ++finish_producers_count;
@@ -289,21 +297,24 @@ public:
         }
         write_remaining_clusters();
         std::cout << processed_border_count << " " << processed_non_border_count << std::endl; 
+        clock_->stop_and_report("parallel_clusterer");
         writer_.write(cluster<hit_type>::end_token());
         writer_.flush();
         std::cout << "CLUSTER MERGING ENDED ---------------------" << std::endl;
     }
+    virtual ~cluster_merging() = default;
 
 };
 
 template <typename hit_type, typename clustering_node, typename pipe_descriptor>
 class parallel_clusterer : public i_data_consumer<hit_type>,
                            public i_data_producer<cluster<hit_type>>, 
-                           public i_sync_node                //performs the splitting work 
+                           public i_sync_node,
+                           public i_time_measurable                //performs the splitting work 
 {                                                                    //and wraps the whole clustering process
 
     pipe_descriptor split_descr_;
-    
+    measuring_clock* clock_;
     pipe_reader<hit_type> reader_;
     pipe_writer<cluster<hit_type>> writer_;
     cluster_merging<hit_type, pipe_descriptor>* merging_node_;
@@ -395,10 +406,16 @@ class parallel_clusterer : public i_data_consumer<hit_type>,
         int_pipes.push_back(merging_pipe_);
         return int_pipes;
     }
+    virtual void prepare_clock(measuring_clock * clock)
+    {
+        merging_node_->prepare_clock(clock);
+        clock_ = clock;
+    }
     virtual void start() override
     {
         hit_type hit;
         reader_.read(hit);
+        clock_->start();
         while(hit.is_valid())
         {
             split_writers_[split_descr_.get_pipe_index(hit)].write(std::move(hit));
@@ -411,5 +428,6 @@ class parallel_clusterer : public i_data_consumer<hit_type>,
         }
         std::cout << "SPLITTER ENDED ---------------------" << std::endl;
     }
+    virtual ~parallel_clusterer() = default;
 
 };

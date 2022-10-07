@@ -12,11 +12,13 @@
 #include "../utils.h"
 #include "../data_structs/mm_hit.h"
 #include "../utils.h"
+#include "../benchmark/i_time_measurable.h"
+#include "../benchmark/measuring_clock.h"
 #include <deque>
 #include <list>
 #pragma once
 template <template<class> typename cluster>
-class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_producer<cluster<mm_hit>>
+class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_producer<cluster<mm_hit>>, public i_time_measurable
 {   
 
     protected:    
@@ -45,8 +47,8 @@ class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_produ
         }
     };
 
-    const double CLUSTER_CLOSING_DT = 200;   //time after which the cluster is closed (> DIFF_DT, because of delays in the datastream)
-    const double CLUSTER_DIFF_DT = 200;     //time that marks the max difference of cluster last_toa()
+    const double CLUSTER_CLOSING_DT = 300;   //time after which the cluster is closed (> DIFF_DT, because of delays in the datastream)
+    const double CLUSTER_DIFF_DT = 300;     //time that marks the max difference of cluster last_toa()
     const uint32_t MAX_PIXEL_COUNT = 2 << 15;
     const std::vector<coord> EIGHT_NEIGHBORS = {{-1, -1}, {-1, 0}, {-1, 1},
                                                 { 0, -1}, { 0, 0}, { 0, 1},
@@ -62,6 +64,7 @@ class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_produ
     uint64_t processed_hit_count_;
     pipe_reader<mm_hit> reader_;
     pipe_writer<cluster<mm_hit>> writer_;
+    measuring_clock * clock_;
     bool is_old(double last_toa, const cluster<mm_hit> & cl)
     {
         return cl.last_toa() < last_toa - CLUSTER_CLOSING_DT; 
@@ -97,7 +100,8 @@ class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_produ
     std::vector<cluster_it> find_neighboring_clusters(const coord& base_coord, double toa, cluster_it& biggest_cluster)
     {
         std::vector<cluster_it> uniq_neighbor_cluster_its;
-        uint32_t max_cluster_size = 0; 
+        //uint32_t max_cluster_size = 0; 
+        double min_toa = ULONG_MAX;
         for (auto neighbor_offset : EIGHT_NEIGHBORS)   //check all neighbor indexes
         {       
             if(!base_coord.is_valid_neighbor(neighbor_offset))
@@ -110,9 +114,9 @@ class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_produ
                     {                                                                     //which of conditions is more likely to fail?
                         neighbor_cl_it->select();
                         uniq_neighbor_cluster_its.push_back(neighbor_cl_it);
-                        if(neighbor_cl_it->cl.hits().size() > max_cluster_size)   //find biggest cluster for possible merging
+                        if(neighbor_cl_it->cl.first_toa() < min_toa)   //find biggest cluster for possible merging
                         {
-                            max_cluster_size = neighbor_cl_it->cl.hits().size();
+                            min_toa= neighbor_cl_it->cl.first_toa();
                             biggest_cluster = neighbor_cl_it;
                         }
                         break;
@@ -215,6 +219,7 @@ class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_produ
     {
         mm_hit hit;
         while(!reader_.read(hit));
+        clock_->start();
         while(hit.is_valid())
         {
             if(processed_hit_count_ % WRITE_INTERVAL == 0) 
@@ -223,9 +228,15 @@ class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_produ
             while(!reader_.read(hit));
         }   
         write_remaining_clusters();
+        clock_->stop_and_report("clusterer");
         writer_.write(cluster<mm_hit>::end_token()); //write empty cluster as end token
         writer_.flush();
+
         std::cout << "CLUSTERER ENDED ---------- " << processed_hit_count_ <<" hits processed" <<std::endl;
     }
-
+    virtual ~pixel_list_clusterer() = default;
+    virtual void prepare_clock(measuring_clock* clock) override
+    {
+        clock_ = clock;
+    }
 };

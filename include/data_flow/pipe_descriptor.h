@@ -15,6 +15,7 @@ public:
     pipe_count_(pipe_count){}
     virtual uint32_t get_pipe_index(const data_type & data) = 0;
     virtual bool is_on_border(const cluster<data_type> & cl) = 0;
+    virtual ~pipe_descriptor() = default;
 };
 
 template <typename hit_type>
@@ -44,5 +45,6 @@ temporal_clustering_descriptor() : pipe_descriptor<hit_type>(1){}
             || last_remainder > SWITCH_INTERVAL_LEN - EPSILON_BORDER_TIME
             || cl.last_toa() - cl.first_toa() > SWITCH_INTERVAL_LEN;
     }
+    virtual ~temporal_clustering_descriptor() = default;
 
 };

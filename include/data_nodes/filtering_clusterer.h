@@ -275,8 +275,8 @@ class energy_filtering_clusterer : public i_data_consumer<mm_hit>, public i_data
     energy_filtering_clusterer() :
     pixel_lists_(MAX_PIXEL_COUNT),
     unfinished_clusters_count_(0),
-    processed_hit_count_(0)
-    
+    processed_hit_count_(0) 
     {   
     }
+    virtual ~energy_filtering_clusterer() = default;
 };

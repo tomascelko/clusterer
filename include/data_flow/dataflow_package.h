@@ -6,3 +6,4 @@
 #include "../data_flow/pipe.h"
 #include "../data_flow/pipe_descriptor.h"
 #include "../data_flow/i_synchronizer_node.h"
+#include "multi_cluster_pipe_reader.h"

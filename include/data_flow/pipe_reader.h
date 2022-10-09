@@ -4,7 +4,7 @@ template <typename data_type>
 class pipe_reader
 {
     pipe<data_type>* pipe_;
-    uint32_t BLOCK_SIZE = 2<<8;
+    uint32_t BLOCK_SIZE = 2<<10;
     data_block<data_type> block_;
     public:
     pipe_reader(): block_(BLOCK_SIZE){}

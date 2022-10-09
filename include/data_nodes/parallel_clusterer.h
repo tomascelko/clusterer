@@ -89,10 +89,10 @@ struct bb_cluster
     }
 };
 template <typename hit_type, typename pipe_descriptor>
-class cluster_merging : public i_data_consumer<produced_cluster<hit_type>>,
+class cluster_merging : public i_data_consumer<cluster<hit_type>>,
                             public i_data_producer<cluster<hit_type>>
 {
-    const uint32_t DEQUEUE_CHECK_INTERVAL = 20; //time when to check for dequeing from sorting queue 
+    const uint32_t DEQUEUE_CHECK_INTERVAL = 10; //time when to check for dequeing from sorting queue 
     const double MERGE_TIME = 300.; //max time difference between cluster to be merged
     //const double SORTING_DEQUEUE_TIME = 1000000000.; //max unorderednes caused by parallelization
     const double MAX_CL_UNORD_TIME = 0; //maximum unorderedness caused by clustering itself (merging to bigger cluster)
@@ -101,7 +101,7 @@ class cluster_merging : public i_data_consumer<produced_cluster<hit_type>>,
                                                 { 1, -1}, { 1, 0}, { 1, 1},
                                                 { 0,  0} };
     pipe_writer<cluster<hit_type>> writer_;
-    pipe_reader<produced_cluster<hit_type>> reader_;
+    multi_cluster_pipe_reader<hit_type> reader_;
     std::priority_queue<cluster<hit_type>, std::vector<cluster<hit_type>>, typename cluster<hit_type>::first_toa_comparer> priority_queue_;
     std::deque<bb_cluster<hit_type>> unfinished_border_clusters_; //we could keep here unbordering clusters as well 
                                                                    //in order to preserve time orderedness
@@ -110,7 +110,6 @@ class cluster_merging : public i_data_consumer<produced_cluster<hit_type>>,
     bitmap_type neighboring_matrix_;
     uint64_t processed_non_border_count = 0;
     uint64_t processed_border_count = 0;
-    i_sync_node* sync_node_;
     measuring_clock* clock_;
     bool are_spatially_neighboring(const bb_cluster<hit_type> & bb_cl_1, const bb_cluster<hit_type> & bb_cl_2)
     {
@@ -173,7 +172,7 @@ class cluster_merging : public i_data_consumer<produced_cluster<hit_type>>,
         return true;
     }
 
-    void process_old_border_cluster(cluster<hit_type>& old_cl)
+    void process_border_cluster(cluster<hit_type>& old_cl)
     {
         bb_cluster bb_cl{std::move(old_cl)};
         for(uint32_t i = 0; i < unfinished_border_clusters_.size(); i++)
@@ -189,36 +188,27 @@ class cluster_merging : public i_data_consumer<produced_cluster<hit_type>>,
         
         
     }
-    double dequeue_threshold()
-    {
-        return sync_node_->min_producer_time() - (MERGE_TIME + MAX_CL_UNORD_TIME);
-    }
     void remove_invalid()
     {
         while((!unfinished_border_clusters_.empty()) && !unfinished_border_clusters_.front().valid)
                     unfinished_border_clusters_.pop_front();
     }
-    void process_old_clusters(bool finishing = false)
+    void process_cluster(cluster<hit_type> && new_cl)
     {
 
-        double recent_dequeued_ftoa = 0.;
-        while ((!priority_queue_.empty()) && (priority_queue_.top().last_toa() < dequeue_threshold() || finishing))
-        {
-            recent_dequeued_ftoa = priority_queue_.top().first_toa();
-            cluster<hit_type> old_cl = std::move(const_cast<cluster<hit_type>&>(priority_queue_.top()));
-            priority_queue_.pop();
-            if(split_descr_.is_on_border(old_cl))
+        double recent_dequeued_ftoa = new_cl.first_toa();
+            if(split_descr_.is_on_border(new_cl))
             {
-                process_old_border_cluster(old_cl);
+                process_border_cluster(new_cl);
             }
             else
             {                        
-                writer_.write(std::move(old_cl));
+                writer_.write(std::move(new_cl));
                 ++processed_non_border_count;
             }
             //TODO possibly check for this only once in a border check interval
             remove_invalid();
-            while((!unfinished_border_clusters_.empty()) && unfinished_border_clusters_.front().cl.last_toa() < recent_dequeued_ftoa - MAX_CL_UNORD_TIME)
+            while((!unfinished_border_clusters_.empty()) && unfinished_border_clusters_.front().cl.last_toa() < recent_dequeued_ftoa - MERGE_TIME)
             {
                 if(unfinished_border_clusters_.front().valid)
                 {
@@ -228,11 +218,9 @@ class cluster_merging : public i_data_consumer<produced_cluster<hit_type>>,
                 unfinished_border_clusters_.pop_front();
                 remove_invalid();
             }
-        }
     }
     void write_remaining_clusters()
     {
-        process_old_clusters(true); //process all clusters on heap
         while((!unfinished_border_clusters_.empty())) //process last clusters on border
         {
             remove_invalid();
@@ -245,18 +233,17 @@ class cluster_merging : public i_data_consumer<produced_cluster<hit_type>>,
         }
     }
 public:
-    cluster_merging(pipe_descriptor split_descr, i_sync_node* sync_node) :
+    cluster_merging(pipe_descriptor split_descr) :
     split_descr_(split_descr),
-    sync_node_(sync_node),
     neighboring_matrix_(current_chip::chip_type::size_x(), std::vector<bool>(current_chip::chip_type::size_y(), false))
     {
         typename cluster<hit_type>::first_toa_comparer first_toa_comp;
         priority_queue_ = std::priority_queue<cluster<hit_type>, std::vector<cluster<hit_type>>, typename cluster<hit_type>::first_toa_comparer>(first_toa_comp);
 
     }
-    void connect_input(pipe<produced_cluster<hit_type>>* input_pipe) override
+    void connect_input(pipe<cluster<hit_type>>* input_pipe) override
     {
-        reader_ = pipe_reader<produced_cluster<hit_type>>(input_pipe);
+        reader_.add_pipe(input_pipe);
     }
     virtual void connect_output(pipe<cluster<hit_type>>* output_pipe) override
     {
@@ -273,27 +260,17 @@ public:
     virtual void start() override
     {
         uint64_t processed = 0;
-        produced_cluster<hit_type> new_cl;
+        cluster<hit_type> new_cl;
         uint32_t finish_producers_count = 0;
         reader_.read(new_cl); 
-        while(finish_producers_count != split_descr_.pipe_count())
+        while(new_cl.is_valid())
         {
-            double current_toa = new_cl.cl().first_toa();
-            priority_queue_.emplace(std::move(new_cl.cl()));
-            sync_node_->update_producer_time(current_toa, new_cl.producer_id());
+            //double current_toa = new_cl.cl().first_toa();
+            //sync_node_->update_producer_time(current_toa, new_cl.producer_id());
             ++processed;
-            if(processed % DEQUEUE_CHECK_INTERVAL == 0)
-                process_old_clusters();
-            //clock_->pause(); 
+            //if(processed % DEQUEUE_CHECK_INTERVAL == 0)
+                process_cluster(std::move(new_cl));
             reader_.read(new_cl);
-            //clock_->start();
-            while(!new_cl.is_valid())
-            {
-                ++finish_producers_count;
-                if(finish_producers_count == split_descr_.pipe_count())
-                    break;
-                reader_.read(new_cl);
-            }
         }
         write_remaining_clusters();
         std::cout << processed_border_count << " " << processed_non_border_count << std::endl; 
@@ -309,7 +286,6 @@ public:
 template <typename hit_type, typename clustering_node, typename pipe_descriptor>
 class parallel_clusterer : public i_data_consumer<hit_type>,
                            public i_data_producer<cluster<hit_type>>, 
-                           public i_sync_node,
                            public i_time_measurable                //performs the splitting work 
 {                                                                    //and wraps the whole clustering process
 
@@ -322,43 +298,9 @@ class parallel_clusterer : public i_data_consumer<hit_type>,
     std::vector<pipe<hit_type>*> split_pipes_;
     std::vector<pipe_writer<hit_type>> split_writers_;
     const uint32_t PIPE_ID_PREFIX = 0x100;
-    pipe<produced_cluster<hit_type>>* merging_pipe_; //needs to be concurrent to merge multiple producers
-    double current_sync_toa_ = 0;
+    std::vector<pipe<cluster<hit_type>>*> merging_pipes_; 
     std::vector<double> first_toas_by_producers_; //used 
     public:
-    virtual void update_producer_time(double toa, uint32_t producer_id) override //consumer informs that it received data from producer
-    {
-        first_toas_by_producers_[producer_id] = toa;
-    }
-    virtual double min_producer_time() override //find last CONSUMED cluster by CONSUMER for each producer
-    {       
-        double min_toa = LONG_MAX;                           //for CONSUMERS ONLY
-        for (uint16_t i = 0; i < first_toas_by_producers_.size(); i++)
-        {
-            if(first_toas_by_producers_[i] < min_toa)
-            {
-                min_toa = first_toas_by_producers_[i];
-            }
-        }
-        return min_toa;
-    }
-    virtual void sync_time() override //checks all clusters and finds last PROCESSED hit by CLUSTERER
-    {                                 //used for inter clusterer synchronization = for PRODUCERS ONLY
-        double oldest_toa = LONG_MAX;
-        for(auto & cl_node : clustering_nodes_)
-        {
-            double toa = cl_node->current_toa();
-            if(toa < oldest_toa)
-            {
-                oldest_toa = toa;
-            }
-        }
-        current_sync_toa_ = oldest_toa;
-    }
-    virtual double check_time() override
-    {
-        return current_sync_toa_;
-    }
     virtual uint64_t queue_size()
     {
         return merging_node_->sorting_queue_size();
@@ -366,21 +308,23 @@ class parallel_clusterer : public i_data_consumer<hit_type>,
     parallel_clusterer(pipe_descriptor split_descr) :
     split_descr_(split_descr),
     first_toas_by_producers_(split_descr.pipe_count(), 0),
-    merging_node_(new cluster_merging<hit_type, pipe_descriptor>(split_descr, this)),
-    merging_pipe_(new pipe<produced_cluster<hit_type>, moodycamel::ConcurrentQueue>(PIPE_ID_PREFIX))
+    merging_node_(new cluster_merging<hit_type, pipe_descriptor>(split_descr))
     {
-     
-        merging_node_->connect_input(merging_pipe_); //output of merging node is decided after connecting the whole block
         for (uint32_t i = 0; i < split_descr_.pipe_count(); i++)
         {
-            pipe<hit_type>* split_pipe = new pipe<hit_type> (PIPE_ID_PREFIX + i + 1);
-            clustering_node* cl_node = new clustering_node(this, i);
+            pipe<hit_type>* split_pipe = new pipe<hit_type> (PIPE_ID_PREFIX + i);
+            pipe<cluster<hit_type>> * merge_pipe = new pipe<cluster<hit_type>> (PIPE_ID_PREFIX + i + split_descr_.pipe_count());
+            
+            clustering_node* cl_node = new clustering_node();
             cl_node->connect_input(split_pipe);
-            cl_node->connect_output(merging_pipe_);
+            cl_node->connect_output(merge_pipe);
             clustering_nodes_.emplace_back(cl_node);
             
             split_pipes_.push_back(split_pipe);
             split_writers_.emplace_back(pipe_writer<hit_type>(split_pipe));
+            
+            merging_pipes_.emplace_back(merge_pipe);
+        merging_node_->connect_input(merge_pipe);
         }
     }
     virtual void connect_input(pipe<hit_type>* input_pipe) override
@@ -403,7 +347,7 @@ class parallel_clusterer : public i_data_consumer<hit_type>,
     {
         std::vector<abstract_pipe*>int_pipes;
         int_pipes.assign(split_pipes_.begin(), split_pipes_.end());
-        int_pipes.push_back(merging_pipe_);
+        int_pipes.insert(int_pipes.end(), merging_pipes_.begin(), merging_pipes_.end());
         return int_pipes;
     }
     virtual void prepare_clock(measuring_clock * clock)

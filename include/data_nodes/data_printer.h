@@ -5,10 +5,10 @@ class data_printer : public i_data_consumer<data_type>, public i_data_producer<d
 {
     pipe_reader<data_type> reader_;
     pipe_writer<data_type> writer_;
-    stream_type* out_stream_;
+    std::unique_ptr<stream_type> out_stream_;
     public:
     data_printer(stream_type* print_stream) :
-    out_stream_(print_stream)
+    out_stream_(std::unique_ptr<stream_type>(print_stream))
     {
         //out_stream_ = std::move(std::make_unique<std::ostream>(print_stream));
     }
@@ -25,7 +25,7 @@ class data_printer : public i_data_consumer<data_type>, public i_data_producer<d
             reader_.read(hit);
 
         }
-        
+        out_stream_->close();
         std::cout << "PRINTER ENDED ----------------" << std::endl;
     }
     virtual void connect_input(pipe<data_type>* in_pipe) override

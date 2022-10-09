@@ -120,20 +120,20 @@ class benchmarker
         burda_to_mm_hit_adapter<mm_hit>* converter = new burda_to_mm_hit_adapter<mm_hit>(current_chip::chip_type::size(), calibration(calib_file, current_chip::chip_type::size()));
         hit_sorter<mm_hit>* sorter = new hit_sorter<mm_hit>();
         //std::ofstream print_stream("printed_hits.txt");
-        //mm_write_stream print_stream("/home/tomas/MFF/DT/clusterer/output/ppppparallel_clustering");
-        //data_printer<cluster<mm_hit>, mm_write_stream>* printer = new data_printer<cluster<mm_hit>, mm_write_stream>(&print_stream);
+        //mm_write_stream * print_stream = new mm_write_stream("/home/tomas/MFF/DT/clusterer/output/testing_new_merge") ;
+        //data_printer<cluster<mm_hit>, mm_write_stream>* printer = new data_printer<cluster<mm_hit>, mm_write_stream>(print_stream);
         
         controller_ = new dataflow_controller();
         controller_->add_node(burda_reader);
         controller_->add_node(converter);
         controller_->add_node(sorter);
         controller_->add_node(clusterer);
-        //controller.add_node(printer);
+        //controller_->add_node(printer);
 
         controller_->connect_nodes(burda_reader, converter);
         controller_->connect_nodes(converter, sorter);
         controller_->connect_nodes(sorter, clusterer);
-        //controller.connect_nodes(clusterer, printer);
+        //controller_->connect_nodes(clusterer, printer);
 
     }
     void print_results(std::ostream & stream)
@@ -195,26 +195,27 @@ class benchmarker
     }
     void run_whole_benchmark()
     {
-        using parallel_clusterer_type = parallel_clusterer<mm_hit, sync_pixel_list_clusterer, temporal_clustering_descriptor<mm_hit>>;
+        using parallel_clusterer_type = parallel_clusterer<mm_hit, pixel_list_clusterer<cluster>, temporal_clustering_descriptor<mm_hit>>;
         
-        const uint16_t REPEATS = 10;
+        const uint16_t REPEATS = 3;
         for (uint32_t i = 0; i < data_files_.size(); ++i)
         {   
             for(uint32_t j = 0; j < REPEATS; j++){ 
             pixel_list_clusterer<cluster>* clusterer = new pixel_list_clusterer<cluster>();
             energy_filtering_clusterer<mm_hit>* e_clusterer = new energy_filtering_clusterer<mm_hit>();
-            parallel_clusterer_type* p_clusterer = new parallel_clusterer_type(temporal_clustering_descriptor<mm_hit>(2)); 
+            parallel_clusterer_type* p_clusterer = new parallel_clusterer_type(
+                temporal_clustering_descriptor<mm_hit>(2)); 
             current_dataset_ = data_files_[i];
             switch(calibration_mode_)
             {
                 case calib_type::automatic:
-                    prepare_model(clusterer, data_files_[i].as_absolute(), auto_find_calib_file(data_files_[i]));
+                    prepare_model(p_clusterer, data_files_[i].as_absolute(), auto_find_calib_file(data_files_[i]));
                     break;
                 case calib_type::manual:
-                    prepare_model(clusterer, data_files_[i].as_absolute(), calib_folders_[i].as_absolute());
+                    prepare_model(p_clusterer, data_files_[i].as_absolute(), calib_folders_[i].as_absolute());
                     break;
                 case calib_type::same:
-                    prepare_model(clusterer, data_files_[i].as_absolute(), calib_folders_[0].as_absolute());
+                    prepare_model(p_clusterer, data_files_[i].as_absolute(), calib_folders_[0].as_absolute());
                     break;    
                 default:
                     throw std::invalid_argument("invalid calibration type (choose one of auto/manual/same)");

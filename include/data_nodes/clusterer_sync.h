@@ -6,9 +6,9 @@ class sync_pixel_list_clusterer : public pixel_list_clusterer<produced_cluster>
 {
     i_sync_node* sync_node_; //has method sync_time and check_time 
     const double MAX_UNSYNC_DELAY = 20000;
-    const uint32_t WAIT_DURATION = 500; //int microsec
+    const uint32_t WAIT_DURATION = 1000; //int microsec
     const uint32_t SYNC_INTERVAL = 100; //in hits
-    const uint32_t MAX_QUEUE_SIZE = 100000; //in clusters inside of a merging node
+    const uint32_t MAX_QUEUE_SIZE = 10000; //in clusters inside of a merging node
     uint16_t id_;
     void check_wait(double current_toa)
     {
@@ -18,6 +18,7 @@ class sync_pixel_list_clusterer : public pixel_list_clusterer<produced_cluster>
         {
             while(sync_node_->queue_size() > MAX_QUEUE_SIZE)
             {
+                std::cout << "WAITING" << std::endl;
                 std::this_thread::sleep_for(std::chrono::microseconds(WAIT_DURATION));
             }
         }

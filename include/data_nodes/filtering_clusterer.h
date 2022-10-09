@@ -91,38 +91,34 @@ class energy_filtering_clusterer : public i_data_consumer<mm_hit>, public i_data
     std::vector<cluster_it> find_neighboring_clusters(const coord& base_coord, double toa, cluster_it& biggest_cluster)
     {
         std::vector<cluster_it> uniq_neighbor_cluster_its;
-        uint32_t max_cluster_size = 0; 
+        //uint32_t max_cluster_size = 0; 
+        double min_toa = ULONG_MAX;
         for (auto neighbor_offset : EIGHT_NEIGHBORS)   //check all neighbor indexes
         {       
             if(!base_coord.is_valid_neighbor(neighbor_offset))
                 continue;
-            uint32_t neighbor_index = neighbor_offset.linearize() + base_coord.linearize();
-            //if(neighbor_index >= 0 && neighbor_index < MAX_PIXEL_COUNT)  //we check neighbor is not outside of the board
-            //{           
+            uint32_t neighbor_index = neighbor_offset.linearize() + base_coord.linearize();        
                 for (auto & neighbor_cl_it : pixel_lists_[neighbor_index])  //iterate over each cluster neighbor pixel can be in
+                //TODO do reverse iteration and break when finding a match - as there cannot two "already mergable" clusters on a single neighbor pixel
                 {
                     if(toa - CLUSTER_DIFF_DT < neighbor_cl_it->cl.last_toa() && !neighbor_cl_it->selected) //TODO order
                     {                                                                     //which of conditions is more likely to fail?
                         neighbor_cl_it->select();
                         uniq_neighbor_cluster_its.push_back(neighbor_cl_it);
-                        if(neighbor_cl_it->cl.hits().size() > max_cluster_size)   //find biggest cluster for possible merging
+                        if(neighbor_cl_it->cl.first_toa() < min_toa)   //find biggest cluster for possible merging
                         {
-                            max_cluster_size = neighbor_cl_it->cl.hits().size();
-                            //std::cout << "before" << std::endl;
+                            min_toa= neighbor_cl_it->cl.first_toa();
                             biggest_cluster = neighbor_cl_it;
-                            //std::cout << "after" << std::endl;
                         }
+                        break;
                     }
-                    //std::cout << "returned_if" << neighbor_index << std::endl;
                 }
-          //  }
         }
-        //std::cout << "almost_returned" << std::endl;
         for (auto& neighbor_cluster_it : uniq_neighbor_cluster_its)
         {
             neighbor_cluster_it->unselect();    //unselect to prepare clusters for next neighbor search
         }
-        //std::cout << "returning " << std::endl;
+        
         return uniq_neighbor_cluster_its;    
     }
     void add_new_hit(mm_hit & hit, cluster_it & cluster_iterator)

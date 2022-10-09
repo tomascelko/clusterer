@@ -16,6 +16,5 @@ int main(int argc, char** argv)
     //controller->start_all();
     std::cout << "ALL ENDED" << std::endl;
     delete bench;
-    //print_stream.close();
     //TODO add virtual destructors
 }

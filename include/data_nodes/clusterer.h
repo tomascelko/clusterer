@@ -207,11 +207,11 @@ class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_produ
     {
         return current_toa_;
     }
-    virtual void connect_input(pipe<mm_hit>* input_pipe) override
+    virtual void connect_input(default_pipe<mm_hit>* input_pipe) override
     {
         reader_ = pipe_reader<mm_hit>(input_pipe);
     }
-    virtual void connect_output(pipe<cluster<mm_hit>>* output_pipe) override
+    virtual void connect_output(default_pipe<cluster<mm_hit>>* output_pipe) override
     {
         writer_ = pipe_writer<cluster<mm_hit>>(output_pipe);
     }

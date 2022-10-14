@@ -4,19 +4,18 @@
 template <typename data_type>
 class pipe_writer
 {
-    pipe<data_type>* pipe_;
-    uint32_t BLOCK_SIZE = 2<<10;
+    default_pipe<data_type>* pipe_;
     data_block<data_type> block_;
-    uint64_t processed_counter = 0;
     public:
-    pipe_writer(): pipe_(nullptr), block_(BLOCK_SIZE){}
-    pipe_writer(pipe<data_type>* pipe):
+
+    pipe_writer(): pipe_(nullptr), block_(){}
+    pipe_writer(default_pipe<data_type>* pipe):
     pipe_(pipe),
-    block_(BLOCK_SIZE)
+    block_()
     {}
     bool write_bulk(data_buffer<data_type> * data_buffer)
     {
-        //while(pipe_->approx_size() > pipe<data_type>::MAX_Q_LEN);
+        //while(pipe_->approx_size() > default_pipe<data_type>::MAX_Q_LEN);
         for (uint32_t i = 0; i < data_buffer->size(); i++)
         {
             write(std::move(data_buffer->data()[i]));

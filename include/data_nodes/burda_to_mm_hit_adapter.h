@@ -50,11 +50,11 @@ class burda_to_mm_hit_adapter : public i_data_consumer<burda_hit>, public i_data
     {
         assert((std::is_same<mm_hit_type, mm_hit>::value));
     }
-    virtual void connect_input(pipe<burda_hit>* input_pipe) override
+    virtual void connect_input(default_pipe<burda_hit>* input_pipe) override
     {
         reader_ = pipe_reader<burda_hit>(input_pipe);
     }
-    virtual void connect_output(pipe<mm_hit_type>* output_pipe) override
+    virtual void connect_output(default_pipe<mm_hit_type>* output_pipe) override
     {
         writer_ = pipe_writer<mm_hit_type>(output_pipe);
     }
@@ -70,6 +70,10 @@ class burda_to_mm_hit_adapter : public i_data_consumer<burda_hit>, public i_data
             if(converted_hit.e() < 0)
             {
                 std::cout << "negative energy found" << std::endl;
+            }
+            if(converted_hit.e() > 100000)
+            {
+                std::cout << "above 100000 energy found" << std::endl;
             }
             reader_.read(hit);
         }

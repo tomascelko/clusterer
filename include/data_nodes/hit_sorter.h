@@ -47,11 +47,11 @@ public:
         toa_comparer less_comparer;
         priority_queue_ = std::priority_queue<data_type, std::vector<data_type>, toa_comparer> (less_comparer);
     }
-    virtual void connect_input(pipe<data_type>* input_pipe) override
+    virtual void connect_input(default_pipe<data_type>* input_pipe) override
     {
         reader_ = pipe_reader<data_type>(input_pipe);
     }
-    virtual void connect_output(pipe<data_type>* output_pipe) override
+    virtual void connect_output(default_pipe<data_type>* output_pipe) override
     {
         writer_ = pipe_writer<data_type>(output_pipe);
     }

@@ -3,6 +3,8 @@
 #include <memory>
 #include <filesystem>
 #include <sstream>
+#include <cmath>
+#include <algorithm>
 #pragma once
 class not_implemented : public std::logic_error
 {
@@ -134,3 +136,34 @@ struct coord
         {
             return coord(left.x() + right.x(), left.y() + right.y());
         }
+    template<typename number_type>
+    std::string double_to_str(number_type number, uint16_t precision = 6)
+    {
+        std::string result;
+        const uint16_t MAX_LENGTH = 20;
+        long number_rounded;
+        std::string str;
+        str.reserve(MAX_LENGTH);
+        const double EPSILON = 0.0000000000000001; 
+        for (uint16_t i = 0; i < precision; ++i)
+        {
+            number *= 10;
+        }
+        number_rounded = (long)std::round(number);
+        for (uint16_t i = 0; i < MAX_LENGTH; ++i)
+        {
+            str.push_back((char)(48 + (number_rounded % 10)));
+            if(i == precision - 1)
+                str.push_back('.');
+            number_rounded /= 10;
+            //number = std::floor(number);
+            if(number_rounded == 0)
+            {
+                if(i == precision - 1)
+                    str.push_back('0');
+                break;
+            }
+        }
+        std::reverse(str.begin(), str.end());
+        return str;
+    }

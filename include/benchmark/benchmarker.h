@@ -7,7 +7,8 @@
 #include "i_time_measurable.h"
 #include "measuring_clock.h"
 #include "../data_nodes/nodes_package.h"
-
+#include "../mapped_mm_stream.h"
+#include "../mm_stream.h"
 
 //TODO try more repeats
 #pragma once
@@ -116,12 +117,13 @@ class benchmarker
     template <typename clustering_type>
     void prepare_model(clustering_type * clusterer, const std::string& data_file, const std::string& calib_file) //todo possibly replace other nodes as well
     {
+        using mm_stream = mm_write_stream;
         data_reader<burda_hit>* burda_reader = new data_reader<burda_hit>{data_file, 2 << 10};
         burda_to_mm_hit_adapter<mm_hit>* converter = new burda_to_mm_hit_adapter<mm_hit>(current_chip::chip_type::size(), calibration(calib_file, current_chip::chip_type::size()));
         hit_sorter<mm_hit>* sorter = new hit_sorter<mm_hit>();
         //std::ofstream print_stream("printed_hits.txt");
-        //mm_write_stream * print_stream = new mm_write_stream("/home/tomas/MFF/DT/clusterer/output/testing_new_merge") ;
-        //data_printer<cluster<mm_hit>, mm_write_stream>* printer = new data_printer<cluster<mm_hit>, mm_write_stream>(print_stream);
+       //mm_stream * print_stream = new mm_stream("/home/tomas/MFF/DT/clusterer/output/new") ;
+        //data_printer<cluster<mm_hit>, mm_stream>* printer = new data_printer<cluster<mm_hit>, mm_stream>(print_stream);
         
         controller_ = new dataflow_controller();
         controller_->add_node(burda_reader);
@@ -179,7 +181,7 @@ class benchmarker
         for(auto & calib_file : calib_folders_)
         {
             if(data_path.filename().find(calib_file.last_folder()) != std::string::npos)
-                matching_files.push_back(calib_file.last_folder());
+                matching_files.push_back(calib_file.as_absolute());
         }
         switch(matching_files.size())
         {
@@ -197,7 +199,7 @@ class benchmarker
     {
         using parallel_clusterer_type = parallel_clusterer<mm_hit, pixel_list_clusterer<cluster>, temporal_clustering_descriptor<mm_hit>>;
         
-        const uint16_t REPEATS = 3;
+        const uint16_t REPEATS = 1;
         for (uint32_t i = 0; i < data_files_.size(); ++i)
         {   
             for(uint32_t j = 0; j < REPEATS; j++){ 

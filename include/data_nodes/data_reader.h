@@ -5,11 +5,12 @@
 #include "../data_flow/dataflow_package.h"
 #include "../utils.h"
 template <typename data_type>
-class data_reader : public i_data_producer<data_type>
+class data_reader : public i_data_producer<data_type>, public i_controlable_source
 {
     using buffer_type = data_buffer<data_type>;
 
 private:
+    const uint32_t SLEEP_DURATION = 100;
     std::unique_ptr<buffer_type> buffer_a_;
     std::unique_ptr<buffer_type> buffer_b_;
     uint32_t max_buffer_size_;
@@ -18,6 +19,7 @@ private:
     buffer_type* reading_buffer_;
     buffer_type* ready_buffer_ = nullptr;
     pipe_writer<data_type> writer = nullptr;
+    bool paused_ = false;
     void swap_buffers()
     {
         buffer_type* temp_buffer = reading_buffer_;
@@ -57,7 +59,15 @@ public:
         buffer_a_->reserve(buffer_size);
         buffer_b_->reserve(buffer_size);
     }
-    virtual void connect_output(pipe<data_type>* out_pipe) override
+    virtual void pause_production() override
+    {
+        paused_ = true;
+    }
+    virtual void continue_production() override
+    {
+        paused_ = false;
+    }
+    virtual void connect_output(default_pipe<data_type>* out_pipe) override
     {
         writer = pipe_writer<data_type> (out_pipe);
     }
@@ -75,7 +85,13 @@ public:
         read_data();
         ready_buffer_ = buffer_b_.get();
         reading_buffer_= buffer_a_.get();
-        while(read_next()); //reads while buffer is filled completely everytime
+        while(read_next()) //reads while buffer is filled completely everytime
+        {
+            while(paused_)
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_DURATION));
+            }
+        }
         writer.write_bulk(ready_buffer_);
         writer.flush(); 
         std::cout << "READER ENDED ----------" << std::endl;  

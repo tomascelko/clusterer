@@ -57,6 +57,8 @@
         "set": "cpp",
         "unordered_set": "cpp",
         "list": "cpp",
-        "codecvt": "cpp"
+        "codecvt": "cpp",
+        "cstring": "cpp",
+        "charconv": "cpp"
     }
 }

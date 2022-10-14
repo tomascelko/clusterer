@@ -8,9 +8,10 @@ class multi_cluster_pipe_reader
     std::vector<double> last_toas_;
     std::vector<cluster<hit_type>> cluster_buffer_;
     uint32_t reading_index_;
+    uint64_t bytes_read_ = 0;
     bool is_initiating_phase_ = true;
     public:
-    multi_cluster_pipe_reader(const std::vector<pipe<cluster<hit_type>>*> & pipes)
+    multi_cluster_pipe_reader(const std::vector<default_pipe<cluster<hit_type>>*> & pipes)
     {
         readers_.reserve(pipes.size());
         cluster_buffer_.reserve(pipes.size());
@@ -20,7 +21,11 @@ class multi_cluster_pipe_reader
         }
     }
     multi_cluster_pipe_reader(){}
-    void add_pipe(pipe<cluster<hit_type>>* pipe)
+    uint64_t bytes_read()
+    {
+        return bytes_read_;
+    }
+    void add_pipe(default_pipe<cluster<hit_type>>* pipe)
     {
         readers_.emplace_back(reader_type{pipe});
     }
@@ -56,7 +61,9 @@ class multi_cluster_pipe_reader
             cl = std::move(cluster_buffer_[argmin_toa]);
             readers_[argmin_toa].read(cluster_buffer_[argmin_toa]);
         }
+        bytes_read_ += cl.size();
         return true;
+
 
     }
 };

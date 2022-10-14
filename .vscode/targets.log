@@ -6,7 +6,7 @@ make all --print-data-base --no-builtin-variables --no-builtin-rules --question
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Fri Oct  7 13:14:35 2022
+# Make data base, printed on Fri Oct 14 01:24:53 2022
 
 # Variables
 
@@ -95,7 +95,7 @@ GPG_AGENT_INFO = /run/user/1000/gnupg/S.gpg-agent:0:1
 # environment
 C_INCLUDE_PATH = /home/tomas/MFF/DT/allpix/install/include:
 # environment
-SESSION_MANAGER = local/tomas-VirtualBox:@/tmp/.ICE-unix/835,unix/tomas-VirtualBox:/tmp/.ICE-unix/835
+SESSION_MANAGER = local/tomas-VirtualBox:@/tmp/.ICE-unix/765,unix/tomas-VirtualBox:/tmp/.ICE-unix/765
 # environment
 G4INCLDATA = /home/tomas/MFF/DT/geant4/install/share/Geant4-11.0.2/data/G4INCL1.0
 # environment
@@ -143,7 +143,7 @@ QT_QPA_PLATFORMTHEME = qt5ct
 # environment
 XDG_SEAT = seat0
 # environment
-SSH_AGENT_PID = 980
+SSH_AGENT_PID = 1003
 # environment
 ORIGINAL_XDG_CURRENT_DESKTOP = MATE
 # environment
@@ -161,7 +161,7 @@ LESSCLOSE = /usr/bin/lesspipe %s %s
 # environment
 VSCODE_CLI = 1
 # environment
-VSCODE_CODE_CACHE_PATH = /home/tomas/.config/Code/CachedData/64bbfbf67ada9953918d72e1df2f4d8e537d340e
+VSCODE_CODE_CACHE_PATH = /home/tomas/.config/Code/CachedData/129500ee4c8ab7263461ffe327268ba56b9f210d
 # environment
 LOGNAME = tomas
 # environment
@@ -229,7 +229,7 @@ LANGUAGE = en_US
 # environment
 XDG_SEAT_PATH = /org/freedesktop/DisplayManager/Seat0
 # environment
-VSCODE_IPC_HOOK = /run/user/1000/vscode-4e534ead-1.72.0-main.sock
+VSCODE_IPC_HOOK = /run/user/1000/vscode-4e534ead-1.72.1-main.sock
 # environment
 PYTHONPATH = /home/tomas/MFF/DT/root/install/lib
 # makefile
@@ -274,9 +274,9 @@ G4RADIOACTIVEDATA = /home/tomas/MFF/DT/geant4/install/share/Geant4-11.0.2/data/R
 CHROME_DESKTOP = code-url-handler.desktop
 # environment
 MATE_DESKTOP_SESSION_ID = this-is-deprecated
- 
 # default
 .INCLUDE_DIRS = /usr/include /usr/local/include /usr/include
+ 
 # environment
 LC_IDENTIFICATION = sk_SK.UTF-8
 # environment
@@ -290,7 +290,7 @@ LANG = C
 # environment
 TERM = xterm-256color
 # environment
-VSCODE_PID = 26475
+VSCODE_PID = 1461
 # environment
 DYLD_LIBRARY_PATH = /home/tomas/MFF/DT/root/install/lib
 # environment
@@ -386,7 +386,7 @@ preinstall/fast:
 # Not a target:
 Makefile:
 #  Implicit rule search has been done.
-#  Last modified 2022-10-07 13:11:04.679495694
+#  Last modified 2022-10-13 06:28:54.424410793
 #  File has been updated.
 #  Successfully updated.
 
@@ -555,18 +555,18 @@ rebuild_cache:
 # files hash-table stats:
 # Load=29/1024=3%, Rehash=0, Collisions=3/101=3%
 # VPATH Search Paths
- 
 
 # No 'vpath' search paths.
 
 # No general ('VPATH' variable) search path.
 
+ 
 # strcache buffers: 1 (0) / strings = 48 / storage = 557 B / avg = 11 B
 # current buf: size = 8162 B / used = 557 B / count = 48 / avg = 11 B
 
 # strcache performance: lookups = 157 / hit rate = 69%
 # hash-table stats:
 # Load=48/8192=1%, Rehash=0, Collisions=2/157=1%
-# Finished Make data base on Fri Oct  7 13:14:35 2022
+# Finished Make data base on Fri Oct 14 01:24:53 2022
 
  

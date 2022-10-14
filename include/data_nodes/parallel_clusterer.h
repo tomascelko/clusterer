@@ -1,7 +1,6 @@
 #include "../data_flow/dataflow_package.h"
 #include <queue>
 #include "../data_structs/cluster.h"
-#include "../data_structs/produced_cluster.h"
 #include "../utils.h"
 #include "../devices/current_device.h"
 #include "../benchmark/i_time_measurable.h"
@@ -241,11 +240,11 @@ public:
         priority_queue_ = std::priority_queue<cluster<hit_type>, std::vector<cluster<hit_type>>, typename cluster<hit_type>::first_toa_comparer>(first_toa_comp);
 
     }
-    void connect_input(pipe<cluster<hit_type>>* input_pipe) override
+    void connect_input(default_pipe<cluster<hit_type>>* input_pipe) override
     {
         reader_.add_pipe(input_pipe);
     }
-    virtual void connect_output(pipe<cluster<hit_type>>* output_pipe) override
+    virtual void connect_output(default_pipe<cluster<hit_type>>* output_pipe) override
     {
         writer_ = pipe_writer<cluster<hit_type>>(output_pipe);
     }
@@ -295,10 +294,10 @@ class parallel_clusterer : public i_data_consumer<hit_type>,
     pipe_writer<cluster<hit_type>> writer_;
     cluster_merging<hit_type, pipe_descriptor>* merging_node_;
     std::vector<clustering_node*> clustering_nodes_;
-    std::vector<pipe<hit_type>*> split_pipes_;
+    std::vector<default_pipe<hit_type>*> split_pipes_;
     std::vector<pipe_writer<hit_type>> split_writers_;
     const uint32_t PIPE_ID_PREFIX = 0x100;
-    std::vector<pipe<cluster<hit_type>>*> merging_pipes_; 
+    std::vector<default_pipe<cluster<hit_type>>*> merging_pipes_; 
     std::vector<double> first_toas_by_producers_; //used 
     public:
     virtual uint64_t queue_size()
@@ -312,8 +311,8 @@ class parallel_clusterer : public i_data_consumer<hit_type>,
     {
         for (uint32_t i = 0; i < split_descr_.pipe_count(); i++)
         {
-            pipe<hit_type>* split_pipe = new pipe<hit_type> (PIPE_ID_PREFIX + i);
-            pipe<cluster<hit_type>> * merge_pipe = new pipe<cluster<hit_type>> (PIPE_ID_PREFIX + i + split_descr_.pipe_count());
+            default_pipe<hit_type>* split_pipe = new default_pipe<hit_type> (PIPE_ID_PREFIX + i);
+            default_pipe<cluster<hit_type>> * merge_pipe = new default_pipe<cluster<hit_type>> (PIPE_ID_PREFIX + i + split_descr_.pipe_count());
             
             clustering_node* cl_node = new clustering_node();
             cl_node->connect_input(split_pipe);
@@ -327,11 +326,11 @@ class parallel_clusterer : public i_data_consumer<hit_type>,
         merging_node_->connect_input(merge_pipe);
         }
     }
-    virtual void connect_input(pipe<hit_type>* input_pipe) override
+    virtual void connect_input(default_pipe<hit_type>* input_pipe) override
     {
         reader_ = pipe_reader<hit_type>(input_pipe);
     }
-    virtual void connect_output(pipe<cluster<hit_type>>* output_pipe) override
+    virtual void connect_output(default_pipe<cluster<hit_type>>* output_pipe) override
     {
         writer_ = pipe_writer<cluster<hit_type>>(output_pipe);
         merging_node_->connect_output(output_pipe);

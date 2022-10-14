@@ -16,9 +16,14 @@ protected:
     uint64_t hit_count_;
     uint64_t byte_start_;
     std::vector<data_type> hits_;
-
     
 public:
+
+    static constexpr uint64_t avg_size()
+    {
+        return 20 * data_type::avg_size();
+    }
+
     struct first_toa_comparer
     {
         auto operator() (const cluster& left, const cluster& right) const
@@ -46,6 +51,7 @@ public:
         cl.first_toa_ = LONG_MAX;
         return cl;
     }
+
     cluster() :
     hit_count_(0)
     { }
@@ -63,6 +69,7 @@ public:
     { 
         return last_toa_;
     }
+    
     uint64_t line_start() const
     {
         return line_start_;
@@ -116,6 +123,10 @@ public:
     void set_last_toa(double toa)
     {
         last_toa_ = toa;
+    }
+    uint64_t size()
+    {
+        return hits_.size() * data_type::avg_size() + 2 * sizeof(double) + 3 * sizeof(uint64_t);
     }
     virtual void write(std::ofstream* cl_stream, std::ofstream* px_stream) const
     {

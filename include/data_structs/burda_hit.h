@@ -27,6 +27,10 @@ public:
             (*in_stream) >> toa_ >> fast_toa_ >> tot_;
 
     }
+    static constexpr uint64_t avg_size()
+    {
+        return (sizeof(decltype(linear_coord_)) + sizeof(decltype(toa_)) +  sizeof(decltype(fast_toa_)) + sizeof(decltype(tot_)));
+    }
     static burda_hit end_token()
     {
         burda_hit end_token(0,-1,0,0);
@@ -54,7 +58,10 @@ public:
     {
         return tot_;
     }
-    
+    uint32_t size() const
+    {
+        return avg_size();
+    }
 };
 std::ostream& operator<<(std::ostream& os, const burda_hit& hit)
 {

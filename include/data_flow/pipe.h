@@ -9,16 +9,26 @@ class data_block
     std::vector<data_type> data_block_;
     int32_t to_delete_index_;
     uint32_t max_capacity_;
+    uint64_t byte_size_ = 0;
     public:
-    data_block(uint64_t size) :
-    max_capacity_(size),
+    uint64_t byte_size()
+    {
+        return byte_size_;
+    }
+    static constexpr uint32_t block_size()
+    {
+        return 2<<10;
+    }
+    data_block() :
+    max_capacity_(data_block<data_type>::block_size()),
     to_delete_index_(0)
     {
-        data_block_.reserve(size);
+        data_block_.reserve(data_block<data_type>::block_size());
     }
     bool try_add_hit(data_type && data)
     {
         data_block_.emplace_back(data);
+        byte_size_ += data.size();
         return data_block_.size() < max_capacity_;
     }
     bool try_remove_hit(data_type & hit)
@@ -28,6 +38,7 @@ class data_block
             return false;
         }
         hit = std::move(data_block_[to_delete_index_]);
+        byte_size_ -= hit.size();
         //TODO try with erase instead
         ++to_delete_index_;
         /*if(to_delete_index_ == data_block_.size())
@@ -39,6 +50,7 @@ class data_block
     }
     void clear()
     {
+        byte_size_ = 0;
         data_block_.clear();
     }
     
@@ -46,12 +58,13 @@ class data_block
 
 
 template <typename data_type, template<typename> typename queue_type = moodycamel::ConcurrentQueue>
-class pipe : public abstract_pipe
+class default_pipe : public abstract_pipe
 {
-    //todo use simple one producer one consumer queue and create multi pipe : public pipe with this multi concurrent queue
+    //todo use simple one producer one consumer queue and create multi default_pipe : public default_pipe with this multi concurrent queue
 private:
     const uint32_t CHECK_FULL_PIPE_INTERVAL = 500;
     queue_type<data_block<data_type>> queue_;
+    std::atomic<uint64_t> bytes_used_ = 0;
     uint32_t id_;
     void emplace_impl(data_block<data_type> && block, moodycamel::ReaderWriterQueue<data_block<data_type>> & queue)
     {
@@ -62,24 +75,28 @@ private:
         queue_.enqueue(block);
     }
 public: 
-    static constexpr uint32_t MAX_Q_LEN = 2 << 17;
-    pipe(uint32_t id) :
+    static constexpr uint64_t MAX_Q_LEN = 2ull << 31; //in bytes
+    default_pipe(uint32_t id) :
     id_(id),
     queue_(MAX_Q_LEN){}
     uint64_t processed_counter = 1;
     //not thread safe TODO move in block and out block to writer and reader so we can use the buffering with multiple writers
     //WILL be called from multiple threads on a same pipe
+    virtual uint64_t bytes_used() override
+    {
+        return bytes_used_;
+    }
     void blocking_enqueue(data_block<data_type> && new_block)
     {
-        //if(new_hit.tot() < 0)
-        //    std::cout << "Enqueued last hit";
         ++processed_counter; //potentially rally condition
+
         if(processed_counter % CHECK_FULL_PIPE_INTERVAL == 0)
             while(is_full())
             {
             
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
             }
+        bytes_used_ += new_block.byte_size();   
         emplace_impl(std::move(new_block), queue_); //TODO or call enqueue when using multi queue
         
     }
@@ -91,6 +108,7 @@ public:
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
         }
+        bytes_used_ -= out_block.byte_size();
         return true;
     }
     uint32_t approx_size()
@@ -99,9 +117,9 @@ public:
     }
     bool is_full()
     {
-        return queue_.size_approx() > MAX_Q_LEN;
+        return queue_.size_approx() * data_block<data_type>::block_size() * data_type::avg_size() > MAX_Q_LEN;
     }
-    virtual ~pipe() = default;
+    virtual ~default_pipe() = default;
 
 
 

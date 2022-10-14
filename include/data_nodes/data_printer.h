@@ -28,11 +28,11 @@ class data_printer : public i_data_consumer<data_type>, public i_data_producer<d
         out_stream_->close();
         std::cout << "PRINTER ENDED ----------------" << std::endl;
     }
-    virtual void connect_input(pipe<data_type>* in_pipe) override
+    virtual void connect_input(default_pipe<data_type>* in_pipe) override
     {
         reader_ = pipe_reader<data_type>(in_pipe);
     }
-    virtual void connect_output(pipe<data_type>* out_pipe) override
+    virtual void connect_output(default_pipe<data_type>* out_pipe) override
     {
         writer_ = pipe_writer<data_type>(out_pipe);
     }

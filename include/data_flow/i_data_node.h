@@ -5,6 +5,7 @@ class i_data_node
 {
     public:
     virtual void start() = 0;
+    
     virtual std::vector<i_data_node*> internal_nodes()
     {
         return std::vector<i_data_node*>();

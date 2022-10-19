@@ -10,10 +10,8 @@
 #include <cassert>
 
 template <typename mm_hit_type>
-class burda_to_mm_hit_adapter : public i_data_consumer<burda_hit>, public i_data_producer<mm_hit_type>
+class burda_to_mm_hit_adapter : public i_simple_consumer<burda_hit>, public i_simple_producer<mm_hit_type>
 {
-    pipe_reader<burda_hit> reader_;
-    pipe_writer<mm_hit_type> writer_;
     bool calibrate_;
     uint16_t chip_width_;
     uint16_t chip_height_;
@@ -50,14 +48,7 @@ class burda_to_mm_hit_adapter : public i_data_consumer<burda_hit>, public i_data
     {
         assert((std::is_same<mm_hit_type, mm_hit>::value));
     }
-    virtual void connect_input(default_pipe<burda_hit>* input_pipe) override
-    {
-        reader_ = pipe_reader<burda_hit>(input_pipe);
-    }
-    virtual void connect_output(default_pipe<mm_hit_type>* output_pipe) override
-    {
-        writer_ = pipe_writer<mm_hit_type>(output_pipe);
-    }
+
 
     virtual void start() override
     {
@@ -66,7 +57,7 @@ class burda_to_mm_hit_adapter : public i_data_consumer<burda_hit>, public i_data
         while(hit.is_valid())
         {
             mm_hit_type converted_hit = convert_hit(hit);
-            writer_.write(convert_hit(hit));
+            this->writer_.write(convert_hit(hit));
             if(converted_hit.e() < 0)
             {
                 std::cout << "negative energy found" << std::endl;
@@ -77,8 +68,8 @@ class burda_to_mm_hit_adapter : public i_data_consumer<burda_hit>, public i_data
             }
             reader_.read(hit);
         }
-        writer_.write(mm_hit_type::end_token());
-        writer_.flush();
+        this->writer_.write(mm_hit_type::end_token());
+        this->writer_.flush();
         std::cout << "ADAPTER ENDED ---------------------" << std::endl;
     }
     virtual ~burda_to_mm_hit_adapter() = default;

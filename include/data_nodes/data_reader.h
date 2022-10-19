@@ -6,7 +6,7 @@
 #include "../utils.h"
 #pragma once
 template <typename data_type>
-class data_reader : public i_data_producer<data_type>, public i_controlable_source
+class data_reader : public i_simple_producer<data_type>, public i_controlable_source
 {
     protected:
     
@@ -19,7 +19,6 @@ class data_reader : public i_data_producer<data_type>, public i_controlable_sour
     std::unique_ptr<std::ifstream> input_stream_;
     buffer_type* reading_buffer_;
     buffer_type* ready_buffer_ = nullptr;
-    pipe_writer<data_type> writer = nullptr;
     bool paused_ = false;
     void swap_buffers()
     {
@@ -68,10 +67,6 @@ public:
     {
         paused_ = false;
     }
-    virtual void connect_output(default_pipe<data_type>* out_pipe) override
-    {
-        writer = pipe_writer<data_type> (out_pipe);
-    }
     virtual void start() override
     {
         io_utils::skip_bom(input_stream_.get());
@@ -79,7 +74,7 @@ public:
         reading_buffer_ = buffer_a_.get();
         bool should_continue = read_data();
         ready_buffer_ = buffer_a_.get();
-        writer.write_bulk(ready_buffer_);
+        this->writer_.write_bulk(ready_buffer_);
         if(!should_continue)
             return;
         reading_buffer_= buffer_b_.get();
@@ -93,13 +88,13 @@ public:
                 std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_DURATION));
             }
         }
-        writer.write_bulk(ready_buffer_);
-        writer.flush(); 
+        this->writer_.write_bulk(ready_buffer_);
+        this->writer_.flush(); 
         std::cout << "READER ENDED ----------" << std::endl;  
     }
     bool read_next()
     {
-        writer.write_bulk(ready_buffer_);
+        this->writer_.write_bulk(ready_buffer_);
         bool should_continue = read_data();
         swap_buffers();
         return should_continue;

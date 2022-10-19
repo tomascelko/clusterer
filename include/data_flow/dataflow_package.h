@@ -7,3 +7,5 @@
 #include "../data_flow/pipe_descriptor.h"
 #include "i_controlable_source.h"
 #include "multi_cluster_pipe_reader.h"
+#include "i_simple_consumer.h"
+#include "i_simple_producer.h"

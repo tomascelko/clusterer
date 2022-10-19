@@ -39,7 +39,7 @@ class repeating_data_reader : public data_reader<data_type>
         {
             for(uint32_t hit_index = 0; hit_index < buffer_->size(); ++hit_index)
             {
-                this->writer.write(offset_hit(rep_buffer[hit_index], toa_offset * rep_index));
+                this->writer_.write(offset_hit(rep_buffer[hit_index], toa_offset * rep_index));
                 while(this->paused_)
                 {
                     std::this_thread::sleep_for(std::chrono::milliseconds(this->SLEEP_DURATION));
@@ -47,8 +47,8 @@ class repeating_data_reader : public data_reader<data_type>
             }
         
         }
-        this->writer.write(data_type::end_token());
-        this->writer.flush();
+        this->writer_.write(data_type::end_token());
+        this->writer_.flush();
         std::cout << "REPEATING READER ENDED ----------" << std::endl;  
     }
 };

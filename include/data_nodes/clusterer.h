@@ -18,7 +18,7 @@
 #include <list>
 #pragma once
 template <template<class> typename cluster>
-class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_producer<cluster<mm_hit>>, public i_time_measurable
+class pixel_list_clusterer : public i_simple_consumer<mm_hit>, public i_simple_producer<cluster<mm_hit>>, public i_time_measurable
 {   
 
     protected:    
@@ -62,8 +62,6 @@ class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_produ
     protected:
     const uint32_t WRITE_INTERVAL = 2 << 6;
     uint64_t processed_hit_count_;
-    pipe_reader<mm_hit> reader_;
-    pipe_writer<cluster<mm_hit>> writer_;
     measuring_clock * clock_;
     bool is_old(double last_toa, const cluster<mm_hit> & cl)
     {
@@ -154,7 +152,7 @@ class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_produ
                 pixel_list_row.erase(current.pixel_iterators[i]); //FIXME pixel_list_rows should be appended in other direction
             }
             current_toa_ = unfinished_clusters_.back().cl.first_toa();
-            writer_.write(std::move(unfinished_clusters_.back().cl));
+            this->writer_.write(std::move(unfinished_clusters_.back().cl));
             unfinished_clusters_.pop_back();
             --unfinished_clusters_count_;
         }
@@ -207,14 +205,6 @@ class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_produ
     {
         return current_toa_;
     }
-    virtual void connect_input(default_pipe<mm_hit>* input_pipe) override
-    {
-        reader_ = pipe_reader<mm_hit>(input_pipe);
-    }
-    virtual void connect_output(default_pipe<cluster<mm_hit>>* output_pipe) override
-    {
-        writer_ = pipe_writer<cluster<mm_hit>>(output_pipe);
-    }
     virtual void start() override
     {
         mm_hit hit;
@@ -229,8 +219,8 @@ class pixel_list_clusterer : public i_data_consumer<mm_hit>, public i_data_produ
         }   
         write_remaining_clusters();
         clock_->stop_and_report("clusterer");
-        writer_.write(cluster<mm_hit>::end_token()); //write empty cluster as end token
-        writer_.flush();
+        this->writer_.write(cluster<mm_hit>::end_token()); //write empty cluster as end token
+        this->writer_.flush();
 
         std::cout << "CLUSTERER ENDED ---------- " << processed_hit_count_ <<" hits processed" <<std::endl;
     }

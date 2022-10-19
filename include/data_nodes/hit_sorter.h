@@ -5,7 +5,7 @@
 
 template <typename data_type>
 
-class hit_sorter : public i_data_consumer<data_type>, public i_data_producer<data_type>
+class hit_sorter : public i_simple_consumer<data_type>, public i_simple_producer<data_type>
 {
     struct toa_comparer
     {
@@ -35,8 +35,6 @@ class hit_sorter : public i_data_consumer<data_type>, public i_data_producer<dat
         }
     };
     using buffer_type = data_buffer<data_type>; 
-    pipe_reader<data_type> reader_;
-    pipe_writer<data_type> writer_;
     std::priority_queue<data_type, std::vector<data_type>, toa_comparer> priority_queue_;
     
     const double DEQUEUE_TIME = 500000.; // in 
@@ -47,19 +45,11 @@ public:
         toa_comparer less_comparer;
         priority_queue_ = std::priority_queue<data_type, std::vector<data_type>, toa_comparer> (less_comparer);
     }
-    virtual void connect_input(default_pipe<data_type>* input_pipe) override
-    {
-        reader_ = pipe_reader<data_type>(input_pipe);
-    }
-    virtual void connect_output(default_pipe<data_type>* output_pipe) override
-    {
-        writer_ = pipe_writer<data_type>(output_pipe);
-    }
     virtual void start() override
     {
         data_type hit;
         int processed = 0;
-        while(!reader_.read(hit));
+        while(!this->reader_.read(hit));
         while(hit.is_valid())
         { //data not end
             processed ++;
@@ -69,10 +59,10 @@ public:
                 while (priority_queue_.top().toa() < hit.toa() - DEQUEUE_TIME)
                 {
                     data_type old_hit = priority_queue_.top();
-                    writer_.write(std::move(old_hit));
+                    this->writer_.write(std::move(old_hit));
                     priority_queue_.pop();
                 }
-            reader_.read(hit);
+            this->reader_.read(hit);
 
         
         }
@@ -80,11 +70,11 @@ public:
             {
                 data_type old_hit = priority_queue_.top();
                 priority_queue_.pop();
-                writer_.write(std::move(old_hit));
+                this->writer_.write(std::move(old_hit));
             }
         //write last (invalid) hit
-        writer_.write(std::move(hit));
-        writer_.flush();
+        this->writer_.write(std::move(hit));
+        this->writer_.flush();
         std::cout << "HIT SORTER ENDED ---------------------" << std::endl;
         
 

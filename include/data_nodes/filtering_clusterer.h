@@ -2,7 +2,7 @@
 #pragma once
 //#include "../data_structs/mm_hit.h"
 template <typename mm_hit>// care, about unfinished energz cluster scope 
-class energy_filtering_clusterer : public i_data_consumer<mm_hit>, public i_data_producer<cluster<mm_hit>>
+class energy_filtering_clusterer : public i_simple_consumer<mm_hit>, public i_simple_producer<cluster<mm_hit>>
 {
     protected:    
     struct unfinished_energy_cluster;
@@ -45,8 +45,6 @@ class energy_filtering_clusterer : public i_data_consumer<mm_hit>, public i_data
     //how many clusters can be open at a time ?
     protected:
     uint64_t processed_hit_count_;
-    pipe_reader<mm_hit> reader_;
-    pipe_writer<cluster<mm_hit>> writer_;
     using buffer_type = std::deque<mm_hit>;
     //const uint32_t expected_buffer_size = 2 << ;
     buffer_type hit_buffer_;
@@ -158,7 +156,7 @@ class energy_filtering_clusterer : public i_data_consumer<mm_hit>, public i_data
             }
             if (unfinished_clusters_.back().has_high_energy)
             {
-                writer_.write(std::move(unfinished_clusters_.back().cl));
+                this->writer_.write(std::move(unfinished_clusters_.back().cl));
                 --hi_e_cl_count;
             }
             unfinished_clusters_.pop_back();
@@ -247,26 +245,18 @@ class energy_filtering_clusterer : public i_data_consumer<mm_hit>, public i_data
     virtual void start() override
     {
         mm_hit hit;
-        reader_.read(hit);
+        this->reader_.read(hit);
         int num_hits = 0;
         while(hit.is_valid())
         {
             process_hit(hit);
             num_hits++;
-            reader_.read(hit);
+            this->reader_.read(hit);
         }
         write_remaining_clusters();
-        writer_.write(cluster<mm_hit>::end_token()); //write empty cluster as end token
-        writer_.flush();
+        this->writer_.write(cluster<mm_hit>::end_token()); //write empty cluster as end token
+        this->writer_.flush();
         std::cout << "CLUSTERER ENDED -------------------" << std::endl;    
-    }
-    virtual void connect_input(default_pipe<mm_hit>* in_pipe) override
-    {
-        reader_ = pipe_reader<mm_hit>(in_pipe);
-    }
-    virtual void connect_output(default_pipe<cluster<mm_hit>>* out_pipe) override
-    {
-        writer_ = pipe_writer<cluster<mm_hit>>(out_pipe);
     }
     energy_filtering_clusterer() :
     pixel_lists_(MAX_PIXEL_COUNT),

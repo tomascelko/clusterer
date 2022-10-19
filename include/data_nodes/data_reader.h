@@ -4,12 +4,13 @@
 #include <memory>
 #include "../data_flow/dataflow_package.h"
 #include "../utils.h"
+#pragma once
 template <typename data_type>
 class data_reader : public i_data_producer<data_type>, public i_controlable_source
 {
+    protected:
+    
     using buffer_type = data_buffer<data_type>;
-
-private:
     const uint32_t SLEEP_DURATION = 100;
     std::unique_ptr<buffer_type> buffer_a_;
     std::unique_ptr<buffer_type> buffer_b_;

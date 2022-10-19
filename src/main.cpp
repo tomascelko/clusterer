@@ -11,7 +11,7 @@ int main(int argc, char** argv)
     std::vector<std::string> args (argv + 1, argc + argv);
     std::string str = double_to_str(0.789);
 
-    args = {"/home/tomas/MFF/DT/clusterer/test_data/large/", "/home/tomas/MFF/DT/clusterer/test_data/calib/"};
+    args = {"/home/tomas/MFF/DT/clusterer/test_data/medium/", "/home/tomas/MFF/DT/clusterer/test_data/calib/"};
     std::string bench_folder = args[0];
     std::string calib_folder = args[1]; 
     benchmarker* bench = new benchmarker(bench_folder, calib_folder);

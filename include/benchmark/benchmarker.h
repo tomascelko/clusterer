@@ -118,7 +118,8 @@ class benchmarker
     void prepare_model(clustering_type * clusterer, const std::string& data_file, const std::string& calib_file) //todo possibly replace other nodes as well
     {
         using mm_stream = mm_write_stream;
-        data_reader<burda_hit>* burda_reader = new data_reader<burda_hit>{data_file, 2 << 10};
+        repeating_data_reader<burda_hit>* burda_reader = new repeating_data_reader<burda_hit>{data_file, 2 << 21};
+        //data_reader<burda_hit> burda_reader = new data_reader<burda_hit>{data_file, 2 << 10};
         burda_to_mm_hit_adapter<mm_hit>* converter = new burda_to_mm_hit_adapter<mm_hit>(current_chip::chip_type::size(), calibration(calib_file, current_chip::chip_type::size()));
         hit_sorter<mm_hit>* sorter = new hit_sorter<mm_hit>();
         //std::ofstream print_stream("printed_hits.txt");
@@ -199,14 +200,14 @@ class benchmarker
     {
         using parallel_clusterer_type = parallel_clusterer<mm_hit, pixel_list_clusterer<cluster>, temporal_clustering_descriptor<mm_hit>>;
         
-        const uint16_t REPEATS = 1;
+        const uint16_t REPEATS = 10;
         for (uint32_t i = 0; i < data_files_.size(); ++i)
         {   
             for(uint32_t j = 0; j < REPEATS; j++){ 
             pixel_list_clusterer<cluster>* clusterer = new pixel_list_clusterer<cluster>();
             energy_filtering_clusterer<mm_hit>* e_clusterer = new energy_filtering_clusterer<mm_hit>();
             parallel_clusterer_type* p_clusterer = new parallel_clusterer_type(
-                temporal_clustering_descriptor<mm_hit>(2)); 
+                temporal_clustering_descriptor<mm_hit>(3)); 
             current_dataset_ = data_files_[i];
             switch(calibration_mode_)
             {
@@ -218,7 +219,7 @@ class benchmarker
                     break;
                 case calib_type::same:
                     prepare_model(p_clusterer, data_files_[i].as_absolute(), calib_folders_[0].as_absolute());
-                    break;    
+                    break;  
                 default:
                     throw std::invalid_argument("invalid calibration type (choose one of auto/manual/same)");
                     break;

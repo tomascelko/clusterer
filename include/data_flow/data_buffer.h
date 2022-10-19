@@ -49,10 +49,6 @@ public:
             state_ = state::full;
         } 
     }
-    size_t size()
-    {
-        return data_.size();
-    }
     private:
     state state_ = state::processing;
 
@@ -61,5 +57,17 @@ public:
     {
         return state_;
     }
-
+    const data_type & operator[] (uint32_t index) const
+    {
+        return data_[index];
+    }
+    data_type & operator[] (uint32_t index)
+    {
+        return data_[index];
+    }
+    size_t size() const
+    {
+        return data_.size();
+    }
+    
 };

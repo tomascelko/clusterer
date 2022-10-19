@@ -85,7 +85,7 @@ public:
         return used_memory;
     }
     
-    void control_memory_usage(uint64_t max_memory = 2ull << 30)
+    void control_memory_usage(uint64_t max_memory = 2ull << 29)
     {
         uint64_t used_memory = get_used_memory();
         const uint64_t EPSILON_MEMORY = 2ull << 27;

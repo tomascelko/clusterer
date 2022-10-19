@@ -6,3 +6,4 @@
 #include "filtering_clusterer.h"
 #include "hit_sorter.h"
 #include "parallel_clusterer.h"
+#include "repeating_data_reader.h"

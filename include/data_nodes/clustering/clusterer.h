@@ -49,7 +49,6 @@ class pixel_list_clusterer : public i_simple_consumer<mm_hit>, public i_simple_p
 
     const double CLUSTER_CLOSING_DT = 300;   //time after which the cluster is closed (> DIFF_DT, because of delays in the datastream)
     const double CLUSTER_DIFF_DT = 300;     //time that marks the max difference of cluster last_toa()
-    const uint32_t MAX_PIXEL_COUNT = 2 << 15;
     const std::vector<coord> EIGHT_NEIGHBORS = {{-1, -1}, {-1, 0}, {-1, 1},
                                                 { 0, -1}, { 0, 0}, { 0, 1},
                                                 { 1, -1}, { 1, 0}, { 1, 1}};
@@ -58,11 +57,12 @@ class pixel_list_clusterer : public i_simple_consumer<mm_hit>, public i_simple_p
     cluster_list unfinished_clusters_;
     uint32_t unfinished_clusters_count_;
     bool finished_ = false;
-    //how many clusters can be open at a time ?
     protected:
     const uint32_t WRITE_INTERVAL = 2 << 6;
     uint64_t processed_hit_count_;
     measuring_clock * clock_;
+    double current_toa_ = 0;
+    uint32_t tile_size_;
     bool is_old(double last_toa, const cluster<mm_hit> & cl)
     {
         return cl.last_toa() < last_toa - CLUSTER_CLOSING_DT; 
@@ -102,9 +102,9 @@ class pixel_list_clusterer : public i_simple_consumer<mm_hit>, public i_simple_p
         double min_toa = ULONG_MAX;
         for (auto neighbor_offset : EIGHT_NEIGHBORS)   //check all neighbor indexes
         {       
-            if(!base_coord.is_valid_neighbor(neighbor_offset))
+            if(!base_coord.is_valid_neighbor(neighbor_offset, tile_size_))
                 continue;
-            uint32_t neighbor_index = neighbor_offset.linearize() + base_coord.linearize();        
+            uint32_t neighbor_index = neighbor_offset.linearize() + base_coord.linearize(tile_size_);        
                 for (auto & neighbor_cl_it : pixel_lists_[neighbor_index])  //iterate over each cluster neighbor pixel can be in
                 //TODO do reverse iteration and break when finding a match - as there cannot two "already mergable" clusters on a single neighbor pixel
                 {
@@ -131,7 +131,7 @@ class pixel_list_clusterer : public i_simple_consumer<mm_hit>, public i_simple_p
     void add_new_hit(mm_hit & hit, cluster_it & cluster_iterator)
     {
         //update cluster itself, assumes the cluster exists
-        auto &  target_pixel_list = pixel_lists_[hit.coordinates().linearize()];
+        auto &  target_pixel_list = pixel_lists_[hit.coordinates().linearize(tile_size_)];
         target_pixel_list.push_front(cluster_iterator);
         cluster_iterator->pixel_iterators.push_back(target_pixel_list.begin()); //beware, we need to push in the same order,
                                                                                 //as we push hits in addhit and in merging
@@ -148,7 +148,7 @@ class pixel_list_clusterer : public i_simple_consumer<mm_hit>, public i_simple_p
             auto & current_hits = current.cl.hits(); 
             for(uint32_t i = 0; i < current.pixel_iterators.size(); i++) //update iterator
             {
-                auto & pixel_list_row = pixel_lists_[current_hits[i].coordinates().linearize()];
+                auto & pixel_list_row = pixel_lists_[current_hits[i].coordinates().linearize(tile_size_)];
                 pixel_list_row.erase(current.pixel_iterators[i]); //FIXME pixel_list_rows should be appended in other direction
             }
             current_toa_ = unfinished_clusters_.back().cl.first_toa();
@@ -193,10 +193,10 @@ class pixel_list_clusterer : public i_simple_consumer<mm_hit>, public i_simple_p
         finished_ = true;
         write_old_clusters();
     }
-    double current_toa_ = 0;
     public:
-    pixel_list_clusterer() :
-    pixel_lists_(MAX_PIXEL_COUNT),
+    pixel_list_clusterer(uint32_t tile_size = 1) :
+    pixel_lists_(current_chip::chip_type::size_x * current_chip::chip_type::size_y / (tile_size * tile_size)),
+    tile_size_(tile_size),
     unfinished_clusters_count_(0),
     processed_hit_count_(0)   
     {        

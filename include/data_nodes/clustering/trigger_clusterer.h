@@ -88,7 +88,8 @@ class energy_dist_state
 
 
 template <typename mm_hit, typename trigger_type>
-class trigger_clusterer : public i_simple_consumer<mm_hit>, public i_simple_producer<cluster<mm_hit>>
+class trigger_clusterer : pixel_list_clusterer<cluster>
+//public i_simple_consumer<mm_hit>, public i_simple_producer<cluster<mm_hit>>
 {
     protected:    
     struct unfinished_energy_cluster;
@@ -268,10 +269,8 @@ class trigger_clusterer : public i_simple_consumer<mm_hit>, public i_simple_prod
         //std::cout << processed_hit_count_ << std::endl;
     }
     
-    void process_hit(mm_hit & hit) //used for benchmarking
+    void wrapped_process_hit(mm_hit & hit) //used for benchmarking
     {
-        if(current_state == clusterer_state::monitoring)
-            hit_buffer_.push_back(hit);
         if(processed_hit_count_ % WRITE_INTERVAL == 0) 
             write_old_clusters(hit.toa());
         window_state_.update(hit);
@@ -279,6 +278,11 @@ class trigger_clusterer : public i_simple_consumer<mm_hit>, public i_simple_prod
         if(processed_hit_count_ % BUFFER_CHECK_INTERVAL == 0)
             forget_old_hits(hit.toa());
         
+        if(current_state == clusterer_state::processing)
+            process_hit(hit);
+        else if(current_state == clusterer_state::monitoring)
+            hit_buffer_.push_back(hit);
+
         if(end_of_window)
         {                                                      //and we were in forgetting phase
             if(current_state == clusterer_state::monitoring && trigger_.trigger(window_state_)) //we just found interesting hit
@@ -290,8 +294,6 @@ class trigger_clusterer : public i_simple_consumer<mm_hit>, public i_simple_prod
             window_state_.reset();                      
         }
                                     //and process all hits retrospectively
-        if(current_state == clusterer_state::processing)
-            clusterize_hit(hit);
     }
     void forget_old_hits(double current_toa) //removes old hits from buffer
     {
@@ -331,7 +333,7 @@ class trigger_clusterer : public i_simple_consumer<mm_hit>, public i_simple_prod
         int num_hits = 0;
         while(hit.is_valid())
         {
-            process_hit(hit);
+            wrapped_process_hit(hit);
             num_hits++;
             this->reader_.read(hit);
         }

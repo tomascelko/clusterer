@@ -126,9 +126,15 @@ struct coord
         {
             return MAX_VALUE * x_ + y_;
         }
-        bool is_valid_neighbor(const coord& neighbor) const
+        int32_t linearize(uint32_t tile_size) const
         {
-            return x_ + neighbor.x_ >= MIN_VALUE && x_ + neighbor.x_ < MAX_VALUE && y_ + neighbor.y_ >= MIN_VALUE && y_ + neighbor.y_ < MAX_VALUE;
+            return (MAX_VALUE / tile_size) * (x_ / tile_size)  + (y_ / tile_size);
+        }
+        bool is_valid_neighbor(const coord& neighbor, uint32_t tile_size = 1) const
+        {
+            return (x_ + neighbor.x_ >= MIN_VALUE / tile_size && x_ + neighbor.x_ < MAX_VALUE / tile_size 
+                && y_ + neighbor.y_ >= MIN_VALUE / tile_size && y_ + neighbor.y_ < MAX_VALUE / tile_size);
+
         }
         
     };

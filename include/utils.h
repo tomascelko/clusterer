@@ -167,3 +167,13 @@ struct coord
         std::reverse(str.begin(), str.end());
         return str;
     }
+template <typename T, class enable = void>
+class class_exists
+{
+    static constexpr bool value = false; 
+};
+template <typename T>
+class class_exists<T, std::enable_if_t<(sizeof(T) > 0)>>
+{
+    static constexpr bool value = true;
+};

@@ -1,9 +1,9 @@
-#include "../data_flow/dataflow_package.h"
+#include "../../data_flow/dataflow_package.h"
 #include <queue>
-#include "../data_structs/cluster.h"
-#include "../utils.h"
-#include "../devices/current_device.h"
-#include "../benchmark/i_time_measurable.h"
+#include "../../data_structs/cluster.h"
+#include "../../utils.h"
+#include "../../devices/current_device.h"
+#include "../../benchmark/i_time_measurable.h"
 struct bbox
 {
     coord left_top;
@@ -87,9 +87,11 @@ struct bb_cluster
         compute_bb();
     }
 };
-template <typename hit_type, typename pipe_descriptor>
+
+template <typename hit_type>
 class cluster_merging : public i_data_consumer<cluster<hit_type>>,
-                            public i_data_producer<cluster<hit_type>>
+                            public i_data_producer<cluster<hit_type>>,
+                            public i_time_measurable  
 {
     const uint32_t DEQUEUE_CHECK_INTERVAL = 10; //time when to check for dequeing from sorting queue 
     const double MERGE_TIME = 300.; //max time difference between cluster to be merged
@@ -104,7 +106,7 @@ class cluster_merging : public i_data_consumer<cluster<hit_type>>,
     std::priority_queue<cluster<hit_type>, std::vector<cluster<hit_type>>, typename cluster<hit_type>::first_toa_comparer> priority_queue_;
     std::deque<bb_cluster<hit_type>> unfinished_border_clusters_; //we could keep here unbordering clusters as well 
                                                                    //in order to preserve time orderedness
-    pipe_descriptor split_descr_;
+    pipe_descriptor<hit_type>* split_descr_;
     using bitmap_type = std::vector<std::vector<bool>>;
     bitmap_type neighboring_matrix_;
     uint64_t processed_non_border_count = 0;
@@ -196,7 +198,7 @@ class cluster_merging : public i_data_consumer<cluster<hit_type>>,
     {
 
         double recent_dequeued_ftoa = new_cl.first_toa();
-            if(split_descr_.is_on_border(new_cl))
+            if(split_descr_->is_on_border(new_cl))
             {
                 process_border_cluster(new_cl);
             }
@@ -232,7 +234,7 @@ class cluster_merging : public i_data_consumer<cluster<hit_type>>,
         }
     }
 public:
-    cluster_merging(pipe_descriptor split_descr) :
+    cluster_merging(pipe_descriptor<hit_type>* split_descr) :
     split_descr_(split_descr),
     neighboring_matrix_(current_chip::chip_type::size_x(), std::vector<bool>(current_chip::chip_type::size_y(), false))
     {
@@ -244,7 +246,7 @@ public:
     {
         reader_.add_pipe(input_pipe);
     }
-    virtual void connect_output(default_pipe<cluster<hit_type>>* output_pipe) override
+    void connect_output(default_pipe<cluster<hit_type>>* output_pipe) override
     {
         writer_ = pipe_writer<cluster<hit_type>>(output_pipe);
     }
@@ -262,6 +264,7 @@ public:
         cluster<hit_type> new_cl;
         uint32_t finish_producers_count = 0;
         reader_.read(new_cl); 
+        clock_->start(); //FIXME interferes with paralell clusterer clock.start()
         while(new_cl.is_valid())
         {
             //double current_toa = new_cl.cl().first_toa();
@@ -279,98 +282,5 @@ public:
         std::cout << "CLUSTER MERGING ENDED ---------------------" << std::endl;
     }
     virtual ~cluster_merging() = default;
-
-};
-
-template <typename hit_type, typename clustering_node, typename pipe_descriptor>
-class parallel_clusterer : public i_data_consumer<hit_type>,
-                           public i_data_producer<cluster<hit_type>>, 
-                           public i_time_measurable                //performs the splitting work 
-{                                                                    //and wraps the whole clustering process
-
-    pipe_descriptor split_descr_;
-    measuring_clock* clock_;
-    pipe_reader<hit_type> reader_;
-    pipe_writer<cluster<hit_type>> writer_;
-    cluster_merging<hit_type, pipe_descriptor>* merging_node_;
-    std::vector<clustering_node*> clustering_nodes_;
-    std::vector<default_pipe<hit_type>*> split_pipes_;
-    std::vector<pipe_writer<hit_type>> split_writers_;
-    const uint32_t PIPE_ID_PREFIX = 0x100;
-    std::vector<default_pipe<cluster<hit_type>>*> merging_pipes_; 
-    std::vector<double> first_toas_by_producers_; //used 
-    public:
-    virtual uint64_t queue_size()
-    {
-        return merging_node_->sorting_queue_size();
-    }
-    parallel_clusterer(pipe_descriptor split_descr) :
-    split_descr_(split_descr),
-    first_toas_by_producers_(split_descr.pipe_count(), 0),
-    merging_node_(new cluster_merging<hit_type, pipe_descriptor>(split_descr))
-    {
-        for (uint32_t i = 0; i < split_descr_.pipe_count(); i++)
-        {
-            default_pipe<hit_type>* split_pipe = new default_pipe<hit_type> (PIPE_ID_PREFIX + i);
-            default_pipe<cluster<hit_type>> * merge_pipe = new default_pipe<cluster<hit_type>> (PIPE_ID_PREFIX + i + split_descr_.pipe_count());
-            
-            clustering_node* cl_node = new clustering_node();
-            cl_node->connect_input(split_pipe);
-            cl_node->connect_output(merge_pipe);
-            clustering_nodes_.emplace_back(cl_node);
-            
-            split_pipes_.push_back(split_pipe);
-            split_writers_.emplace_back(pipe_writer<hit_type>(split_pipe));
-            
-            merging_pipes_.emplace_back(merge_pipe);
-        merging_node_->connect_input(merge_pipe);
-        }
-    }
-    virtual void connect_input(default_pipe<hit_type>* input_pipe) override
-    {
-        reader_ = pipe_reader<hit_type>(input_pipe);
-    }
-    virtual void connect_output(default_pipe<cluster<hit_type>>* output_pipe) override
-    {
-        writer_ = pipe_writer<cluster<hit_type>>(output_pipe);
-        merging_node_->connect_output(output_pipe);
-    }
-    virtual std::vector<i_data_node*> internal_nodes() override
-    {
-        std::vector<i_data_node*>int_nodes;
-        int_nodes.assign(clustering_nodes_.begin(), clustering_nodes_.end());
-        int_nodes.push_back(merging_node_);
-        return int_nodes;        
-    }
-    virtual std::vector<abstract_pipe*> internal_pipes() override
-    {
-        std::vector<abstract_pipe*>int_pipes;
-        int_pipes.assign(split_pipes_.begin(), split_pipes_.end());
-        int_pipes.insert(int_pipes.end(), merging_pipes_.begin(), merging_pipes_.end());
-        return int_pipes;
-    }
-    virtual void prepare_clock(measuring_clock * clock)
-    {
-        merging_node_->prepare_clock(clock);
-        clock_ = clock;
-    }
-    virtual void start() override
-    {
-        hit_type hit;
-        reader_.read(hit);
-        clock_->start();
-        while(hit.is_valid())
-        {
-            split_writers_[split_descr_.get_pipe_index(hit)].write(std::move(hit));
-            reader_.read(hit);
-        }
-        for (uint32_t i = 0; i < split_descr_.pipe_count(); i++)
-        {
-            split_writers_[i].write(hit_type::end_token());
-            split_writers_[i].flush();
-        }
-        std::cout << "SPLITTER ENDED ---------------------" << std::endl;
-    }
-    virtual ~parallel_clusterer() = default;
 
 };

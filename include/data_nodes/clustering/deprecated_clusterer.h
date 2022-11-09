@@ -7,10 +7,10 @@
 #include <set>
 #include <map>
 #include <queue>
-#include "../data_flow/dataflow_package.h"
-#include "../utils.h"
-#include "../data_structs/cluster.h"
-#include "../data_structs/mm_hit.h"
+#include "../../data_flow/dataflow_package.h"
+#include "../../utils.h"
+#include "../../data_structs/cluster.h"
+#include "../../data_structs/mm_hit.h"
 #include <deque>
 /*template <typename hit_type, typename cluster>
 

@@ -59,6 +59,8 @@
         "list": "cpp",
         "codecvt": "cpp",
         "cstring": "cpp",
-        "charconv": "cpp"
+        "charconv": "cpp",
+        "cassert": "cpp",
+        "filesystem": "cpp"
     }
 }

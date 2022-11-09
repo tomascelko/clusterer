@@ -25,12 +25,12 @@ class temporal_clustering_descriptor : public pipe_descriptor<hit_type>
     const double EPSILON_BORDER_TIME = 300; 
     uint32_t full_rotation_interval_;
 public:
-temporal_clustering_descriptor() : pipe_descriptor<hit_type>(1){}
+temporal_clustering_descriptor() : pipe_descriptor<hit_type>(2){}
     temporal_clustering_descriptor(uint32_t pipe_count) :
     pipe_descriptor<hit_type>(pipe_count),
     full_rotation_interval_(pipe_count * SWITCH_INTERVAL_LEN)
     {}
-    virtual uint32_t get_pipe_index(const hit_type & hit) override
+    uint32_t get_pipe_index(const hit_type & hit) override
     {
         return (std::llround(hit.toa()) % full_rotation_interval_) / SWITCH_INTERVAL_LEN;
         
@@ -47,4 +47,20 @@ temporal_clustering_descriptor() : pipe_descriptor<hit_type>(1){}
     }
     virtual ~temporal_clustering_descriptor() = default;
 
+};
+template <typename hit_type>
+class trivial_clustering_descriptor : public pipe_descriptor<hit_type>
+{
+    public:
+    trivial_clustering_descriptor() :
+    pipe_descriptor<hit_type>(1){}
+    uint32_t get_pipe_index(const hit_type & hit) override
+    {
+        return 0;
+    }
+    bool is_on_border(const cluster<hit_type> & cl) override
+    {
+        return false;
+    }
+    virtual ~trivial_clustering_descriptor() = default;
 };

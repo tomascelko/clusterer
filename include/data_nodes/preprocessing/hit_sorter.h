@@ -1,7 +1,7 @@
 #include <algorithm>
-#include "../data_flow/dataflow_package.h"
+#include "../../data_flow/dataflow_package.h"
 #include <queue>
-#include "../data_structs/burda_hit.h"
+#include "../../data_structs/burda_hit.h"
 
 template <typename data_type>
 

@@ -85,10 +85,10 @@ public:
         return used_memory;
     }
     
-    void control_memory_usage(uint64_t max_memory = 2ull << 29)
+    void control_memory_usage(uint64_t max_memory = 2ull << 29) //29
     {
         uint64_t used_memory = get_used_memory();
-        const uint64_t EPSILON_MEMORY = 2ull << 27;
+        const uint64_t EPSILON_MEMORY = 2ull << 27; //CHANGED FROM 27
         memory_control_counter_ ++;
         if(memory_control_counter_ % 2 == 0)
             std::cout << used_memory / 1000000. << " MB" <<std::endl;

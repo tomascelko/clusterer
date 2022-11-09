@@ -3,6 +3,7 @@ make: Entering directory '/home/tomas/MFF/DT/clusterer'
 /usr/bin/cmake -S/home/tomas/MFF/DT/clusterer -B/home/tomas/MFF/DT/clusterer --check-build-system CMakeFiles/Makefile.cmake 0
 /usr/bin/cmake -E cmake_progress_start /home/tomas/MFF/DT/clusterer/CMakeFiles /home/tomas/MFF/DT/clusterer/CMakeFiles/progress.marks
 make -f CMakeFiles/Makefile2 all
+ 
 make[1]: Entering directory '/home/tomas/MFF/DT/clusterer'
 make -f CMakeFiles/cclusterer.dir/build.make CMakeFiles/cclusterer.dir/depend
  
@@ -11,15 +12,18 @@ cd /home/tomas/MFF/DT/clusterer && /usr/bin/cmake -E cmake_depends "Unix Makefil
 make[2]: Leaving directory '/home/tomas/MFF/DT/clusterer'
 make -f CMakeFiles/cclusterer.dir/build.make CMakeFiles/cclusterer.dir/build
 make[2]: Entering directory '/home/tomas/MFF/DT/clusterer'
- 
-make[2]: *** No rule to make target 'include/data_flow/i_synchronizer_node.h', needed by 'CMakeFiles/cclusterer.dir/src/main.cpp.o'.
-make[2]: *** No rule to make target 'include/data_nodes/clusterer_sync.h', needed by 'CMakeFiles/cclusterer.dir/src/main.cpp.o'.
-make[2]: *** No rule to make target 'include/data_structs/produced_cluster.h', needed by 'CMakeFiles/cclusterer.dir/src/main.cpp.o'.
-
-make[1]: *** [CMakeFiles/Makefile2:76: CMakeFiles/cclusterer.dir/all] Error 2
-make: *** [Makefile:84: all] Error 2
-
 make[2]: Leaving directory '/home/tomas/MFF/DT/clusterer'
 make[1]: Leaving directory '/home/tomas/MFF/DT/clusterer'
 make: Leaving directory '/home/tomas/MFF/DT/clusterer'
  
+make[2]: *** No rule to make target 'include/data_nodes/burda_to_mm_hit_adapter.h', needed by 'CMakeFiles/cclusterer.dir/src/main.cpp.o'.
+make[2]: *** No rule to make target 'include/data_nodes/clusterer.h', needed by 'CMakeFiles/cclusterer.dir/src/main.cpp.o'.
+make[2]: *** No rule to make target 'include/data_nodes/data_printer.h', needed by 'CMakeFiles/cclusterer.dir/src/main.cpp.o'.
+make[2]: *** No rule to make target 'include/data_nodes/data_reader.h', needed by 'CMakeFiles/cclusterer.dir/src/main.cpp.o'.
+make[2]: *** No rule to make target 'include/data_nodes/filtering_clusterer.h', needed by 'CMakeFiles/cclusterer.dir/src/main.cpp.o'.
+make[2]: *** No rule to make target 'include/data_nodes/hit_sorter.h', needed by 'CMakeFiles/cclusterer.dir/src/main.cpp.o'.
+make[2]: *** No rule to make target 'include/data_nodes/parallel_clusterer.h', needed by 'CMakeFiles/cclusterer.dir/src/main.cpp.o'.
+make[2]: *** No rule to make target 'include/data_nodes/repeating_data_reader.h', needed by 'CMakeFiles/cclusterer.dir/src/main.cpp.o'.
+make[1]: *** [CMakeFiles/Makefile2:76: CMakeFiles/cclusterer.dir/all] Error 2
+make: *** [Makefile:84: all] Error 2
+

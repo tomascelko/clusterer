@@ -17,7 +17,7 @@ class data_block
     }
     static constexpr uint32_t block_size()
     {
-        return 2<<10;
+        return 2<<7;
     }
     data_block() :
     max_capacity_(data_block<data_type>::block_size()),
@@ -89,13 +89,6 @@ public:
     void blocking_enqueue(data_block<data_type> && new_block)
     {
         ++processed_counter; //potentially rally condition
-
-        if(processed_counter % CHECK_FULL_PIPE_INTERVAL == 0)
-            while(is_full())
-            {
-            
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
-            }
         bytes_used_ += new_block.byte_size();   
         emplace_impl(std::move(new_block), queue_); //TODO or call enqueue when using multi queue
         
@@ -114,10 +107,6 @@ public:
     uint32_t approx_size()
     {
         return queue_.size_approx();
-    }
-    bool is_full()
-    {
-        return queue_.size_approx() * data_block<data_type>::block_size() * data_type::avg_size() > MAX_Q_LEN;
     }
     virtual ~default_pipe() = default;
 

@@ -1,4 +1,4 @@
-#include "../data_flow/dataflow_package.h"
+#include "../../data_flow/dataflow_package.h"
 
 template <typename data_type, typename stream_type>
 class data_printer : public i_simple_consumer<data_type>, public i_simple_producer<data_type>

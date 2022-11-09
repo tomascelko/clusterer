@@ -114,29 +114,70 @@ class benchmarker
         std::cout << result.node_name() << " " << result.exec_time() << std::endl; 
 
     }
-    template <typename clustering_type>
-    void prepare_model(clustering_type * clusterer, const std::string& data_file, const std::string& calib_file) //todo possibly replace other nodes as well
+    template <typename clustering_type, typename ...cl_args_type>
+    void prepare_model(const std::string& data_file, const std::string& calib_file, cl_args_type ... cl_args) //todo possibly replace other nodes as well
     {
         using mm_stream = mm_write_stream;
         repeating_data_reader<burda_hit>* burda_reader = new repeating_data_reader<burda_hit>{data_file, 2 << 21};
-        //data_reader<burda_hit> burda_reader = new data_reader<burda_hit>{data_file, 2 << 10};
-        burda_to_mm_hit_adapter<mm_hit>* converter = new burda_to_mm_hit_adapter<mm_hit>(current_chip::chip_type::size(), calibration(calib_file, current_chip::chip_type::size()));
+        //data_reader<burda_hit>* burda_reader = new data_reader<burda_hit>{data_file, 2 << 10};
+        burda_to_mm_hit_adapter<mm_hit>* converter = new burda_to_mm_hit_adapter<mm_hit>(calibration(calib_file, current_chip::chip_type::size()));
         hit_sorter<mm_hit>* sorter = new hit_sorter<mm_hit>();
+        clustering_type* clusterer = new clustering_type(cl_args...);
         //std::ofstream print_stream("printed_hits.txt");
-       //mm_stream * print_stream = new mm_stream("/home/tomas/MFF/DT/clusterer/output/new") ;
+        //mm_stream * print_stream = new mm_stream("/home/tomas/MFF/DT/clusterer/output/new") ;
         //data_printer<cluster<mm_hit>, mm_stream>* printer = new data_printer<cluster<mm_hit>, mm_stream>(print_stream);
+        //std::ofstream* out_halo_file = new std::ofstream("/home/tomas/MFF/DT/clusterer/output/halos.txt");
+        //pixel_halo_width_calculator<cluster, mm_hit, std::ofstream>  * halo_calc = new pixel_halo_width_calculator<cluster, mm_hit, std::ofstream>(out_halo_file);
         
         controller_ = new dataflow_controller();
         controller_->add_node(burda_reader);
         controller_->add_node(converter);
         controller_->add_node(sorter);
+        std::cout << "adding clusterer" << std::endl;
         controller_->add_node(clusterer);
+        std::cout << "added clusterer" << std::endl;
         //controller_->add_node(printer);
 
         controller_->connect_nodes(burda_reader, converter);
         controller_->connect_nodes(converter, sorter);
+        std::cout << "connecting clusterer" << std::endl;
         controller_->connect_nodes(sorter, clusterer);
+         std::cout << "connected clusterer" << std::endl;
         //controller_->connect_nodes(clusterer, printer);
+
+    }
+    template <typename clustering_type, typename split_data_type, typename ...cl_args_type>
+    void prepare_model(pipe_descriptor<split_data_type>* split_descriptor, const std::string& data_file, const std::string& calib_file, cl_args_type ... cl_args) //todo possibly replace other nodes as well
+    {
+        using mm_stream = mm_write_stream;
+        repeating_data_reader<burda_hit>* burda_reader = new repeating_data_reader<burda_hit>{data_file, 2 << 21};
+        //data_reader<burda_hit>* burda_reader = new data_reader<burda_hit>{data_file, 2 << 10};
+        burda_to_mm_hit_adapter<mm_hit>* converter = new burda_to_mm_hit_adapter<mm_hit>(split_descriptor, 
+            calibration(calib_file, current_chip::chip_type::size()));
+        cluster_merging<mm_hit>* merger = new cluster_merging<mm_hit>(split_descriptor);
+        controller_ = new dataflow_controller();
+        controller_->add_node(burda_reader);
+        controller_->add_node(converter);
+        controller_->add_node(merger);
+        controller_->connect_nodes(burda_reader, converter);
+        for(uint32_t i = 0; i < split_descriptor->pipe_count(); ++i)
+        {
+            auto sorter = new hit_sorter<mm_hit>();
+            auto clusterer = new clustering_type(cl_args...);
+            controller_->add_node(sorter);
+            controller_->add_node(clusterer);
+            controller_->connect_nodes(sorter, clusterer);
+            controller_->connect_nodes(converter, sorter);
+            controller_->connect_nodes(clusterer, merger);
+        }
+        //std::ofstream print_stream("printed_hits.txt");
+        //mm_stream * print_stream = new mm_stream("/home/tomas/MFF/DT/clusterer/output/new") ;
+        //data_printer<cluster<mm_hit>, mm_stream>* printer = new data_printer<cluster<mm_hit>, mm_stream>(print_stream);
+        //std::ofstream* out_halo_file = new std::ofstream("/home/tomas/MFF/DT/clusterer/output/halos.txt");
+        //pixel_halo_width_calculator<cluster, mm_hit, std::ofstream>  * halo_calc = new pixel_halo_width_calculator<cluster, mm_hit, std::ofstream>(out_halo_file);
+        
+
+        
 
     }
     void print_results(std::ostream & stream)
@@ -196,29 +237,25 @@ class benchmarker
                 throw std::invalid_argument("too many calibration files were found (ambigiouous) for file: " + data_path.as_absolute());
         }
     }
-    void run_whole_benchmark()
+    template <typename clusterer_type, typename hit_type, typename... cl_arg_types>
+    void run_whole_benchmark(pipe_descriptor<hit_type>* split_descr, const std::string & clustering_name, cl_arg_types... cl_args)
     {
-        using parallel_clusterer_type = parallel_clusterer<mm_hit, pixel_list_clusterer<cluster>, temporal_clustering_descriptor<mm_hit>>;
-        
-        const uint16_t REPEATS = 10;
+        const uint16_t REPEATS = 3;
         for (uint32_t i = 0; i < data_files_.size(); ++i)
         {   
-            for(uint32_t j = 0; j < REPEATS; j++){ 
-            pixel_list_clusterer<cluster>* clusterer = new pixel_list_clusterer<cluster>();
-            energy_filtering_clusterer<mm_hit>* e_clusterer = new energy_filtering_clusterer<mm_hit>();
-            parallel_clusterer_type* p_clusterer = new parallel_clusterer_type(
-                temporal_clustering_descriptor<mm_hit>(3)); 
+            for(uint32_t j = 0; j < REPEATS; j++)
+            { 
             current_dataset_ = data_files_[i];
             switch(calibration_mode_)
             {
                 case calib_type::automatic:
-                    prepare_model(p_clusterer, data_files_[i].as_absolute(), auto_find_calib_file(data_files_[i]));
+                    prepare_model<clusterer_type>(split_descr, data_files_[i].as_absolute(), auto_find_calib_file(data_files_[i]), cl_args...);
                     break;
                 case calib_type::manual:
-                    prepare_model(p_clusterer, data_files_[i].as_absolute(), calib_folders_[i].as_absolute());
+                    prepare_model<clusterer_type>(split_descr, data_files_[i].as_absolute(), calib_folders_[i].as_absolute(), cl_args...);
                     break;
                 case calib_type::same:
-                    prepare_model(p_clusterer, data_files_[i].as_absolute(), calib_folders_[0].as_absolute());
+                    prepare_model<clusterer_type>(split_descr, data_files_[i].as_absolute(), calib_folders_[0].as_absolute(), cl_args...);
                     break;  
                 default:
                     throw std::invalid_argument("invalid calibration type (choose one of auto/manual/same)");
@@ -226,13 +263,44 @@ class benchmarker
             }
             
             run_benchmark_for_dataset();
-            std::cout << "FINISHED" << std::endl;
             delete controller_;
+            std::cout << "FINISHED" << std::endl;
             }
         }
         print_results(std::cout);
     }
-
+    template <typename clusterer_type, typename... cl_arg_types>
+    void run_whole_benchmark(const std::string & clustering_name, cl_arg_types... cl_args)
+    {
+        const uint16_t REPEATS = 3;
+        for (uint32_t i = 0; i < data_files_.size(); ++i)
+        {   
+            for(uint32_t j = 0; j < REPEATS; j++)
+            { 
+            current_dataset_ = data_files_[i];
+            switch(calibration_mode_)
+            {
+                case calib_type::automatic:
+                    prepare_model<clusterer_type>(data_files_[i].as_absolute(), auto_find_calib_file(data_files_[i]), cl_args...);
+                    break;
+                case calib_type::manual:
+                    prepare_model<clusterer_type>(data_files_[i].as_absolute(), calib_folders_[i].as_absolute(), cl_args...);
+                    break;
+                case calib_type::same:
+                    prepare_model<clusterer_type>(data_files_[i].as_absolute(), calib_folders_[0].as_absolute(), cl_args...);
+                    break;  
+                default:
+                    throw std::invalid_argument("invalid calibration type (choose one of auto/manual/same)");
+                    break;
+            }
+            
+            run_benchmark_for_dataset();
+            delete controller_;
+            std::cout << "FINISHED" << std::endl;
+            }
+        }
+        print_results(std::cout);
+    }
 
 
 };

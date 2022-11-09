@@ -1,16 +1,17 @@
 #include <algorithm>
 #include <queue>
-#include "../data_flow/dataflow_package.h"
-#include "../data_structs/mm_hit.h"
-#include "../data_structs/mm_hit_tot.h"
-#include "../data_structs/burda_hit.h"
-#include "../utils.h"
-#include "../data_structs/calibration.h"
+#include "../../data_flow/dataflow_package.h"
+#include "../../data_structs/mm_hit.h"
+#include "../../data_structs/mm_hit_tot.h"
+#include "../../data_structs/burda_hit.h"
+#include "../../utils.h"
+#include "../../data_structs/calibration.h"
+#include "../../devices/current_device.h"
 #include <type_traits>
 #include <cassert>
 
 template <typename mm_hit_type>
-class burda_to_mm_hit_adapter : public i_simple_consumer<burda_hit>, public i_simple_producer<mm_hit_type>
+class burda_to_mm_hit_adapter : public i_simple_consumer<burda_hit>, public i_multi_producer<mm_hit_type>
 {
     bool calibrate_;
     uint16_t chip_width_;
@@ -30,19 +31,38 @@ class burda_to_mm_hit_adapter : public i_simple_consumer<burda_hit>, public i_si
             return mm_hit_type(x, y, toa, in_hit.tot());
         
     }
-
+    using split_descriptor_type = pipe_descriptor<mm_hit_type>;
     public:
-    burda_to_mm_hit_adapter(const coord& chip_size) :
-    chip_height_(chip_size.x()),
-    chip_width_(chip_size.y()),
+    burda_to_mm_hit_adapter(split_descriptor_type * split_descriptor) :
+    chip_height_(current_chip::chip_type::size_x()),
+    chip_width_(current_chip::chip_type::size_y()),
+    calibrate_(false),
+    i_multi_producer<mm_hit_type>(split_descriptor)
+    {
+        assert((std::is_same<mm_hit_type, mm_hit_tot>::value));
+    }
+
+    burda_to_mm_hit_adapter() :
+    chip_height_(current_chip::chip_type::size_x()),
+    chip_width_(current_chip::chip_type::size_y()),
     calibrate_(false)
     {
         assert((std::is_same<mm_hit_type, mm_hit_tot>::value));
     }
 
-    burda_to_mm_hit_adapter(const coord& chip_size, calibration && calib) :
-    chip_height_(chip_size.x()),
-    chip_width_(chip_size.y()),
+    burda_to_mm_hit_adapter(split_descriptor_type * split_descriptor, calibration && calib) :
+    chip_height_(current_chip::chip_type::size_x()),
+    chip_width_(current_chip::chip_type::size_y()),
+    calibrate_(true),
+    calibrator_(std::make_unique<calibration>(std::move(calib))),
+    i_multi_producer<mm_hit_type>(split_descriptor)
+    {
+        assert((std::is_same<mm_hit_type, mm_hit>::value));
+    }
+
+    burda_to_mm_hit_adapter(calibration && calib) :
+    chip_height_(current_chip::chip_type::size_x()),
+    chip_width_(current_chip::chip_type::size_y()),
     calibrate_(true),
     calibrator_(std::make_unique<calibration>(std::move(calib)))
     {
@@ -57,7 +77,6 @@ class burda_to_mm_hit_adapter : public i_simple_consumer<burda_hit>, public i_si
         while(hit.is_valid())
         {
             mm_hit_type converted_hit = convert_hit(hit);
-            this->writer_.write(convert_hit(hit));
             if(converted_hit.e() < 0)
             {
                 std::cout << "negative energy found" << std::endl;
@@ -66,10 +85,10 @@ class burda_to_mm_hit_adapter : public i_simple_consumer<burda_hit>, public i_si
             {
                 std::cout << "above 100000 energy found" << std::endl;
             }
+            this->writer_.write(std::move(converted_hit));
             reader_.read(hit);
         }
-        this->writer_.write(mm_hit_type::end_token());
-        this->writer_.flush();
+        this->writer_.close();
         std::cout << "ADAPTER ENDED ---------------------" << std::endl;
     }
     virtual ~burda_to_mm_hit_adapter() = default;

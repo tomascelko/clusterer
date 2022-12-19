@@ -86,6 +86,10 @@ class pixel_halo_width_calculator: public i_simple_consumer<cluster_type<hit_typ
     {
 
     }
+    std::string name() override
+    {
+        return "halo_width_calculator";
+    }
     void start() override 
     {
         cluster_type<hit_type> cl;

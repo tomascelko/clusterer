@@ -5,7 +5,7 @@ template <typename data_type>
 class repeating_data_reader : public data_reader<data_type>
 {
     static constexpr uint32_t REPETITION_COUNT = 40;
-
+    double freq_multiplier_;
     using buffer_type = typename data_reader<data_type>::buffer_type;
     std::unique_ptr<buffer_type> buffer_;
     void store_buffer(std::unique_ptr<buffer_type> && buffer)
@@ -23,12 +23,17 @@ class repeating_data_reader : public data_reader<data_type>
     }
     data_type offset_hit(const data_type & hit, uint64_t offset)
     {
-        return data_type{hit.linear_coord(), hit.toa() + offset, hit.fast_toa(), hit.tot()};
+        return data_type{hit.linear_coord(), static_cast<uint64_t>(std::round(((hit.toa() + offset) * (1. / freq_multiplier_)))), hit.fast_toa(), hit.tot()};
     }
     public:
-    repeating_data_reader(const std::string & filename, uint32_t buffer_size) :
-    data_reader<data_type>(filename, buffer_size)
+    repeating_data_reader(const std::string & filename, uint32_t buffer_size, double freq_multiplier = 1) :
+    data_reader<data_type>(filename, buffer_size),
+    freq_multiplier_(freq_multiplier)
     {}
+    std::string name() override
+    {
+        return "recurring_adjustable_data_reader";
+    }
     virtual void start() override
     {
         init_read_data();

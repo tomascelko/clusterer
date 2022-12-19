@@ -7,5 +7,8 @@
 #include "preprocessing/hit_sorter.h"
 #include "clustering/parallel_clusterer.h"
 #include "clustering/trigger_clusterer.h"
+#include "clustering/filtering_clusterer.h"
+#include "clustering/halo_bb_clusterer.h"
+#include "clustering/cluster_sorting_combiner.h"
 #include "io/repeating_data_reader.h"
 #include "analysis/pixel_halo_width_calculator.h"

@@ -13,6 +13,10 @@ class pipe_writer
     pipe_(pipe),
     block_()
     {}
+    default_pipe<data_type>* pipe()
+    {
+        return pipe_;
+    }
     bool write_bulk(data_buffer<data_type> * data_buffer)
     {
         //while(pipe_->approx_size() > default_pipe<data_type>::MAX_Q_LEN);
@@ -40,5 +44,9 @@ class pipe_writer
             pipe_->blocking_enqueue(std::move(block_));
             block_.clear(); 
         }
+    }
+    virtual uint32_t open_pipe_count()
+    {
+        return 1u;
     }
 };

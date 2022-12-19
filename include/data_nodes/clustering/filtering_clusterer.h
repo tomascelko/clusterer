@@ -242,6 +242,10 @@ class energy_filtering_clusterer : public i_simple_consumer<mm_hit>, public i_si
         write_old_clusters();
     }
     public:
+    std::string name() override
+    {
+        return "energy_triggering_clusterer";
+    }
     virtual void start() override
     {
         mm_hit hit;

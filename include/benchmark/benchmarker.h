@@ -9,11 +9,12 @@
 #include "../data_nodes/nodes_package.h"
 #include "../mapped_mm_stream.h"
 #include "../mm_stream.h"
-
+#include "model_factory.h"
 //TODO try more repeats
 #pragma once
 class benchmarker
 {
+    static constexpr double FREQUENCY_MULTIPLIER_ = 20.; 
     using node_id_type = std::string;
     using dataset_name_type = std::string;
     using measured_runs_type = std::vector<double>;
@@ -114,11 +115,12 @@ class benchmarker
         std::cout << result.node_name() << " " << result.exec_time() << std::endl; 
 
     }
+    /*
     template <typename clustering_type, typename ...cl_args_type>
     void prepare_model(const std::string& data_file, const std::string& calib_file, cl_args_type ... cl_args) //todo possibly replace other nodes as well
     {
         using mm_stream = mm_write_stream;
-        repeating_data_reader<burda_hit>* burda_reader = new repeating_data_reader<burda_hit>{data_file, 2 << 21};
+        repeating_data_reader<burda_hit>* burda_reader = new repeating_data_reader<burda_hit>{data_file, 2 << 21, FREQUENCY_MULTIPLIER_};
         //data_reader<burda_hit>* burda_reader = new data_reader<burda_hit>{data_file, 2 << 10};
         burda_to_mm_hit_adapter<mm_hit>* converter = new burda_to_mm_hit_adapter<mm_hit>(calibration(calib_file, current_chip::chip_type::size()));
         hit_sorter<mm_hit>* sorter = new hit_sorter<mm_hit>();
@@ -133,16 +135,12 @@ class benchmarker
         controller_->add_node(burda_reader);
         controller_->add_node(converter);
         controller_->add_node(sorter);
-        std::cout << "adding clusterer" << std::endl;
         controller_->add_node(clusterer);
-        std::cout << "added clusterer" << std::endl;
         //controller_->add_node(printer);
 
         controller_->connect_nodes(burda_reader, converter);
         controller_->connect_nodes(converter, sorter);
-        std::cout << "connecting clusterer" << std::endl;
         controller_->connect_nodes(sorter, clusterer);
-         std::cout << "connected clusterer" << std::endl;
         //controller_->connect_nodes(clusterer, printer);
 
     }
@@ -152,22 +150,22 @@ class benchmarker
         using mm_stream = mm_write_stream;
         repeating_data_reader<burda_hit>* burda_reader = new repeating_data_reader<burda_hit>{data_file, 2 << 21};
         //data_reader<burda_hit>* burda_reader = new data_reader<burda_hit>{data_file, 2 << 10};
-        burda_to_mm_hit_adapter<mm_hit>* converter = new burda_to_mm_hit_adapter<mm_hit>(split_descriptor, 
+        burda_to_mm_hit_adapter<mm_hit>* converter = new burda_to_mm_hit_adapter<mm_hit>(
             calibration(calib_file, current_chip::chip_type::size()));
         cluster_merging<mm_hit>* merger = new cluster_merging<mm_hit>(split_descriptor);
+        auto sorter = new hit_sorter<mm_hit>(split_descriptor);
         controller_ = new dataflow_controller();
         controller_->add_node(burda_reader);
         controller_->add_node(converter);
+        controller_->add_node(sorter);
         controller_->add_node(merger);
         controller_->connect_nodes(burda_reader, converter);
+        controller_->connect_nodes(converter, sorter);
         for(uint32_t i = 0; i < split_descriptor->pipe_count(); ++i)
         {
-            auto sorter = new hit_sorter<mm_hit>();
             auto clusterer = new clustering_type(cl_args...);
-            controller_->add_node(sorter);
             controller_->add_node(clusterer);
             controller_->connect_nodes(sorter, clusterer);
-            controller_->connect_nodes(converter, sorter);
             controller_->connect_nodes(clusterer, merger);
         }
         //std::ofstream print_stream("printed_hits.txt");
@@ -179,7 +177,7 @@ class benchmarker
 
         
 
-    }
+    }*/
     void print_results(std::ostream & stream)
     {
         for (auto & node_pair : results_)
@@ -237,10 +235,10 @@ class benchmarker
                 throw std::invalid_argument("too many calibration files were found (ambigiouous) for file: " + data_path.as_absolute());
         }
     }
-    template <typename clusterer_type, typename hit_type, typename... cl_arg_types>
+    /*template <typename clusterer_type, typename hit_type, typename... cl_arg_types>
     void run_whole_benchmark(pipe_descriptor<hit_type>* split_descr, const std::string & clustering_name, cl_arg_types... cl_args)
     {
-        const uint16_t REPEATS = 3;
+        const uint16_t REPEATS = 1;
         for (uint32_t i = 0; i < data_files_.size(); ++i)
         {   
             for(uint32_t j = 0; j < REPEATS; j++)
@@ -301,6 +299,41 @@ class benchmarker
         }
         print_results(std::cout);
     }
+*/
+    template <typename clusterer_type, typename... cl_arg_types, typename arch_type>
+    void run_whole_benchmark(arch_type arch, cl_arg_types... cl_args)
+    {
+    const uint16_t REPEATS = 1;
 
+    model_factory factory;
+        for (uint32_t i = 0; i < data_files_.size(); ++i)
+        {   
+            for(uint32_t j = 0; j < REPEATS; j++)
+            { 
 
+            controller_  = new dataflow_controller();
+            current_dataset_ = data_files_[i];
+            switch(calibration_mode_)
+            {
+                case calib_type::automatic:
+                    factory.create_model(controller_, arch,  data_files_[i].as_absolute(), auto_find_calib_file(data_files_[i]), cl_args...);
+                    break;
+                case calib_type::manual:
+                    factory.create_model(controller_, arch, data_files_[i].as_absolute(), calib_folders_[i].as_absolute(), cl_args...);
+                    break;
+                case calib_type::same:
+                    factory.create_model(controller_, arch, data_files_[i].as_absolute(), calib_folders_[0].as_absolute(), cl_args...);
+                    break;  
+                default:
+                    throw std::invalid_argument("invalid calibration type (choose one of auto/manual/same)");
+                    break;
+            }
+            
+            run_benchmark_for_dataset();
+            delete controller_;
+            std::cout << "FINISHED" << std::endl;
+            }
+        }
+        print_results(std::cout);
+    }
 };

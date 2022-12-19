@@ -6,7 +6,7 @@ make all --print-data-base --no-builtin-variables --no-builtin-rules --question
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Sat Nov  5 16:05:11 2022
+# Make data base, printed on Mon Dec 19 11:45:09 2022
 
 # Variables
 
@@ -95,7 +95,7 @@ GPG_AGENT_INFO = /run/user/1000/gnupg/S.gpg-agent:0:1
 # environment
 C_INCLUDE_PATH = /home/tomas/MFF/DT/allpix/install/include:
 # environment
-SESSION_MANAGER = local/tomas-VirtualBox:@/tmp/.ICE-unix/860,unix/tomas-VirtualBox:/tmp/.ICE-unix/860
+SESSION_MANAGER = local/tomas-VirtualBox:@/tmp/.ICE-unix/834,unix/tomas-VirtualBox:/tmp/.ICE-unix/834
 # environment
 G4INCLDATA = /home/tomas/MFF/DT/geant4/install/share/Geant4-11.0.2/data/G4INCL1.0
 # environment
@@ -103,7 +103,7 @@ XDG_RUNTIME_DIR = /run/user/1000
 # environment
 LIBRARY_PATH = /home/tomas/MFF/DT/allpix/install/lib:
 # environment
-WINDOWID = 56623110
+WINDOWID = 54525958
 # environment
 LD_PYTHON2_PATH = /usr/bin/python2/
 # environment
@@ -145,7 +145,7 @@ QT_QPA_PLATFORMTHEME = qt5ct
 # environment
 XDG_SEAT = seat0
 # environment
-SSH_AGENT_PID = 1004
+SSH_AGENT_PID = 978
 # environment
 ORIGINAL_XDG_CURRENT_DESKTOP = MATE
 # environment
@@ -163,7 +163,7 @@ LESSCLOSE = /usr/bin/lesspipe %s %s
 # environment
 VSCODE_CLI = 1
 # environment
-VSCODE_CODE_CACHE_PATH = /home/tomas/.config/Code/CachedData/d045a5eda657f4d7b676dedbfa7aab8207f8a075
+VSCODE_CODE_CACHE_PATH = /home/tomas/.config/Code/CachedData/1ad8d514439d5077d2b0b7ee64d2ce82a9308e5a
 # environment
 LOGNAME = tomas
 # environment
@@ -231,7 +231,7 @@ LANGUAGE = en_US
 # environment
 XDG_SEAT_PATH = /org/freedesktop/DisplayManager/Seat0
 # environment
-VSCODE_IPC_HOOK = /run/user/1000/vscode-4e534ead-1.72.2-main.sock
+VSCODE_IPC_HOOK = /run/user/1000/vscode-4e534ead-1.74.1-main.sock
 # environment
 PYTHONPATH = /home/tomas/MFF/DT/root/install/lib
 # makefile
@@ -292,7 +292,7 @@ LANG = C
 # environment
 TERM = xterm-256color
 # environment
-VSCODE_PID = 1734
+VSCODE_PID = 1911
 # environment
 DYLD_LIBRARY_PATH = /home/tomas/MFF/DT/root/install/lib
 # environment
@@ -306,9 +306,9 @@ G4ENSDFSTATEDATA = /home/tomas/MFF/DT/geant4/install/share/Geant4-11.0.2/data/G4
 
 # Directories
 
-# . (device 2053, inode 860492): 17 files, no impossibilities.
+# . (device 2053, inode 860492): 18 files, no impossibilities.
 
-# 17 files, no impossibilities in 1 directories.
+# 18 files, no impossibilities in 1 directories.
 
 # Implicit Rules
 
@@ -563,12 +563,12 @@ rebuild_cache:
 
 # No general ('VPATH' variable) search path.
 
-# strcache buffers: 1 (0) / strings = 48 / storage = 557 B / avg = 11 B
-# current buf: size = 8162 B / used = 557 B / count = 48 / avg = 11 B
+# strcache buffers: 1 (0) / strings = 49 / storage = 576 B / avg = 11 B
+# current buf: size = 8162 B / used = 576 B / count = 49 / avg = 11 B
 
-# strcache performance: lookups = 157 / hit rate = 69%
+# strcache performance: lookups = 158 / hit rate = 68%
 # hash-table stats:
-# Load=48/8192=1%, Rehash=0, Collisions=2/157=1%
-# Finished Make data base on Sat Nov  5 16:05:11 2022
+# Load=49/8192=1%, Rehash=0, Collisions=2/158=1%
+# Finished Make data base on Mon Dec 19 11:45:09 2022
 
  

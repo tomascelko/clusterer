@@ -19,4 +19,15 @@ class pipe_reader
         }
         return true;
     }
+    bool is_empty()
+    {
+        return !block_.can_peek();
+    }
+    data_type & peek()
+    {
+        if(!block_.can_peek())
+            pipe_->blocking_dequeue(block_);
+        return block_.peek();
+        
+    }
 };   

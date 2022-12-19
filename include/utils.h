@@ -122,18 +122,23 @@ struct coord
         {
             return y_;
         }
-        int32_t linearize() const
+        int32_t linearize() const //use if untiled coord -> untiled linear
         {
-            return MAX_VALUE * x_ + y_;
+            return (MAX_VALUE) * x_ + y_;
         }
-        int32_t linearize(uint32_t tile_size) const
+        int32_t linearize(uint32_t tile_size) const //use if untiled coord -> tiled linear
         {
             return (MAX_VALUE / tile_size) * (x_ / tile_size)  + (y_ / tile_size);
         }
-        bool is_valid_neighbor(const coord& neighbor, uint32_t tile_size = 1) const
+        int32_t linearize_tiled(uint32_t tile_size) const //use if tiled coord -> tiled linear 
         {
-            return (x_ + neighbor.x_ >= MIN_VALUE / tile_size && x_ + neighbor.x_ < MAX_VALUE / tile_size 
-                && y_ + neighbor.y_ >= MIN_VALUE / tile_size && y_ + neighbor.y_ < MAX_VALUE / tile_size);
+            return (MAX_VALUE / tile_size) * x_   + y_ ;
+        }
+        bool is_valid_neighbor(const coord& neighbor, int32_t tile_size = 1) const
+        {
+            //Note expression obtained after multiplying the whole formula by tile_size
+            return (x_ + neighbor.x_ * tile_size >= MIN_VALUE && x_ + neighbor.x_ * tile_size < MAX_VALUE 
+                && y_ + neighbor.y_ * tile_size >= MIN_VALUE && y_ + neighbor.y_ * tile_size < MAX_VALUE);
 
         }
         

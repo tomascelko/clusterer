@@ -12,7 +12,7 @@ class parallel_clusterer : public i_data_consumer<hit_type>,
                            public i_time_measurable                //performs the splitting work 
 {                                                                    //and wraps the whole clustering process
 
-    pipe_descriptor<hit_type>* split_descr_;
+    split_descriptor<hit_type>* split_descr_;
     measuring_clock* clock_;
     pipe_reader<hit_type> reader_;
     pipe_writer<cluster<hit_type>> writer_;
@@ -24,21 +24,20 @@ class parallel_clusterer : public i_data_consumer<hit_type>,
     std::vector<default_pipe<cluster<hit_type>>*> merging_pipes_; 
     std::vector<double> first_toas_by_producers_; //used 
     public:
-    virtual uint64_t queue_size()
-    {
-        return merging_node_->sorting_queue_size();
-    }
-    parallel_clusterer(pipe_descriptor<hit_type>* split_descr) :
-    split_descr_(split_descr),
-    first_toas_by_producers_(split_descr->pipe_count(), 0),
-    merging_node_(new cluster_merging<hit_type>(split_descr))
+    parallel_clusterer(node_descriptor<cluster<hit_type>, hit_type>* node_descr) :
+    split_descr_(node_descr->split_descr),
+    merging_node_(new cluster_merging<hit_type>(
+        new node_descriptor<cluster<hit_type>, cluster<hit_type>>(node_descr->merge_descr, 
+        new trivial_split_descriptor<cluster<hit_type>>(),  "merging_node_descriptor")))
     {
         for (uint32_t i = 0; i < split_descr_->pipe_count(); i++)
         {
-            default_pipe<hit_type>* split_pipe = new default_pipe<hit_type> (PIPE_ID_PREFIX + i);
-            default_pipe<cluster<hit_type>> * merge_pipe = new default_pipe<cluster<hit_type>> (PIPE_ID_PREFIX + i + split_descr_->pipe_count());
-            
             clustering_node* cl_node = new clustering_node();
+            default_pipe<hit_type>* split_pipe = new default_pipe<hit_type> (name() + "_" + 
+                cl_node->name() + "_" + std::to_string(split_pipes_.size()));
+            default_pipe<cluster<hit_type>> * merge_pipe = new default_pipe<cluster<hit_type>> (cl_node->name() + "_" + 
+                merging_node_->name() + "_" + std::to_string(merging_pipes_.size()));
+            
             cl_node->connect_input(split_pipe);
             cl_node->connect_output(merge_pipe);
             clustering_nodes_.emplace_back(cl_node);
@@ -77,6 +76,10 @@ class parallel_clusterer : public i_data_consumer<hit_type>,
     {
         merging_node_->prepare_clock(clock);
         clock_ = clock;
+    }
+    std::string name() override
+    {
+        return "parallel_clusterer";
     }
     virtual void start() override
     {

@@ -4,8 +4,8 @@
 #include "../../utils.h"
 #include "../../devices/current_device.h"
 #include "../../benchmark/i_time_measurable.h"
+#include <list>
 #pragma once
-
 struct bbox
 {
     coord left_top;
@@ -19,11 +19,8 @@ struct bbox
     right_bot(right_bot)
     {}
     template <typename hit_type>
-    bbox(const cluster<hit_type> & cluster) :
-    left_top(coord::MAX_VALUE, coord::MAX_VALUE),
-    right_bot(coord::MIN_VALUE, coord::MIN_VALUE)
+    bbox(const cluster<hit_type> & cluster)
     {
-
         for(auto & hit : cluster.hits())
         {
             if(hit.x() > right_bot.x())
@@ -67,22 +64,27 @@ struct bbox
     }
 
 };
-template <typename hit_type, typename cluster_reference_type = cluster<hit_type>>
-struct bb_cluster
+template <typename hit_type>
+struct cluster_border_wrapper
 {
-    cluster_reference_type cl;
+    cluster<hit_type> cl;
+    bool is_on_border;
+    cluster_border_wrapper(cluster<hit_type> && cluster, bool is_on_border) :
+    cl(cluster),
+    is_on_border(is_on_border)
+    {
+    }
+
+};
+
+template <typename hit_type>
+struct bb_cluster_it
+{
+    using cl_it_type = typename std::list<cluster_border_wrapper<hit_type>>::iterator;
+    using bb_cl_it_type = typename std::list<bb_cluster_it<hit_type>>::iterator;
+    cl_it_type cl_it;
     bbox bb;
     bool valid = true;
-    bool bordering_;
-    uint32_t bordering_offset_;
-    bool bordering()
-    {
-        return bordering_;
-    }
-    uint32_t bordering_offset()
-    {
-        return bordering_offset_;
-    }
     void invalidate()
     {
         valid = false;
@@ -93,7 +95,7 @@ struct bb_cluster
     }
     void compute_bb()
     {
-        for(auto & hit : cl.hits())
+        for(auto & hit : cl_it->cl.hits())
         {
             if(hit.x() > bb.right_bot.x())
                 bb.right_bot.x_ = hit.x();
@@ -111,29 +113,38 @@ struct bb_cluster
                         std::min(bb.right_bot.y() + 1, coord::MAX_VALUE - 1));
         
     }
-    void merge_with(bb_cluster && other)
+    void merge_with(bb_cl_it_type other)
     {
-        cl.merge_with(std::move(other.cl));
+        bb.left_top = coord(std::min(bb.left_top.x(), other->bb.left_top.x()),
+                           std::min(bb.left_top.y(), other->bb.left_top.y()));
+        bb.right_bot = coord(std::max(bb.right_bot.x(), other->bb.right_bot.x()),
+                           std::max(bb.right_bot.y(), other->bb.right_bot.y()));
+        cl_it->cl.merge_with(std::move(other->cl_it->cl));
+    
+        
+        
+    }
+    void merge_with(bb_cluster_it<hit_type> && other)
+    {
         bb.left_top = coord(std::min(bb.left_top.x(), other.bb.left_top.x()),
                            std::min(bb.left_top.y(), other.bb.left_top.y()));
         bb.right_bot = coord(std::max(bb.right_bot.x(), other.bb.right_bot.x()),
                            std::max(bb.right_bot.y(), other.bb.right_bot.y()));
-                           other.invalidate();
+        cl_it->cl.merge_with(std::move(other.cl_it->cl));
+        
         
     }
-    bb_cluster(cluster_reference_type && cl, uint32_t bordering_offset = 0, bool should_compute = true) :  //CHECK ME
-    cl(cl),
-    bordering_offset_(bordering_offset),
-    bordering_(should_compute)
+    bb_cluster_it(cl_it_type cl_it) :  //CHECK ME
+    cl_it(cl_it)
     {
-        if(should_compute)
-            compute_bb();
+        compute_bb();
     }
 };
 
+
 template <typename hit_type>
-class cluster_merging : public i_data_consumer<cluster<hit_type>>,
-                            public i_multi_producer<cluster<hit_type>>,
+class cluster_merging_new : public i_data_consumer<cluster<hit_type>>,
+                            public i_data_producer<cluster<hit_type>>,
                             public i_time_measurable  
 {
     const uint32_t DEQUEUE_CHECK_INTERVAL = 10; //time when to check for dequeing from sorting queue 
@@ -144,31 +155,33 @@ class cluster_merging : public i_data_consumer<cluster<hit_type>>,
                                                 { 0, -1}, { 0, 0}, { 0, 1},
                                                 { 1, -1}, { 1, 0}, { 1, 1},
                                                 { 0,  0} };
-    //pipe_writer<cluster<hit_type>> writer_;
+    pipe_writer<cluster<hit_type>> writer_;
     multi_cluster_pipe_reader<hit_type> reader_;
-    std::priority_queue<cluster<hit_type>, std::vector<cluster<hit_type>>, typename cluster<hit_type>::first_toa_comparer> priority_queue_;
-    std::deque<bb_cluster<hit_type>> unfinished_border_clusters_; //we could keep here unbordering clusters as well 
-                                                                   //in order to preserve time orderedness
-    node_descriptor<cluster<hit_type>, cluster<hit_type>>* node_descr_;
+    using bb_cl_type = bb_cluster_it<hit_type>;
+    using bb_cl_it_type = typename std::list<bb_cl_type>::iterator;
+    using cl_it_type =  typename std::list<cluster_border_wrapper<hit_type>>::iterator;
     using bitmap_type = std::vector<std::vector<bool>>;
+    std::list<cluster_border_wrapper<hit_type>> unfinished_clusters_; 
+    std::list<bb_cl_type> unfinished_border_cl_its_;
+    pipe_descriptor<hit_type>* split_descr_;
     bitmap_type neighboring_matrix_;
     uint64_t processed_non_border_count = 0;
     uint64_t processed_border_count = 0;
-    uint32_t bordering_offset = 1;
+
     measuring_clock* clock_;
-    bool are_spatially_neighboring(const bb_cluster<hit_type> & bb_cl_1, const bb_cluster<hit_type> & bb_cl_2)
+    bool are_spatially_neighboring(const bb_cluster_it<hit_type> & bb_cl_1, const bb_cluster_it<hit_type> & bb_cl_2)
     {
-        const bb_cluster<hit_type> & bigger_bb_cl = bb_cl_1.cl.hits().size() < bb_cl_2.cl.hits().size() ? bb_cl_2 : bb_cl_1;
-        const bb_cluster<hit_type> & smaller_bb_cl = bb_cl_1.cl.hits().size() < bb_cl_2.cl.hits().size() ? bb_cl_1 : bb_cl_2;
+        const bb_cluster_it<hit_type> & bigger_bb_cl = bb_cl_1.cl_it->cl.hits().size() < bb_cl_2.cl_it->cl.hits().size() ? bb_cl_2 : bb_cl_1;
+        const bb_cluster_it<hit_type> & smaller_bb_cl = bb_cl_1.cl_it->cl.hits().size() < bb_cl_2.cl_it->cl.hits().size() ? bb_cl_1 : bb_cl_2;
         
         bbox intersection_bb = bb_cl_1.bb.intersect_with(bb_cl_2.bb);
-        for(auto & hit : bigger_bb_cl.cl.hits())
+        for(auto & hit : bigger_bb_cl.cl_it->cl.hits())
         {
             if (intersection_bb.lies_in_bb(hit.coordinates()))
                 neighboring_matrix_[hit.x()][hit.y()] = true;
         }
         bool is_neighbor = false;
-        for(auto & hit : smaller_bb_cl.cl.hits())
+        for(auto & hit : smaller_bb_cl.cl_it->cl.hits())
         {
             if (intersection_bb.lies_in_bb(hit.coordinates()))
             {
@@ -185,18 +198,24 @@ class cluster_merging : public i_data_consumer<cluster<hit_type>>,
             if (is_neighbor)
                 break;
         }
-        for(auto & hit : bigger_bb_cl.cl.hits())
+        for(auto & hit : bigger_bb_cl.cl_it->cl.hits())
         {
+            //TODO possile to skip when optimizing
+            /*if (intersection_bb.lies_in_bb(hit.coordinates()))
+            {
+            if(neighboring_matrix_[hit.x()][hit.y()] == false)
+                break;
+            }*/
             neighboring_matrix_[hit.x()][hit.y()] = false;
 
         }
         return is_neighbor;
     }
-    bool can_merge(const bb_cluster<hit_type>& bb_cl_1, const bb_cluster<hit_type> & bb_cl_2)
+    bool can_merge(const bb_cluster_it<hit_type>& bb_cl_1, const bb_cluster_it<hit_type> & bb_cl_2)
     {
 
-        if(std::abs(bb_cl_1.cl.first_toa() - bb_cl_2.cl.last_toa()) > MERGE_TIME && 
-           std::abs(bb_cl_1.cl.last_toa() - bb_cl_2.cl.first_toa()) > MERGE_TIME)
+        if(std::abs(bb_cl_1.cl_it->cl.first_toa() - bb_cl_2.cl_it->cl.last_toa()) > MERGE_TIME && 
+           std::abs(bb_cl_1.cl_it->cl.last_toa() - bb_cl_2.cl_it->cl.first_toa()) > MERGE_TIME)
         {
             return false;  //clusters are too far apart timewise
         }
@@ -211,112 +230,86 @@ class cluster_merging : public i_data_consumer<cluster<hit_type>>,
         return true;
     }
 
-    void process_border_cluster(cluster<hit_type>& old_cl)
+    void process_border_cluster(cl_it_type cl_it)
     {
-        bb_cluster<hit_type> bb_cl{std::move(old_cl), bordering_offset};
-        std::vector<uint32_t> merge_indices;
-        for(int32_t i = unfinished_border_clusters_.size() - bordering_offset; i >= 0; i-= unfinished_border_clusters_[i].bordering_offset())
+        bb_cluster_it<hit_type> bb_cl{cl_it};
+        std::vector<bb_cl_it_type> its_to_merge;
+        for(auto border_it = unfinished_border_cl_its_.begin(); border_it != unfinished_border_cl_its_.end(); ++border_it)
         {
-            if(unfinished_border_clusters_[i].valid && 
-                unfinished_border_clusters_[i].cl.first_toa() < bb_cl.cl.first_toa() - (MAX_CLUSTER_TIMESPAN + MERGE_TIME))
+            if(border_it->cl_it->cl.first_toa() < bb_cl.cl_it->cl.first_toa() - (MAX_CLUSTER_TIMESPAN + MERGE_TIME))
                 break;
-            if (unfinished_border_clusters_[i].valid && can_merge(unfinished_border_clusters_[i], bb_cl))
+            if (can_merge(*border_it, bb_cl))
             {
-                merge_indices.push_back(i);//bb_cl.merge_with(std::move(unfinished_border_clusters_[i]));
-                //unfinished_border_clusters_[i].invalidate();
+                its_to_merge.push_back(border_it);
+                
             }
-            //std::cout << "Made " << unfinished_border_clusters_.size() - i  << " iterations" << std::endl;
-            
         }
-        if(merge_indices.size() == 0)
-            unfinished_border_clusters_.emplace_back(std::move(bb_cl));
+        if(its_to_merge.size() == 0)
+            unfinished_border_cl_its_.emplace_front(std::move(bb_cl));
         else
         {
-            uint32_t oldest_to_merge = merge_indices.back(); //retrieve oldest cluster for merging
-            merge_indices.pop_back();
-            unfinished_border_clusters_[oldest_to_merge].merge_with(std::move(bb_cl));  //merge current with oldest
-            for(auto merge_ind : merge_indices) //possibly also merge other suitable clustrers with the oldest
+            its_to_merge[its_to_merge.size() - 1]->merge_with(std::move(bb_cl));
+            unfinished_clusters_.erase(cl_it);
+            for (uint32_t i = 0; i < its_to_merge.size() - 1; ++i)
             {
-                unfinished_border_clusters_[oldest_to_merge].merge_with(std::move(unfinished_border_clusters_[merge_ind]));
-                unfinished_border_clusters_[merge_ind].invalidate();
+                its_to_merge[its_to_merge.size() - 1]->merge_with(its_to_merge[i]);
+                unfinished_clusters_.erase(its_to_merge[i]->cl_it);
+                unfinished_border_cl_its_.erase(its_to_merge[i]);
             }
+
         }
-        
-        
+           
     }
-    void remove_invalid()
-    {
-        while((!unfinished_border_clusters_.empty()) && !unfinished_border_clusters_.front().valid)
-                    unfinished_border_clusters_.pop_front();
-    }
-     std::vector<cluster<hit_type>> cls_;
+
     void process_cluster(cluster<hit_type> && new_cl)
     {
+
         double recent_dequeued_ftoa = new_cl.first_toa();
-        if(node_descr_->merge_descr->is_on_border(new_cl) && !node_descr_->merge_descr->should_be_forwarded(new_cl))
-        {
-            process_border_cluster(new_cl);
-            bordering_offset = 1;
-        }
-        else
-        {    
-            if(unfinished_border_clusters_.size() > 0)
+            if(split_descr_->is_on_border(new_cl))
             {
-                bb_cluster<hit_type> bb_cl{std::move(new_cl), bordering_offset, false}; 
-            unfinished_border_clusters_.emplace_back(std::move(bb_cl));
+                unfinished_clusters_.emplace_front(cluster_border_wrapper<hit_type>(std::move(new_cl), true));
+                process_border_cluster(unfinished_clusters_.begin());
             }
             else
             {
-                this->writer_.write(std::move(new_cl));
+                unfinished_clusters_.emplace_front(cluster_border_wrapper<hit_type>(std::move(new_cl), false));
             }
-            ++bordering_offset;
-            //this->writer_.write(std::move(new_cl));
-            ++processed_non_border_count;
-        }
-        //TODO possibly check for this only once in a border check interval
-        write_old_clusters(recent_dequeued_ftoa);
-        
-    }
-    void write_old_clusters(double last_toa)
-    {
-        remove_invalid();
-        while((!unfinished_border_clusters_.empty()) 
-        && (! unfinished_border_clusters_.front().bordering()
-            || unfinished_border_clusters_.front().cl.last_toa() < last_toa - MERGE_TIME))
-        {
-            if(unfinished_border_clusters_.front().valid)
+            while((!unfinished_clusters_.empty()) && unfinished_clusters_.back().cl.last_toa() < recent_dequeued_ftoa - MERGE_TIME)
             {
-                this->writer_.write(std::move(unfinished_border_clusters_.front().cl));
-                ++processed_border_count;
+                if(unfinished_clusters_.back().is_on_border)
+                {
+                    unfinished_border_cl_its_.pop_back(); //if cluster being removed is on border, it must be at the end of the border list
+                }
+                writer_.write(std::move(unfinished_clusters_.back().cl));
+                processed_border_count++;
+                unfinished_clusters_.pop_back();
             }
-            unfinished_border_clusters_.pop_front();
-            remove_invalid();
-        }
+            
     }
     void write_remaining_clusters()
     {
-        while((!unfinished_border_clusters_.empty())) //process last clusters on border
+        unfinished_border_cl_its_.clear();
+        while((!unfinished_clusters_.empty()))
         {
-            remove_invalid();
-            if(!unfinished_border_clusters_.empty()) 
+            if(!unfinished_clusters_.empty()) 
             {
-                this->writer_.write(std::move(unfinished_border_clusters_.front().cl));
-                ++processed_border_count;
-                unfinished_border_clusters_.pop_front();
+                if(unfinished_clusters_.back().is_on_border)
+                {
+                    processed_border_count++;
+                    unfinished_border_cl_its_.pop_back(); //if cluster being removed is on border, it must be at the end of the border list
+                }
+                writer_.write(std::move(unfinished_clusters_.back().cl));
+                
+                unfinished_clusters_.pop_back();
             }
         }
     }
 public:
-    cluster_merging(node_descriptor<cluster<hit_type>, cluster<hit_type>>* node_descr) :
-    node_descr_(node_descr),
-    neighboring_matrix_(current_chip::chip_type::size_x(), std::vector<bool>(current_chip::chip_type::size_y(), false)),
-    i_multi_producer<cluster<hit_type>>(node_descr->split_descr)
+    cluster_merging_new(pipe_descriptor<hit_type>* split_descr) :
+    split_descr_(split_descr),
+    neighboring_matrix_(current_chip::chip_type::size_x(), std::vector<bool>(current_chip::chip_type::size_y(), false))
     {
-        typename cluster<hit_type>::first_toa_comparer first_toa_comp;
-        priority_queue_ = std::priority_queue<cluster<hit_type>, std::vector<cluster<hit_type>>, typename cluster<hit_type>::first_toa_comparer>(first_toa_comp);
-
     }
-  
     std::string name()
     {
         return "merger";
@@ -325,9 +318,9 @@ public:
     {
         reader_.add_pipe(input_pipe);
     }
-    uint64_t sorting_queue_size()
+    void connect_output(default_pipe<cluster<hit_type>>* output_pipe) override
     {
-        return priority_queue_.size();
+        writer_ = pipe_writer<cluster<hit_type>>(output_pipe);
     }
     void prepare_clock( measuring_clock * clock)
     {
@@ -339,7 +332,7 @@ public:
         cluster<hit_type> new_cl;
         uint32_t finish_producers_count = 0;
         reader_.read(new_cl); 
-        clock_->start();
+        clock_->start(); //FIXME interferes with paralell clusterer clock.start()
         while(new_cl.is_valid())
         {
             ++processed;
@@ -349,9 +342,10 @@ public:
         write_remaining_clusters();
         std::cout << processed_border_count << " " << processed_non_border_count << std::endl; 
         clock_->stop_and_report("parallel_clusterer");
-        this->writer_.close();
+        writer_.write(cluster<hit_type>::end_token());
+        writer_.flush();
         std::cout << "CLUSTER MERGING ENDED ---------------------" << std::endl;
     }
-    virtual ~cluster_merging() = default;
+    virtual ~cluster_merging_new() = default;
 
 };

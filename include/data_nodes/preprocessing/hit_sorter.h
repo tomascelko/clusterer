@@ -4,8 +4,8 @@
 #include "../../data_structs/burda_hit.h"
 
 template <typename data_type>
-
-class hit_sorter : public i_simple_consumer<data_type>, public i_simple_producer<data_type>
+class hit_sorter : public i_simple_consumer<data_type>, 
+                   public i_multi_producer<data_type>
 {
     struct toa_comparer
     {
@@ -39,17 +39,27 @@ class hit_sorter : public i_simple_consumer<data_type>, public i_simple_producer
     
     const double DEQUEUE_TIME = 500000.; // in 
     const uint32_t DEQUEUE_CHECK_INTEVAL = 512;
+    using split_descriptor_type = split_descriptor<data_type>;
 public:
     hit_sorter()   
     {
         toa_comparer less_comparer;
         priority_queue_ = std::priority_queue<data_type, std::vector<data_type>, toa_comparer> (less_comparer);
     }
+    std::string name() override
+    {
+        return "hit_sorter";
+    }
+    hit_sorter(node_descriptor<data_type, data_type> * node_descriptor) :
+    i_multi_producer<data_type>(node_descriptor->split_descr)
+    {
+        //assert((std::is_same<data_type, mm_hit_tot>::value));
+    }
     virtual void start() override
     {
         data_type hit;
         int processed = 0;
-        while(!this->reader_.read(hit));
+        this->reader_.read(hit);
         while(hit.is_valid())
         { //data not end
             processed ++;
@@ -73,8 +83,7 @@ public:
                 this->writer_.write(std::move(old_hit));
             }
         //write last (invalid) hit
-        this->writer_.write(std::move(hit));
-        this->writer_.flush();
+        this->writer_.close();
         std::cout << "HIT SORTER ENDED ---------------------" << std::endl;
         
 

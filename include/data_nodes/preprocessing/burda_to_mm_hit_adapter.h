@@ -31,13 +31,13 @@ class burda_to_mm_hit_adapter : public i_simple_consumer<burda_hit>, public i_mu
             return mm_hit_type(x, y, toa, in_hit.tot());
         
     }
-    using split_descriptor_type = pipe_descriptor<mm_hit_type>;
+    using split_descriptor_type = split_descriptor<mm_hit_type>;
     public:
-    burda_to_mm_hit_adapter(split_descriptor_type * split_descriptor) :
+    burda_to_mm_hit_adapter(node_descriptor<burda_hit, mm_hit_type> * node_descriptor) :
     chip_height_(current_chip::chip_type::size_x()),
     chip_width_(current_chip::chip_type::size_y()),
     calibrate_(false),
-    i_multi_producer<mm_hit_type>(split_descriptor)
+    i_multi_producer<mm_hit_type>(node_descriptor->split_descr)
     {
         assert((std::is_same<mm_hit_type, mm_hit_tot>::value));
     }
@@ -50,12 +50,12 @@ class burda_to_mm_hit_adapter : public i_simple_consumer<burda_hit>, public i_mu
         assert((std::is_same<mm_hit_type, mm_hit_tot>::value));
     }
 
-    burda_to_mm_hit_adapter(split_descriptor_type * split_descriptor, calibration && calib) :
+    burda_to_mm_hit_adapter(node_descriptor<mm_hit_type, burda_hit> * node_descriptor, calibration && calib) :
     chip_height_(current_chip::chip_type::size_x()),
     chip_width_(current_chip::chip_type::size_y()),
     calibrate_(true),
     calibrator_(std::make_unique<calibration>(std::move(calib))),
-    i_multi_producer<mm_hit_type>(split_descriptor)
+    i_multi_producer<mm_hit_type>(node_descriptor->split_descr)
     {
         assert((std::is_same<mm_hit_type, mm_hit>::value));
     }
@@ -69,7 +69,10 @@ class burda_to_mm_hit_adapter : public i_simple_consumer<burda_hit>, public i_mu
         assert((std::is_same<mm_hit_type, mm_hit>::value));
     }
 
-
+    std::string name() override
+    {
+        return "burda_to_mm_adapter";
+    }
     virtual void start() override
     {
         burda_hit hit;

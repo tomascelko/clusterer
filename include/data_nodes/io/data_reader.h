@@ -67,6 +67,10 @@ public:
     {
         paused_ = false;
     }
+    std::string name() override
+    {
+        return "mm_reader";
+    }
     virtual void start() override
     {
         io_utils::skip_bom(input_stream_.get());

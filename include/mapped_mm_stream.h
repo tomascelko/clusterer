@@ -7,7 +7,7 @@
 #include <boost/iostreams/device/mapped_file.hpp>
 #include <boost/iostreams/stream.hpp>
 #include <vector>
-
+#pragma once
 //namespace bio = boost::iostreams;
 class mapped_mm_write_stream
 {

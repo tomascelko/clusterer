@@ -48,6 +48,14 @@ class data_block
         }*/
         return true;
     }
+    bool can_peek()
+    {
+        return to_delete_index_ != data_block_.size();
+    }
+    data_type & peek()
+    {
+        return data_block_[to_delete_index_];
+    }
     void clear()
     {
         byte_size_ = 0;
@@ -65,7 +73,7 @@ private:
     const uint32_t CHECK_FULL_PIPE_INTERVAL = 500;
     queue_type<data_block<data_type>> queue_;
     std::atomic<uint64_t> bytes_used_ = 0;
-    uint32_t id_;
+    std::string name_;
     void emplace_impl(data_block<data_type> && block, moodycamel::ReaderWriterQueue<data_block<data_type>> & queue)
     {
         queue_.emplace(block);
@@ -76,8 +84,8 @@ private:
     }
 public: 
     static constexpr uint64_t MAX_Q_LEN = 2ull << 31; //in bytes
-    default_pipe(uint32_t id) :
-    id_(id),
+    default_pipe(const std::string & name) :
+    name_(name),
     queue_(MAX_Q_LEN){}
     uint64_t processed_counter = 1;
     //not thread safe TODO move in block and out block to writer and reader so we can use the buffering with multiple writers
@@ -85,6 +93,10 @@ public:
     virtual uint64_t bytes_used() override
     {
         return bytes_used_;
+    }
+    std::string name()
+    {
+        return name_;
     }
     void blocking_enqueue(data_block<data_type> && new_block)
     {

@@ -24,7 +24,7 @@ class clustering_validator : public i_data_consumer<cluster<hit_type>>
     const double EPSILON_FTOA = 0.01;
     uint64_t intersection_size = 0;
     uint64_t union_size = 0;
-    std::vector<cluster<hit_type>> get_clusters(bool pick_first)
+    std::vector<cluster<hit_type>>& get_clusters(bool pick_first)
     {
         if(pick_first)
             return clusters_0;
@@ -33,9 +33,9 @@ class clustering_validator : public i_data_consumer<cluster<hit_type>>
     void compare_clusters()
     {
         bool is_first_older = clusters_0[0].first_toa() < clusters_1[1].first_toa();
-        auto oldest_cls = get_clusters(is_first_older);
-        auto oldest_cl = oldest_cls[0];
-        auto to_compare_cls = get_clusters(!is_first_older);
+        std::vector<cluster<hit_type>>& oldest_cls = get_clusters(is_first_older);
+        cluster<hit_type>& oldest_cl = oldest_cls[0];
+        std::vector<cluster<hit_type>>& to_compare_cls = get_clusters(!is_first_older);
         ++union_size;
         for (auto it = to_compare_cls.begin(); it != to_compare_cls.end(); ++it)
         {
@@ -73,6 +73,7 @@ class clustering_validator : public i_data_consumer<cluster<hit_type>>
         }
         out_stream_ << "Intersection: " << intersection_size << std::endl;
         out_stream_ << "Union: " << union_size << std::endl; 
+        out_stream_ << "IoU: " << intersection_size / (double) union_size;
         out_stream_.flush();
         std::cout << "PRINTER ENDED ----------------" << std::endl;
     }

@@ -166,6 +166,8 @@ class mm_read_stream
     template <typename hit_type>
     mm_read_stream& operator >>(cluster<hit_type>& cl)
     {
+        cl = cluster<hit_type>();
+        io_utils::skip_eol(*cl_file_);
         if (cl_file_->peek() == EOF)
         {
             cl = cluster<hit_type>::end_token();
@@ -182,15 +184,18 @@ class mm_read_stream
         *cl_file_ >> hit_count >> line_start >> byte_start;
         cl.set_byte_start(byte_start);
         cl.set_line_start(line_start);
+        cl.set_last_toa(ftoa); //is updated in .add_hit automatically
+        cl.set_first_toa(ftoa);
         cl.hits().reserve(hit_count);
         short x, y;
         double toa = 0, tot = 0, e = 0; 
         for (size_t i = 0; i < hit_count; i++)
         {   
+            hit_type hit;
             if (calib_)
             {
-                *px_file_ >> x >> y >> toa >> e;
-                cl.add_hit(hit_type{x, y, toa, e});
+                *px_file_ >> hit;
+                cl.add_hit(std::move(hit));
             }
             else
             {

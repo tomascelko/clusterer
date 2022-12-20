@@ -6,15 +6,15 @@
 #include "../include/utils.h"
 #include "../include/benchmark/i_time_measurable.h"
 #include "../include/benchmark/benchmarker.h"
+#include "../include/execution/executor.h"
 #include <iostream>
 #include <fstream>
 using standard_clustering_type = pixel_list_clusterer<cluster>;
 using parallel_clusterer_type = parallel_clusterer<mm_hit, pixel_list_clusterer<cluster>>;
 
-void run_architecture(benchmarker * bench, const std::string & arch_name, uint32_t clustering_cores)
+void bench_architecture(benchmarker * bench, const std::string & arch_name, uint32_t clustering_cores)
 {
-    std::string base_arch = /*"co1p1,*/    "rr1bm1,bm1s1," ;
-    std::string validation_arch = "rc1cv1,rc2cv1";
+    std::string base_arch = "co1p1,r1bm1,bm1s1," ;
     auto default_split_descr = new temporal_clustering_descriptor<mm_hit>(clustering_cores);
     auto default_merge_descr = new temporal_clustering_descriptor<mm_hit>(clustering_cores);
     auto multi_merge_descr_1 = new temporal_merge_descriptor<cluster<mm_hit>>(2, 1);
@@ -58,12 +58,17 @@ void run_architecture(benchmarker * bench, const std::string & arch_name, uint32
             architecture_type(base_arch + "s1bbc1,bbc1co1"));
     else if (arch_name == "trbb")
     bench->run_whole_benchmark(
-            architecture_type(base_arch + "s1trbbc1,trbbc1co1"), TIME_WINDOW_SIZE);
-    else if (arch_name == "val")
-        bench->run_whole_benchmark(
-            architecture_type(validation_arch));   
+            architecture_type(base_arch + "s1trbbc1,trbbc1co1"), TIME_WINDOW_SIZE); 
 
 
+}
+void run_architecture(model_executor * exec, const std::string & arch_name, uint32_t core_count)
+{
+
+    std::string validation_arch = "rc1cv1,rc2cv1";
+    if (arch_name == "val")
+        exec->run_model(
+            architecture_type(validation_arch));  
 }
 int main(int argc, char** argv)
 {
@@ -71,15 +76,24 @@ int main(int argc, char** argv)
     const uint32_t TIME_WINDOW_SIZE = 50000000; //50ms
     std::vector<std::string> args (argv + 1, argc + argv);
     
-    args = {"/home/tomas/MFF/DT/clusterer/test_data/large/", "/home/tomas/MFF/DT/clusterer/test_data/calib/", "pmm", "4"};
-    std::string bench_folder = args[0];
+    args = {"/home/tomas/MFF/DT/clusterer/test_data/small/", "/home/tomas/MFF/DT/clusterer/test_data/calib/", "s", "4"};
+    std::string data_folder = args[0];
+    std::vector<std::string> cluster_comparison_datasets = {"/home/tomas/MFF/DT/clusterer/test_data/validation/small/\
+Clustered - pions_180GeV_bias200V_60deg_alignment_test_F4-W00076_1.txt - 12-30 12-12-20221.ini",
+        "/home/tomas/MFF/DT/clusterer/test_data/validation/small/\
+Clustered - pions_180GeV_bias200V_60deg_alignment_test_F4-W00076_1.txt - 12-30 12-12-2022.ini"
+    };
     std::string calib_folder = args[1]; 
     std::string arch_type = args[2];
     uint16_t clustering_cores = std::stoi(args[3]);
     //temporal_clustering_descriptor<mm_hit>* descriptor_ = new temporal_clustering_descriptor<mm_hit>();
-    benchmarker* bench = new benchmarker(bench_folder, calib_folder);
+    benchmarker* bench = new benchmarker(data_folder, calib_folder);
+    model_executor * executor = new model_executor(cluster_comparison_datasets, std::vector<std::string>());
     
-    run_architecture(bench, arch_type, clustering_cores);
+    
+    //run_architecture(executor, arch_type, clustering_cores);
+    bench_architecture(bench, arch_type, 4);
+
     std::cout << "ALL ENDED" << std::endl;
     delete bench;
     //TODO add virtual destructors

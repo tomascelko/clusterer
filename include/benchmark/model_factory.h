@@ -138,22 +138,27 @@ class model_factory
     using standard_clustering_type = pixel_list_clusterer<cluster>;
     using parallel_clusterer_type = parallel_clusterer<mm_hit, pixel_list_clusterer<cluster>>;
     mm_write_stream * print_stream;
+    using filenames_type = std::vector<std::string>; 
+    filenames_type::iterator data_file_it;
+    filenames_type::iterator calib_file_it;
+
     template <typename arch_type, typename ... args_type>
     i_data_node* create_node(node node, arch_type arch, args_type... args)
     {
+        
         if(node.type == "r")
-            return new data_reader<burda_hit, std::ifstream>(data_file, 2 << 10);
+            return new data_reader<burda_hit, std::ifstream>(*data_file_it, 2 << 10);
         else if(node.type == "rr")
-            return new repeating_data_reader<burda_hit, std::ifstream>{data_file, 2 << 21};  
+            return new repeating_data_reader<burda_hit, std::ifstream>{*data_file_it, 2 << 21};  
         else if(node.type == "rc")
-            return new data_reader<cluster<mm_hit>, mm_read_stream>(data_file, 2 << 10);
+            return new data_reader<cluster<mm_hit>, mm_read_stream>(*data_file_it, 2 << 10);
         else if(node.type == "bm")
         {
             if (arch.node_descriptors().find(node.type + std::to_string(node.id)) != arch.node_descriptors().end())
                 return new burda_to_mm_hit_adapter<mm_hit>(
                     dynamic_cast<node_descriptor<burda_hit, mm_hit>*>(arch.node_descriptors()["bm" + std::to_string(node.id)]));
             else
-                    return new burda_to_mm_hit_adapter<mm_hit>(calibration(calib_file, current_chip::chip_type::size()));
+                    return new burda_to_mm_hit_adapter<mm_hit>(calibration(*calib_file_it, current_chip::chip_type::size()));
         }
         else if(node.type == "s")
         {
@@ -197,12 +202,21 @@ class model_factory
     void create_model(dataflow_controller * controller, architecture_type arch,
       const std::string& data_file, const std::string& calib_file, clustering_args_type ... cl_args)
     {
-        this->data_file = data_file;
-        this->calib_file = calib_file;
-        this->print_stream = new mm_write_stream("/home/tomas/MFF/DT/clusterer/output/new") ;
+        create_model(controller, arch, std::vector<std::string>{data_file}, std::vector<std::string>{calib_file},
+            cl_args...);
+    }
+    //TODO FINISH METHOD THAT GETS INPUT AS VECTORS
+    template <typename ...clustering_args_type>
+    void create_model(dataflow_controller * controller, architecture_type arch,
+      std::vector<std::string> data_files, std::vector<std::string> calib_files, clustering_args_type ... cl_args)
+    {
+        this->print_stream = new mm_write_stream("/home/tomas/MFF/DT/clusterer/output/new");
         std::vector<i_data_node*> data_nodes;
+        data_file_it = data_files.begin();
+        calib_file_it = calib_files.begin();
         for (auto node : arch.nodes())
         {
+            
             data_nodes.emplace_back(create_node(node, arch, cl_args...));
             controller->add_node(data_nodes.back());
         }

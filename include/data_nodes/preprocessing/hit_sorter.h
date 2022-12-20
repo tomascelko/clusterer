@@ -38,7 +38,7 @@ class hit_sorter : public i_simple_consumer<data_type>,
     std::priority_queue<data_type, std::vector<data_type>, toa_comparer> priority_queue_;
     
     const double DEQUEUE_TIME = 500000.; // in 
-    const uint32_t DEQUEUE_CHECK_INTEVAL = 512;
+    const uint32_t DEQUEUE_CHECK_INTEVAL = 128;
     using split_descriptor_type = split_descriptor<data_type>;
 public:
     hit_sorter()   

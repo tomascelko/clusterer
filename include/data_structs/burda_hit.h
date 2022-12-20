@@ -11,7 +11,7 @@ class burda_hit
     int16_t tot_;  //can be zero because of chip error, so we set invalid value to -1
 public:
 //TODO create producer of burda hits (burda reader) instead of burda hit  class reading from stream
-    burda_hit(uint16_t linear_coord, uint64_t toa, short fast_toa, int16_t tot):
+    burda_hit(uint16_t linear_coord, int64_t toa, short fast_toa, int16_t tot):
     linear_coord_(linear_coord),
     toa_(toa),
     fast_toa_(fast_toa),
@@ -33,7 +33,7 @@ public:
     }
     static burda_hit end_token()
     {
-        burda_hit end_token(0,0,0,0);
+        burda_hit end_token(0,-1,0,0);
         return end_token;
     }
     burda_hit()

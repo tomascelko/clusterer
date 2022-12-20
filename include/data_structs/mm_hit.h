@@ -58,6 +58,14 @@ public:
     {
         return e_;
     }
+    bool approx_equals(const mm_hit & other)
+    {
+        const double epsilon = 0.01;
+        return (x() == other.x()
+            && y() == other.y()
+            && std::abs(toa() - other.toa()) < epsilon
+            && std::abs(e() - other.e() < epsilon));
+    }
 
 
 };
@@ -70,5 +78,15 @@ stream_type& operator<<(stream_type& os, const mm_hit& hit)
     //os << hit.x() << " " << hit.y() << " " << std::fixed << std::setprecision(6) << (hit.toa()) << " ";
     //os << std::fixed << std::setprecision(1) << hit.e() << "\n";
     return os;
+}
+template<typename stream_type>
+stream_type& operator>>(stream_type& istream, mm_hit& hit)
+{
+    short x,y;
+    double toa, e;
+    istream >> x >> y >> toa >> e;
+    hit = mm_hit(x, y, toa, e);
+
+    return istream;
 }
 

@@ -67,26 +67,26 @@ class io_utils
         return character < SEPARATORS_ASCII_IDEX && character > 0;
     }
     public:
-    static void skip_eol(std::istream* stream)
+    static void skip_eol(std::istream& stream)
     {
-        if (stream->peek() < 0)
+        if (stream.peek() < 0)
             return;
-        char next_char = stream->peek();
+        char next_char = stream.peek();
         while (is_separator(next_char))
         {
             //FIXME only works with char = 1byte encoding (UTF8)
-            next_char = stream->get();
-            next_char = stream->peek();
+            next_char = stream.get();
+            next_char = stream.peek();
         }
     }
-    static void skip_comment_lines(std::istream* stream)
+    static void skip_comment_lines(std::istream& stream)
     {
         //std::cout << "skipping comments" << std::endl;
         skip_eol(stream);
-        while(stream->peek() == '#')
+        while(stream.peek() == '#')
         {
             std::string line;
-            std::getline((*stream), line);
+            std::getline((stream), line);
             /*std::cout << "line:" << std::endl;
             std::cout << line << std::endl;
             std::cout << "peek:" << std::endl;
@@ -94,11 +94,11 @@ class io_utils
             skip_eol(stream);
         }    
     }
-    static void skip_bom(std::istream * stream)
+    static void skip_bom(std::istream& stream)
     {
         char* bom = new char[3];
-        if (stream->peek() == 0xEF)
-            (*stream).read(bom, 3);
+        if (stream.peek() == 0xEF)
+            stream.read(bom, 3);
         delete bom;
     }
 

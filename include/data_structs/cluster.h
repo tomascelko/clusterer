@@ -159,4 +159,34 @@ public:
         set_first_toa(std::min(first_toa(), other.first_toa()));
         set_last_toa(std::max(last_toa(), other.last_toa()));
     }
+    bool approx_equals(cluster<data_type> & other)
+    {
+        if(other.hits().size() != hits().size())
+        {
+            return false;
+        }
+        auto hit_comparer = [](const data_type & left, const data_type & right){
+            if(left.toa() < right.toa())
+                return true;
+            if(left.toa() > right.toa())
+                return false;
+            if (left.x() < right.x())
+                return true;
+            if (left.x() > right.x())
+                return false;
+            if (left.y() < right.y())
+                return true;
+            return false;
+
+        };
+        std::sort(hits().begin(), hits().end(), hit_comparer);
+        std::sort(other.hits().begin(), other.hits().end(), hit_comparer);
+        
+        for (uint32_t i = 0; i < hits().size(); ++i)
+        {
+            if (!hits()[i].approx_equals(other.hits()[i]))
+                return false;
+        }
+        return true;
+    }
 };

@@ -24,6 +24,10 @@ class multi_cluster_pipe_reader
     {
         return bytes_read_;
     }
+    uint32_t last_read_pipe()
+    {
+        return reading_index_;
+    }
     void add_pipe(default_pipe<cluster<hit_type>>* pipe)
     {
         readers_.emplace_back(reader_type{pipe});
@@ -33,6 +37,7 @@ class multi_cluster_pipe_reader
     {
         double min_toa = LONG_LONG_MAX;
         uint32_t argmin_toa = -1;
+
         for(uint32_t i = 0; i < readers_.size(); ++i)
         {
             cluster<hit_type> & current = readers_[i].peek();
@@ -43,10 +48,14 @@ class multi_cluster_pipe_reader
             }
         }
         if(argmin_toa == -1)
+        {
             readers_[0].read(cl); //we found all of the end tokens
+            reading_index_ = 0;
+        }
         else
         {
             readers_[argmin_toa].read(cl);
+            reading_index_ = argmin_toa;
         }
         bytes_read_ += cl.size();
         return true;

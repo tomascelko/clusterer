@@ -142,9 +142,11 @@ class model_factory
     i_data_node* create_node(node node, arch_type arch, args_type... args)
     {
         if(node.type == "r")
-            return new data_reader<burda_hit>(data_file, 2 << 10);
+            return new data_reader<burda_hit, std::ifstream>(data_file, 2 << 10);
         else if(node.type == "rr")
-            return new repeating_data_reader<burda_hit>{data_file, 2 << 21};  
+            return new repeating_data_reader<burda_hit, std::ifstream>{data_file, 2 << 21};  
+        else if(node.type == "rc")
+            return new data_reader<cluster<mm_hit>, mm_read_stream>(data_file, 2 << 10);
         else if(node.type == "bm")
         {
             if (arch.node_descriptors().find(node.type + std::to_string(node.id)) != arch.node_descriptors().end())
@@ -181,9 +183,11 @@ class model_factory
             return new halo_buffer_clusterer<mm_hit, standard_clustering_type>(args...);
         else if(node.type == "trbbc")
             return new trigger_clusterer<mm_hit, halo_buffer_clusterer<mm_hit, standard_clustering_type>, frequency_diff_trigger<mm_hit>>(
-                arch.window_size());
+                args...);
         else if(node.type == "co")
             return new cluster_sorting_combiner<mm_hit>();
+        else if (node.type == "cv")
+            return new clustering_validator<mm_hit>(std::cout);
         throw std::invalid_argument("node of given type was not recognized");
         
     };

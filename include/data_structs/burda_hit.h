@@ -20,7 +20,7 @@ public:
     {
         toa_ = -1;
         //TODO call skip comment before each read (now causes error)
-        io_utils::skip_comment_lines(in_stream);
+        io_utils::skip_comment_lines(*in_stream);
         if(in_stream->peek() == EOF)
             return;
         *in_stream >> linear_coord_;
@@ -33,7 +33,7 @@ public:
     }
     static burda_hit end_token()
     {
-        burda_hit end_token(0,-1,0,0);
+        burda_hit end_token(0,0,0,0);
         return end_token;
     }
     burda_hit()
@@ -67,4 +67,23 @@ std::ostream& operator<<(std::ostream& os, const burda_hit& hit)
 {
     os << hit.linear_coord() << " " << hit.toa() << " " << hit.fast_toa() << " " << hit.tot()  ;
     return os;
+}
+std::istream& operator>>(std::istream& is, burda_hit& hit)
+{
+
+    uint32_t lin_coord;
+    uint64_t toa;
+    short ftoa;
+    int16_t tot;
+    io_utils::skip_comment_lines(is);
+    if(is.peek() == EOF)
+    {
+        hit = burda_hit::end_token();
+        return is;
+    }
+        
+    is >> lin_coord >> toa >> ftoa >> tot;
+    hit = burda_hit(lin_coord, toa, ftoa, tot);
+
+    return is;
 }

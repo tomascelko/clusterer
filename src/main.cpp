@@ -14,6 +14,7 @@ using parallel_clusterer_type = parallel_clusterer<mm_hit, pixel_list_clusterer<
 void run_architecture(benchmarker * bench, const std::string & arch_name, uint32_t clustering_cores)
 {
     std::string base_arch = /*"co1p1,*/    "rr1bm1,bm1s1," ;
+    std::string validation_arch = "rc1cv1,rc2cv1";
     auto default_split_descr = new temporal_clustering_descriptor<mm_hit>(clustering_cores);
     auto default_merge_descr = new temporal_clustering_descriptor<mm_hit>(clustering_cores);
     auto multi_merge_descr_1 = new temporal_merge_descriptor<cluster<mm_hit>>(2, 1);
@@ -24,16 +25,16 @@ void run_architecture(benchmarker * bench, const std::string & arch_name, uint32
     uint32_t TILE_SIZE = 4;
     uint32_t TIME_WINDOW_SIZE = 50000000;
     if(arch_name == "s")
-         bench->run_whole_benchmark<standard_clustering_type>(architecture_type(base_arch + "s1sc1,sc1co1"));
+         bench->run_whole_benchmark(architecture_type(base_arch + "s1sc1,sc1co1"));
     else if (arch_name == "e")
-        bench->run_whole_benchmark<energy_filtering_clusterer<mm_hit>>(architecture_type(base_arch + "s1ec1"));
+        bench->run_whole_benchmark(architecture_type(base_arch + "s1ec1"));
     else if (arch_name == "p")
-        bench->run_whole_benchmark<parallel_clusterer_type>(
+        bench->run_whole_benchmark(
             architecture_type(base_arch + "s1ppc1,ppc1co1", std::map<std::string, abstract_node_descriptor*>{
                 {"ppc1",new node_descriptor<cluster<mm_hit>, mm_hit>(default_merge_descr, default_split_descr, "packed_parallel_clusterer_descriptor")}
                 })); 
     else if(arch_name == "pmm")
-        bench->run_whole_benchmark<standard_clustering_type>(
+        bench->run_whole_benchmark(
             architecture_type(base_arch + "s1sc1,s1sc2,s1sc3,s1sc4,sc1m1,sc2m1,sc3m2,sc4m2,m1co1,m2co1,m3co1,m2m3,m1m3", std::map<std::string, abstract_node_descriptor*>{
                 {"s1", new node_descriptor<mm_hit, mm_hit>(trivial_sorter_merge_descr, hit_sorter_split_descr, "sorter_descriptor")},
                 {"m1", new node_descriptor<cluster<mm_hit>,cluster<mm_hit>>(multi_merge_descr_1, multi_merge_descr_1, "merger1_desc")},
@@ -41,25 +42,26 @@ void run_architecture(benchmarker * bench, const std::string & arch_name, uint32
                 {"m3", new node_descriptor<cluster<mm_hit>,cluster<mm_hit>>(multi_merge_descr_2, multi_merge_descr_2, "merger3_descr")}
                 }));
     else if (arch_name == "pm")
-        bench->run_whole_benchmark<standard_clustering_type>(
+        bench->run_whole_benchmark(
             architecture_type(base_arch + "s1sc1,s1sc2,s1sc3,s1sc4,sc1m1,sc2m1,sc3m1,sc4m1,m1co1", std::map<std::string, abstract_node_descriptor*>{
                     {"s1", new node_descriptor<mm_hit, mm_hit>(trivial_sorter_merge_descr, hit_sorter_split_descr, "sorter_descriptor")},
                     {"m1", new node_descriptor<cluster<mm_hit>,cluster<mm_hit>>(default_merge_descr, trivial_merger_split_descr, "merger_desc")}
                     }));
     else if (arch_name == "tr")
-        bench->run_whole_benchmark<trigger_clusterer<mm_hit, standard_clustering_type, frequency_diff_trigger<mm_hit>>>(
+        bench->run_whole_benchmark(
             architecture_type(base_arch + "s1trc1,trc1co1"));
     else if (arch_name == "ti") //TODO try paralel clustering with tiles
-        bench->run_whole_benchmark<pixel_list_clusterer<cluster>>(
+        bench->run_whole_benchmark(
             architecture_type(base_arch + "s1tic1,tic1co1"), TILE_SIZE);
     else if (arch_name == "bb")
-        bench->run_whole_benchmark<halo_buffer_clusterer<mm_hit, standard_clustering_type>>(
+        bench->run_whole_benchmark(
             architecture_type(base_arch + "s1bbc1,bbc1co1"));
     else if (arch_name == "trbb")
-    bench->run_whole_benchmark<trigger_clusterer<mm_hit,
-        halo_buffer_clusterer<mm_hit, standard_clustering_type>, frequency_diff_trigger<mm_hit>>>(
-            architecture_type(base_arch + "s1trc1,trc1co1"), TIME_WINDOW_SIZE);
-
+    bench->run_whole_benchmark(
+            architecture_type(base_arch + "s1trbbc1,trbbc1co1"), TIME_WINDOW_SIZE);
+    else if (arch_name == "val")
+        bench->run_whole_benchmark(
+            architecture_type(validation_arch));   
 
 
 }

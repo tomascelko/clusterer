@@ -7,8 +7,8 @@ class multi_pipe_writer
     
     std::vector<writer_type> writers_;
     split_descriptor<data_type>* split_descriptor_;
+    
     public:
-
     multi_pipe_writer(split_descriptor<data_type> * split_descriptor) :
     split_descriptor_(split_descriptor)
     {

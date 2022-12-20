@@ -300,7 +300,7 @@ class benchmarker
         print_results(std::cout);
     }
 */
-    template <typename clusterer_type, typename... cl_arg_types, typename arch_type>
+    template <typename... cl_arg_types, typename arch_type>
     void run_whole_benchmark(arch_type arch, cl_arg_types... cl_args)
     {
     const uint16_t REPEATS = 1;

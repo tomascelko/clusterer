@@ -108,3 +108,99 @@ class mm_write_stream
     }    
 
 };
+
+
+class mm_read_stream
+{
+    std::unique_ptr<std::ifstream> cl_file_;
+    std::unique_ptr<std::ifstream> px_file_;
+    static constexpr std::string_view CL_KEY = "ClFile";
+    static constexpr std::string_view PX_KEY = "PxFile";
+    static constexpr uint32_t FLUSH_INTERVAL = 2 << 23;
+    uint64_t current_line = 0;
+    uint64_t current_byte = 0;
+    uint64_t clusters_written_ = 0;
+    uint64_t new_pixels_written_ = 0;
+    bool calib_ = true;
+    void open_streams(const std::string& ini_file)
+    {
+        std::string path_suffix = ini_file.substr(ini_file.find_last_of("\\/") + 1);
+        std::string path_prefix = ini_file.substr(0, ini_file.find_last_of("\\/") + 1);
+        if(ini_file.find_last_of("\\/") == std::string::npos)
+        {
+            //handle special case where no path is given
+            path_prefix = "";
+        }
+        std::ifstream ini_stream(ini_file);
+        std::string ini_line = "";
+        std::string delimiter = "=";
+        while(std::getline(ini_stream, ini_line))
+        {
+            auto delim_pos = ini_line.find(delimiter);
+            if (delim_pos != std::string::npos)
+            {
+                std::string prop_key = ini_line.substr(0, delim_pos);
+                std::string prop_value = ini_line.substr(delim_pos + 1);
+                if(prop_key == CL_KEY)
+                    cl_file_ = std::move(std::make_unique<std::ifstream>(path_prefix + prop_value));
+                else if (prop_key == PX_KEY)
+                    px_file_ = std::move(std::make_unique<std::ifstream>(path_prefix + prop_value));
+         
+
+            }
+                
+        }
+
+    }
+    public:
+    mm_read_stream(const std::string & ini_filename)
+    {
+        open_streams(ini_filename);
+    }
+    virtual ~mm_read_stream() = default;
+    void close()
+    {
+        cl_file_->close();
+        px_file_->close();
+    }
+    template <typename hit_type>
+    mm_read_stream& operator >>(cluster<hit_type>& cl)
+    {
+        if (cl_file_->peek() == EOF)
+        {
+            cl = cluster<hit_type>::end_token();
+            return *this;
+        }
+        double ftoa;
+        uint32_t hit_count;
+        uint64_t line_start, byte_start;
+        if(!(*cl_file_ >> ftoa))
+        {
+            cl = cluster<hit_type>::end_token();
+            return *this;
+        }
+        *cl_file_ >> hit_count >> line_start >> byte_start;
+        cl.set_byte_start(byte_start);
+        cl.set_line_start(line_start);
+        cl.hits().reserve(hit_count);
+        short x, y;
+        double toa = 0, tot = 0, e = 0; 
+        for (size_t i = 0; i < hit_count; i++)
+        {   
+            if (calib_)
+            {
+                *px_file_ >> x >> y >> toa >> e;
+                cl.add_hit(hit_type{x, y, toa, e});
+            }
+            else
+            {
+                *px_file_ >> x >> y >> toa >> tot;
+                cl.add_hit(hit_type{x, y, toa, tot});
+            }
+        }
+        char hash_char;
+        *px_file_ >> hash_char;
+        return *this;
+    }    
+
+};

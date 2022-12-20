@@ -12,3 +12,4 @@
 #include "clustering/cluster_sorting_combiner.h"
 #include "io/repeating_data_reader.h"
 #include "analysis/pixel_halo_width_calculator.h"
+#include "clustering_validation/clustering_validator.h"

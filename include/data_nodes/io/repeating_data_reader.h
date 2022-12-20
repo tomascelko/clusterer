@@ -1,12 +1,12 @@
 #include "data_reader.h"
 
 #pragma once
-template <typename data_type>
-class repeating_data_reader : public data_reader<data_type>
+template <typename data_type, typename istream_type>
+class repeating_data_reader : public data_reader<data_type, istream_type>
 {
     static constexpr uint32_t REPETITION_COUNT = 40;
     double freq_multiplier_;
-    using buffer_type = typename data_reader<data_type>::buffer_type;
+    using buffer_type = typename data_reader<data_type, istream_type>::buffer_type;
     std::unique_ptr<buffer_type> buffer_;
     void store_buffer(std::unique_ptr<buffer_type> && buffer)
     {
@@ -14,8 +14,8 @@ class repeating_data_reader : public data_reader<data_type>
     }
     void init_read_data()
     {
-        io_utils::skip_bom(this->input_stream_.get());
-        io_utils::skip_comment_lines(this->input_stream_.get());
+        io_utils::skip_bom(*this->input_stream_.get());
+        io_utils::skip_comment_lines(*this->input_stream_.get());
         this->reading_buffer_ = this->buffer_a_.get();
         bool should_continue = this->read_data();
         store_buffer(std::move(this->buffer_a_));
@@ -27,7 +27,7 @@ class repeating_data_reader : public data_reader<data_type>
     }
     public:
     repeating_data_reader(const std::string & filename, uint32_t buffer_size, double freq_multiplier = 1) :
-    data_reader<data_type>(filename, buffer_size),
+    data_reader<data_type, istream_type>(filename, buffer_size),
     freq_multiplier_(freq_multiplier)
     {}
     std::string name() override

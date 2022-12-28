@@ -68,12 +68,12 @@ class calibration
         double c = c_[y][x];
         double t = t_[y][x];
         double b = b_[y][x];
-
+        const double epsilon = 0.000000000001;
         double a2 = a;
         double b2 = (-a*t+b-tot);
         double c2 = tot*t - b*t - c;
         const double invalid_value = 0.1;
-        if(a2 == 0)
+        if(std::abs(a2) < epsilon || b2*b2 - 4*a2*c2 < 0)
             return invalid_value;
         return std::max((-b2 + std::sqrt(b2*b2 - 4*a2*c2))/(2*a2), invalid_value); //greater root of quad formula
     }

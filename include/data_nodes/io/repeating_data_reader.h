@@ -23,7 +23,7 @@ class repeating_data_reader : public data_reader<data_type, istream_type>
     }
     data_type offset_hit(const data_type & hit, uint64_t offset)
     {
-        return data_type{hit.linear_coord(), static_cast<uint64_t>(std::round(((hit.toa() + offset) * (1. / freq_multiplier_)))), hit.fast_toa(), hit.tot()};
+        return data_type{hit.linear_coord(), static_cast<int64_t>(std::round(((hit.toa() + offset) * (1. / freq_multiplier_)))), hit.fast_toa(), hit.tot()};
     }
     public:
     repeating_data_reader(const std::string & filename, uint32_t buffer_size, double freq_multiplier = 1) :

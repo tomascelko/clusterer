@@ -219,7 +219,11 @@ class model_factory
             
             data_nodes.emplace_back(create_node(node, arch, cl_args...));
             controller->add_node(data_nodes.back());
-        }
+            if(node.type[0] == 'r')
+                ++data_file_it;
+            if(node.type == "bm")
+                ++calib_file_it;
+        }   
         for(auto edge : arch.edges())
         {
             auto from_index = std::find(arch.nodes().begin(), arch.nodes().end(), edge.from) - arch.nodes().begin();

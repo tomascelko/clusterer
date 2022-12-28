@@ -76,12 +76,12 @@ int main(int argc, char** argv)
     const uint32_t TIME_WINDOW_SIZE = 50000000; //50ms
     std::vector<std::string> args (argv + 1, argc + argv);
     
-    args = {"/home/tomas/MFF/DT/clusterer/test_data/small/", "/home/tomas/MFF/DT/clusterer/test_data/calib/", "s", "4"};
+    args = {"/home/tomas/MFF/DT/clusterer/test_data/small/", "/home/tomas/MFF/DT/clusterer/test_data/calib/", "val", "4"};
     std::string data_folder = args[0];
     std::vector<std::string> cluster_comparison_datasets = {"/home/tomas/MFF/DT/clusterer/test_data/validation/small/\
-Clustered - pions_180GeV_bias200V_60deg_alignment_test_F4-W00076_1.txt - 12-30 12-12-20221.ini",
+new28-12-2022-19-28-17.ini",
         "/home/tomas/MFF/DT/clusterer/test_data/validation/small/\
-Clustered - pions_180GeV_bias200V_60deg_alignment_test_F4-W00076_1.txt - 12-30 12-12-2022.ini"
+Clustered - pions_180GeV_bias200V_60deg_alignment_test_F4-W00076_1.txt - 19-47 28-12-2022.ini"
     };
     std::string calib_folder = args[1]; 
     std::string arch_type = args[2];
@@ -91,8 +91,8 @@ Clustered - pions_180GeV_bias200V_60deg_alignment_test_F4-W00076_1.txt - 12-30 1
     model_executor * executor = new model_executor(cluster_comparison_datasets, std::vector<std::string>());
     
     
-    //run_architecture(executor, arch_type, clustering_cores);
-    bench_architecture(bench, arch_type, 4);
+    run_architecture(executor, arch_type, clustering_cores);
+    //bench_architecture(bench, arch_type, 4);
 
     std::cout << "ALL ENDED" << std::endl;
     delete bench;

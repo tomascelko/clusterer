@@ -68,6 +68,12 @@ class clustering_validator : public i_data_consumer<cluster<hit_type>>
                 std::abs(clusters_0.back().first_toa() - clusters_1.back().first_toa()) > EPSILON_FTOA)
                 compare_clusters();
             ++processed; 
+           
+            std::cout << processed << " " << clusters_0.size() << " " << clusters_1.size();
+            if(clusters_0.size() > 10)
+                {
+                    std:: cout << "debug";
+                }
             this->reader_.read(cl);
 
         }

@@ -6,7 +6,7 @@ make all --print-data-base --no-builtin-variables --no-builtin-rules --question
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Tue Dec 20 08:13:00 2022
+# Make data base, printed on Wed Dec 28 18:37:44 2022
 
 # Variables
 
@@ -95,7 +95,7 @@ GPG_AGENT_INFO = /run/user/1000/gnupg/S.gpg-agent:0:1
 # environment
 C_INCLUDE_PATH = /home/tomas/MFF/DT/allpix/install/include:
 # environment
-SESSION_MANAGER = local/tomas-VirtualBox:@/tmp/.ICE-unix/834,unix/tomas-VirtualBox:/tmp/.ICE-unix/834
+SESSION_MANAGER = local/tomas-VirtualBox:@/tmp/.ICE-unix/862,unix/tomas-VirtualBox:/tmp/.ICE-unix/862
 # environment
 G4INCLDATA = /home/tomas/MFF/DT/geant4/install/share/Geant4-11.0.2/data/G4INCL1.0
 # environment
@@ -145,7 +145,7 @@ QT_QPA_PLATFORMTHEME = qt5ct
 # environment
 XDG_SEAT = seat0
 # environment
-SSH_AGENT_PID = 978
+SSH_AGENT_PID = 1006
 # environment
 ORIGINAL_XDG_CURRENT_DESKTOP = MATE
 # environment
@@ -274,9 +274,9 @@ CMAKE_COMMAND = /usr/bin/cmake
 G4RADIOACTIVEDATA = /home/tomas/MFF/DT/geant4/install/share/Geant4-11.0.2/data/RadioactiveDecay5.6
 # environment
 CHROME_DESKTOP = code-url-handler.desktop
- 
 # environment
 MATE_DESKTOP_SESSION_ID = this-is-deprecated
+ 
 # default
 .INCLUDE_DIRS = /usr/include /usr/local/include /usr/include
 # environment
@@ -292,7 +292,7 @@ LANG = C
 # environment
 TERM = xterm-256color
 # environment
-VSCODE_PID = 1497
+VSCODE_PID = 1461
 # environment
 DYLD_LIBRARY_PATH = /home/tomas/MFF/DT/root/install/lib
 # environment
@@ -555,7 +555,6 @@ rebuild_cache:
 	/usr/bin/cmake -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
 
 # files hash-table stats:
- 
 # Load=29/1024=3%, Rehash=0, Collisions=3/101=3%
 # VPATH Search Paths
 
@@ -564,11 +563,12 @@ rebuild_cache:
 # No general ('VPATH' variable) search path.
 
 # strcache buffers: 1 (0) / strings = 49 / storage = 576 B / avg = 11 B
+ 
 # current buf: size = 8162 B / used = 576 B / count = 49 / avg = 11 B
 
 # strcache performance: lookups = 158 / hit rate = 68%
 # hash-table stats:
 # Load=49/8192=1%, Rehash=0, Collisions=2/158=1%
-# Finished Make data base on Tue Dec 20 08:13:00 2022
+# Finished Make data base on Wed Dec 28 18:37:44 2022
 
  

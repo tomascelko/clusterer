@@ -142,6 +142,7 @@ class halo_buffer_clusterer : public i_simple_consumer<hit_type>, public i_data_
     clusterer_(std::make_unique<clusterer_type>(underlying_clusterer_args...)),
     time_window_size_(time_window_size),
     window_start_time_(0)
+    
     {
        //clusterer_->connect_output(this->writer_.pipe()); //clusterer_ is performing the output of this node
     }

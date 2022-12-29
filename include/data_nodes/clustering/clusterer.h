@@ -45,7 +45,7 @@ struct unfinished_cluster
 };
 template <template<class> typename cluster>
 class pixel_list_clusterer : public i_simple_consumer<mm_hit>, 
-                             public i_simple_producer<cluster<mm_hit>>, 
+                             public i_multi_producer<cluster<mm_hit>>, 
                              public i_time_measurable,
                              public i_public_state_clusterer<unfinished_cluster<mm_hit>>
 {   
@@ -226,16 +226,25 @@ class pixel_list_clusterer : public i_simple_consumer<mm_hit>,
     {
         finished_ = true;
         write_old_clusters();
-        this->writer_.write(cluster<mm_hit>::end_token()); //write empty cluster as end token
-        this->writer_.flush();
+        this->writer_.close();
+    }
+    pixel_list_clusterer(node_descriptor<mm_hit, cluster<mm_hit>>* node_descr, uint32_t tile_size = 1) :
+    pixel_lists_(current_chip::chip_type::size_x() * current_chip::chip_type::size_y() / (tile_size * tile_size)),
+    tile_size_(tile_size),
+    unfinished_clusters_count_(0),
+    processed_hit_count_(0),
+    i_multi_producer<cluster<mm_hit>>(node_descr->split_descr)
+    {  
+        return;
     }
     pixel_list_clusterer(uint32_t tile_size = 1) :
     pixel_lists_(current_chip::chip_type::size_x() * current_chip::chip_type::size_y() / (tile_size * tile_size)),
     tile_size_(tile_size),
     unfinished_clusters_count_(0),
-    processed_hit_count_(0)   
+    processed_hit_count_(0),
+    i_multi_producer<cluster<mm_hit>>(new trivial_split_descriptor<cluster<mm_hit>>())
     {  
-        return;      
+        return;
     }
     double current_toa()
     {

@@ -32,6 +32,7 @@ class parallel_clusterer : public i_data_consumer<hit_type>,
     {
         for (uint32_t i = 0; i < split_descr_->pipe_count(); i++)
         {
+
             clustering_node* cl_node = new clustering_node();
             default_pipe<hit_type>* split_pipe = new default_pipe<hit_type> (name() + "_" + 
                 cl_node->name() + "_" + std::to_string(split_pipes_.size()));

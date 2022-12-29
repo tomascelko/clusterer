@@ -174,7 +174,12 @@ class model_factory
             return new cluster_merging<mm_hit>(
                 dynamic_cast<node_descriptor<cluster<mm_hit>, cluster<mm_hit>>*>(arch.node_descriptors()["m" + std::to_string(node.id)]));
         else if(node.type == "sc")
-            return new standard_clustering_type();
+        {
+            if (arch.node_descriptors().find(node.type + std::to_string(node.id)) != arch.node_descriptors().end())
+                return new standard_clustering_type(
+                    dynamic_cast<node_descriptor<mm_hit, cluster<mm_hit>>*>(arch.node_descriptors()["sc" + std::to_string(node.id)]));
+                return new standard_clustering_type();
+        }
         else if(node.type == "ec")
             return new energy_filtering_clusterer<mm_hit>();
         else if(node.type == "ppc")

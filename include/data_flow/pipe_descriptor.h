@@ -212,3 +212,23 @@ public:
     virtual ~temporal_merge_descriptor() = default;
 
 };
+
+template <typename cl_type>
+class clustering_two_split_descriptor : public split_descriptor<cl_type>
+{
+    const uint32_t SWITCH_INTERVAL_LEN = 8000; //in nanoseconds
+    const double EPSILON_BORDER_TIME = 300;
+    public:
+    uint32_t get_pipe_index(const cl_type & cl) override
+    {
+        uint32_t remainder = std::abs(std::llround(cl.first_toa()) % SWITCH_INTERVAL_LEN);
+        if (remainder < SWITCH_INTERVAL_LEN / 2)
+            return 0;
+        return 1;
+    }
+    uint32_t pipe_count() override
+    {
+        return 2;
+    }
+    virtual ~clustering_two_split_descriptor() = default;
+};

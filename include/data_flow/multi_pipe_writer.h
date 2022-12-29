@@ -52,7 +52,7 @@ class multi_pipe_writer
     {
         if(dynamic_cast<trivial_split_descriptor<data_type>*>(split_descriptor_) != nullptr)
         {
-            delete split_descriptor_; //in this case, we are the owners of the trivial descriptor
+            //delete split_descriptor_; //TODO in this case, we are the owners of the trivial descriptor
         }
         writers_.clear();
     }

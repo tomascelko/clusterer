@@ -5,6 +5,7 @@
 #include <string_view>
 #include <iostream>
 #include <cmath>
+#pragma once
 class calibration
 {
     std::vector<std::vector<double>> a_;

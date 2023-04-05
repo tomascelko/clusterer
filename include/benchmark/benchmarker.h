@@ -14,7 +14,7 @@
 #pragma once
 class benchmarker
 {
-    static constexpr double FREQUENCY_MULTIPLIER_ = 20.; 
+    static constexpr double FREQUENCY_MULTIPLIER_ = 80.; 
     using node_id_type = std::string;
     using dataset_name_type = std::string;
     using measured_runs_type = std::vector<double>;
@@ -27,6 +27,7 @@ class benchmarker
     std::vector<basic_path> calib_folders_;
     std::vector<std::unique_ptr<measuring_clock>> clocks_;
     benchmark_results_type results_;
+    std::string output_dir_; 
     enum class calib_type
     {
         manual,
@@ -69,13 +70,16 @@ class benchmarker
             std::cout << ss.str();
     }
     public:
-    benchmarker(const std::string& folder, const std::string & calib_folder): //automatic names based search of calib file
-    calibration_mode_(calib_type::automatic)
+    benchmarker(const std::string& folder, const std::string & calib_folder, const std::string & output_dir): //automatic names based search of calib file
+    calibration_mode_(calib_type::automatic),
+    output_dir_(output_dir)
     {
        load_all_datasets(folder);
        load_all_calib_files(calib_folder);
     }
-    benchmarker(std::vector<std::string>& data_files, std::vector<std::string>& calib_files) //automatic names based search of calib file
+    benchmarker(std::vector<std::string>& data_files, std::vector<std::string>& calib_files,
+        const std::string & output_dir): //automatic names based search of calib file
+    output_dir_(output_dir)
     {
         for (auto & data_file : data_files) 
         {
@@ -300,8 +304,8 @@ class benchmarker
         print_results(std::cout);
     }
 */
-    template <typename... cl_arg_types, typename arch_type>
-    void run_whole_benchmark(arch_type arch, cl_arg_types... cl_args)
+    template <typename... cl_arg_types>
+    void run(architecture_type arch, cl_arg_types... cl_args)
     {
     const uint16_t REPEATS = 1;
 
@@ -316,13 +320,13 @@ class benchmarker
             switch(calibration_mode_)
             {
                 case calib_type::automatic:
-                    factory.create_model(controller_, arch,  data_files_[i].as_absolute(), auto_find_calib_file(data_files_[i]), cl_args...);
+                    factory.create_model(controller_, arch,  data_files_[i].as_absolute(), auto_find_calib_file(data_files_[i]), output_dir_, cl_args...);
                     break;
                 case calib_type::manual:
-                    factory.create_model(controller_, arch, data_files_[i].as_absolute(), calib_folders_[i].as_absolute(), cl_args...);
+                    factory.create_model(controller_, arch, data_files_[i].as_absolute(), calib_folders_[i].as_absolute(), output_dir_, cl_args...);
                     break;
                 case calib_type::same:
-                    factory.create_model(controller_, arch, data_files_[i].as_absolute(), calib_folders_[0].as_absolute(), cl_args...);
+                    factory.create_model(controller_, arch, data_files_[i].as_absolute(), calib_folders_[0].as_absolute(), output_dir_,  cl_args...);
                     break;  
                 default:
                     throw std::invalid_argument("invalid calibration type (choose one of auto/manual/same)");

@@ -1,10 +1,10 @@
+#pragma once
 #include <string>
 #include <sstream>
 #include <iostream>
 #include <fstream>
 #include <iomanip>
 #include "../utils.h"
-#pragma once
 class mm_hit
 {
     coord coord_;

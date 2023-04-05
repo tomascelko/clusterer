@@ -40,7 +40,7 @@ class multi_cluster_pipe_reader
 
         for(uint32_t i = 0; i < readers_.size(); ++i)
         {
-            cluster<hit_type> & current = readers_[i].peek();
+            const cluster<hit_type> & current = readers_[i].peek();
             if(current.is_valid() && current.first_toa() < min_toa)
             {
                 min_toa = current.first_toa();

@@ -11,6 +11,8 @@
 #include "../data_structs/cluster.h"
 #include "../data_structs/mm_hit.h"
 #include "../data_structs/burda_hit.h"
+#include "../data_nodes/analysis/default_window_feature_vector.h"
+#pragma once
 class dataflow_controller
 {
     using node_pointer = std::unique_ptr<i_data_node>;
@@ -69,8 +71,10 @@ public:
             connect_nodes(dynamic_cast<i_data_producer<cluster<mm_hit>>*>(producer), dynamic_cast<i_data_consumer<cluster<mm_hit>>*>(consumer));
         else if (dynamic_cast<i_data_producer<cluster<burda_hit>>*>(producer) != nullptr)
             connect_nodes(dynamic_cast<i_data_producer<cluster<burda_hit>>*>(producer), dynamic_cast<i_data_consumer<cluster<burda_hit>>*>(consumer));
-        else
-            throw std::invalid_argument("provided data node produces unsupported data type");
+        else if (dynamic_cast<i_data_producer<default_window_feature_vector<mm_hit>>*>(producer) != nullptr)
+            connect_nodes(dynamic_cast<i_data_producer<default_window_feature_vector<mm_hit>>*>(producer), 
+            dynamic_cast<i_data_consumer<default_window_feature_vector<mm_hit>>*>(consumer));
+        else throw std::invalid_argument("provided data node produces unsupported data type");
     }
     void add_node(i_data_node * data_node)
     {

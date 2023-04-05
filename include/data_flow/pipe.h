@@ -52,7 +52,7 @@ class data_block
     {
         return to_delete_index_ != data_block_.size();
     }
-    data_type & peek()
+    const data_type & peek()
     {
         return data_block_[to_delete_index_];
     }

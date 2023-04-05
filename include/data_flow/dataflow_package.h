@@ -11,3 +11,5 @@
 #include "i_simple_producer.h"
 #include "multi_pipe_writer.h"
 #include "i_multi_producer.h"
+#include "dataflow_controller.h"
+#pragma once

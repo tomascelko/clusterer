@@ -1,5 +1,6 @@
 #pragma once
 #include <functional>
+#pragma once
 template <typename data_type >
 class multi_pipe_writer
 {

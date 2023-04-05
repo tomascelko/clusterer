@@ -182,8 +182,8 @@ class mm_read_stream
             return *this;
         }
         *cl_file_ >> hit_count >> line_start >> byte_start;
-        cl.set_byte_start(byte_start);
-        cl.set_line_start(line_start);
+        //cl.set_byte_start(byte_start);
+        //cl.set_line_start(line_start);
         cl.set_last_toa(ftoa); //is updated in .add_hit automatically
         cl.set_first_toa(ftoa);
         cl.hits().reserve(hit_count);

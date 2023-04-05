@@ -138,10 +138,11 @@ class model_factory
     using standard_clustering_type = pixel_list_clusterer<cluster>;
     using parallel_clusterer_type = parallel_clusterer<mm_hit, pixel_list_clusterer<cluster>>;
     mm_write_stream * print_stream;
-    using filenames_type = std::vector<std::string>; 
-    filenames_type::iterator data_file_it;
-    filenames_type::iterator calib_file_it;
-
+    using filenames_type = const std::vector<std::string>; 
+    filenames_type::const_iterator data_file_it;
+    filenames_type::const_iterator calib_file_it;
+    static constexpr double FREQUENCY_MULTIPLIER_ = 100.; 
+    std::ofstream * window_print_stream;
     template <typename arch_type, typename ... args_type>
     i_data_node* create_node(node node, arch_type arch, args_type... args)
     {
@@ -149,7 +150,7 @@ class model_factory
         if(node.type == "r")
             return new data_reader<burda_hit, std::ifstream>(*data_file_it, 2 << 10);
         else if(node.type == "rr")
-            return new repeating_data_reader<burda_hit, std::ifstream>{*data_file_it, 2 << 21};  
+            return new repeating_data_reader<burda_hit, std::ifstream>{*data_file_it, 2 << 21, FREQUENCY_MULTIPLIER_};  
         else if(node.type == "rc")
             return new data_reader<cluster<mm_hit>, mm_read_stream>(*data_file_it, 2 << 10);
         else if(node.type == "bm")
@@ -170,6 +171,8 @@ class model_factory
         } 
         else if(node.type == "p")
             return new data_printer<cluster<mm_hit>, mm_write_stream>(print_stream);
+        else if(node.type == "wp")
+            return new data_printer<default_window_feature_vector<mm_hit>, std::ofstream>(window_print_stream);
         else if(node.type == "m")
             return new cluster_merging<mm_hit>(
                 dynamic_cast<node_descriptor<cluster<mm_hit>, cluster<mm_hit>>*>(arch.node_descriptors()["m" + std::to_string(node.id)]));
@@ -198,6 +201,8 @@ class model_factory
             return new cluster_sorting_combiner<mm_hit>();
         else if (node.type == "cv")
             return new clustering_validator<mm_hit>(std::cout);
+        else if (node.type == "wfc")
+            return new window_feature_computer<default_window_feature_vector<mm_hit>, mm_hit>(args...);
         throw std::invalid_argument("node of given type was not recognized");
         
     };
@@ -205,20 +210,35 @@ class model_factory
     public:
     template <typename ...clustering_args_type>
     void create_model(dataflow_controller * controller, architecture_type arch,
-      const std::string& data_file, const std::string& calib_file, clustering_args_type ... cl_args)
+      const std::string& data_file, const std::string& calib_file, 
+      const std::string output_dir, clustering_args_type ... cl_args)
     {
-        create_model(controller, arch, std::vector<std::string>{data_file}, std::vector<std::string>{calib_file},
-            cl_args...);
+        create_model(controller, arch, std::vector<std::string>{data_file}, 
+        std::vector<std::string>{calib_file}, output_dir, cl_args...);
     }
     //TODO FINISH METHOD THAT GETS INPUT AS VECTORS
     template <typename ...clustering_args_type>
     void create_model(dataflow_controller * controller, architecture_type arch,
-      std::vector<std::string> data_files, std::vector<std::string> calib_files, clustering_args_type ... cl_args)
+      const std::vector<std::string> & data_files, const std::vector<std::string> & calib_files,  
+       const std::string & output_dir, clustering_args_type ... cl_args)
     {
-        this->print_stream = new mm_write_stream("/home/tomas/MFF/DT/clusterer/output/new");
+        auto t = std::time(nullptr);
+        auto time = *std::localtime(&t);
+        std::stringstream time_ss;
+        time_ss << std::put_time(&time, "%d-%m-%Y_%h_%m_%s");
+        if(output_dir.size() > 0 && ((output_dir[output_dir.size() - 1] == '/') || (output_dir[output_dir.size() - 1] == '\\')))
+        {
+            this->print_stream = new mm_write_stream(output_dir + "clustered_" + time_ss.str());
+            this->window_print_stream = new std::ofstream(output_dir + "window_features_" + time_ss.str());
+        }
+        else
+        {
+            this->print_stream = new mm_write_stream(output_dir);
+            this->window_print_stream = new std::ofstream(output_dir);    
+        }
         std::vector<i_data_node*> data_nodes;
-        data_file_it = data_files.begin();
-        calib_file_it = calib_files.begin();
+        data_file_it = data_files.cbegin();
+        calib_file_it = calib_files.cbegin();
         for (auto node : arch.nodes())
         {
             

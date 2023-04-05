@@ -11,7 +11,7 @@ class data_reader : public i_simple_producer<data_type>, public i_controlable_so
     protected:
     
     using buffer_type = data_buffer<data_type>;
-    const uint32_t SLEEP_DURATION = 200;
+    const uint32_t SLEEP_DURATION = 100;
     std::unique_ptr<buffer_type> buffer_a_;
     std::unique_ptr<buffer_type> buffer_b_;
     uint32_t max_buffer_size_;

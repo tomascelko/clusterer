@@ -1,3 +1,4 @@
+#pragma once
 #include "../utils.h"
 #include <string>
 #include <map>
@@ -9,6 +10,7 @@
 #include "../mapped_mm_stream.h"
 #include "../mm_stream.h"
 #include "../benchmark/model_factory.h"
+
 class model_executor
 {
     std::vector<file_path> data_files_;
@@ -23,6 +25,7 @@ class model_executor
         none
     };
     calib_type calibration_mode_;
+    std::string output_dir_;
     void load_all_datasets(const std::string & data_folder)
     {
         std::stringstream ss;
@@ -77,7 +80,7 @@ class model_executor
     std::vector<std::string> calib_paths_as_absolute()
     {
         std::vector<std::string> result;
-        for (uint32_t i = 0; i < calib_folders_.size(); ++i)
+        for (uint32_t i = 0; i < data_files_.size(); ++i)
             switch(calibration_mode_)
             {
                 case calib_type::automatic:
@@ -98,14 +101,26 @@ class model_executor
     }
     public:
     //burda file reading with calibration
-    model_executor(const std::string& folder, const std::string & calib_folder): //automatic names based search of calib file
-    calibration_mode_(calib_type::automatic)
+    model_executor(const std::string& folder, const std::string & calib_folder,
+    const std::string & output_dir): //automatic names based search of calib file
+    calibration_mode_(calib_type::automatic),
+    output_dir_(output_dir)
     {
        load_all_datasets(folder);
        load_all_calib_files(calib_folder);
     }
-    model_executor(std::vector<std::string> files, std::vector<std::string> calib_files) //
-
+    model_executor(std::vector<std::string> files, std::string calib_folder, 
+        const std::string & output_dir):
+    output_dir_(output_dir),
+    calibration_mode_(calib_type::automatic)
+    {
+        for (auto file : files)
+                data_files_.emplace_back(file_path(file));
+        load_all_calib_files(calib_folder);
+    }
+    model_executor(std::vector<std::string> files, std::vector<std::string> calib_files, 
+        const std::string & output_dir):
+    output_dir_(output_dir)
     {
         for (auto file : files)
                 data_files_.emplace_back(file_path(file));
@@ -115,23 +130,22 @@ class model_executor
         {
             for (auto file : calib_files)
                 calib_folders_.emplace_back(file_path(file));
-                calibration_mode_ = calib_type::manual;
+            calibration_mode_ = calib_type::manual;
         }
     }
     
     template < typename... cl_args_type>
-    void run_model(architecture_type arch, cl_args_type ... cl_args)
+    void run(architecture_type arch, cl_args_type ... cl_args)
     {
          model_factory factory;  
 
         controller_ = new dataflow_controller();
         auto datasets_str = data_paths_as_absolute();
         auto calib_str = calib_paths_as_absolute();
-        factory.create_model(controller_, arch,  datasets_str, calib_str, cl_args...);
+        factory.create_model(controller_, arch,  datasets_str, calib_str, output_dir_, cl_args...);
         
         
         controller_->start_all();
-
         controller_->wait_all();
         controller_->remove_all();
         delete controller_;

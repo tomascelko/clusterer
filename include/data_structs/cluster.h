@@ -12,9 +12,9 @@ class cluster
 protected:
     double first_toa_ = std::numeric_limits<double>::max();
     double last_toa_ = - std::numeric_limits<double>::max();
-    uint64_t line_start_;
+    //uint64_t line_start_;
     uint64_t hit_count_;
-    uint64_t byte_start_;
+    //uint64_t byte_start_;
     std::vector<data_type> hits_;
     
 public:
@@ -70,18 +70,18 @@ public:
         return last_toa_;
     }
     
-    uint64_t line_start() const
+    /*uint64_t line_start() const
     {
         return line_start_;
-    }
+    }*/
     uint64_t hit_count() const
     {
         return hits().size();
     }
-    uint64_t byte_start() const
+    /*uint64_t byte_start() const
     {
         return byte_start_;
-    }
+    }*/
     std::vector<data_type>& hits()
     {
         return hits_;
@@ -108,14 +108,14 @@ public:
         }
         return tot_energy;
     }
-    void set_byte_start(uint64_t new_byte_start)
+    /*void set_byte_start(uint64_t new_byte_start)
     {
         byte_start_ = new_byte_start;
     }
     void set_line_start(uint64_t new_line_start)
     {
         line_start_ = new_line_start;
-    }
+    }*/
     void set_first_toa(double toa)
     {
         first_toa_ = toa;
@@ -128,7 +128,7 @@ public:
     {
         return hits_.size() * data_type::avg_size() + 2 * sizeof(double) + 3 * sizeof(uint64_t);
     }
-    virtual void write(std::ofstream* cl_stream, std::ofstream* px_stream) const
+    /*virtual void write(std::ofstream* cl_stream, std::ofstream* px_stream) const
     {
         //std::stringstream result;
         *px_stream << std::fixed << std::setprecision(6) << first_toa_ << " " << hit_count_<< std::string(" ") << line_start_ << " " << byte_start_ << std::endl;
@@ -138,7 +138,7 @@ public:
         }
         *px_stream << "#" << std::endl;
         //return result.str();
-    }
+    }*/
     virtual std::pair<double, double> center()
     {
         double mean_x = 0;

@@ -141,12 +141,12 @@ struct coord
                 && y_ + neighbor.y_ * tile_size >= MIN_VALUE && y_ + neighbor.y_ * tile_size < MAX_VALUE);
 
         }
-        
-    };
-        coord operator + (const coord & left, const coord & right)
+        coord operator + (const coord & right)
         {
-            return coord(left.x() + right.x(), left.y() + right.y());
+            return coord(this->x() + right.x(), this->y() + right.y());
         }
+    };
+        
     template<typename number_type>
     std::string double_to_str(number_type number, uint16_t precision = 6)
     {

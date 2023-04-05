@@ -23,7 +23,7 @@ class pipe_reader
     {
         return !block_.can_peek();
     }
-    data_type & peek()
+    const data_type & peek()
     {
         if(!block_.can_peek())
             pipe_->blocking_dequeue(block_);

@@ -157,7 +157,8 @@ class model_factory
         {
             if (arch.node_descriptors().find(node.type + std::to_string(node.id)) != arch.node_descriptors().end())
                 return new burda_to_mm_hit_adapter<mm_hit>(
-                    dynamic_cast<node_descriptor<burda_hit, mm_hit>*>(arch.node_descriptors()["bm" + std::to_string(node.id)]));
+                    dynamic_cast<node_descriptor<burda_hit, mm_hit>*>(arch.node_descriptors()["bm" + std::to_string(node.id)]), 
+                        calibration(*calib_file_it, current_chip::chip_type::size()));
             else
                     return new burda_to_mm_hit_adapter<mm_hit>(calibration(*calib_file_it, current_chip::chip_type::size()));
         }
@@ -203,10 +204,25 @@ class model_factory
             return new clustering_validator<mm_hit>(std::cout);
         else if (node.type == "wfc")
             return new window_feature_computer<default_window_feature_vector<mm_hit>, mm_hit>(args...);
+        else if (node.type == "tr")
+            throw std::invalid_argument("node of given type was not implemented yet");
+
         throw std::invalid_argument("node of given type was not recognized");
         
     };
-    
+    void set_output_streams(const std::string & output_dir, const std::string & time_str, const std::string & id)
+    {
+        if(output_dir.size() > 0 && ((output_dir[output_dir.size() - 1] == '/') || (output_dir[output_dir.size() - 1] == '\\')))
+        {
+            this->print_stream = new mm_write_stream(output_dir + "clustered_" + id + "_" + time_str);
+            this->window_print_stream = new std::ofstream(output_dir + "window_features_" + id + "_" + time_str);
+        }
+        else
+        {
+            this->print_stream = new mm_write_stream(output_dir + id);
+            this->window_print_stream = new std::ofstream(output_dir + id);    
+        }
+    }
     public:
     template <typename ...clustering_args_type>
     void create_model(dataflow_controller * controller, architecture_type arch,
@@ -226,28 +242,27 @@ class model_factory
         auto time = *std::localtime(&t);
         std::stringstream time_ss;
         time_ss << std::put_time(&time, "%d-%m-%Y_%h_%m_%s");
-        if(output_dir.size() > 0 && ((output_dir[output_dir.size() - 1] == '/') || (output_dir[output_dir.size() - 1] == '\\')))
-        {
-            this->print_stream = new mm_write_stream(output_dir + "clustered_" + time_ss.str());
-            this->window_print_stream = new std::ofstream(output_dir + "window_features_" + time_ss.str());
-        }
-        else
-        {
-            this->print_stream = new mm_write_stream(output_dir);
-            this->window_print_stream = new std::ofstream(output_dir);    
-        }
+        
         std::vector<i_data_node*> data_nodes;
         data_file_it = data_files.cbegin();
         calib_file_it = calib_files.cbegin();
+        auto output_node_index = 0;
         for (auto node : arch.nodes())
         {
-            
+            if(node.type == "p")
+            {
+                set_output_streams(output_dir + std::to_string(output_node_index), time_ss.str(), std::to_string(output_node_index));
+                output_node_index ++;
+            }
             data_nodes.emplace_back(create_node(node, arch, cl_args...));
+            
+            
             controller->add_node(data_nodes.back());
             if(node.type[0] == 'r')
                 ++data_file_it;
             if(node.type == "bm")
                 ++calib_file_it;
+            
         }   
         for(auto edge : arch.edges())
         {

@@ -21,8 +21,18 @@ endif()
 #include_directories(${Python2_INCLUDE_DIRS} ${Python2_NumPy_INCLUDE_DIRS})
 AUX_SOURCE_DIRECTORY(./src SOURCES)
 #set(SOURCES ./src/main.cpp)
+
+
 add_executable(cclusterer ${SOURCES})
+#add_library(lcclusterer STATIC ${SOURCES})
+
+
+#set_target_properties(lcclusterer PROPERTIES RUNTIME_OUTPUT_DIRECTORY "./lib")
 set_target_properties(cclusterer PROPERTIES RUNTIME_OUTPUT_DIRECTORY "./bin")
-target_link_libraries(cclusterer ${Boost_LIBRARIES} stdc++fs) #Python3::Python Python3::NumPy)
+
+
+
+
+#target_link_libraries(cclusterer ${Boost_LIBRARIES} stdc++fs) #Python3::Python Python3::NumPy)
 
 

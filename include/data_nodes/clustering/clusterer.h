@@ -269,7 +269,7 @@ class pixel_list_clusterer : public i_simple_consumer<mm_hit>,
     {
         mm_hit hit;
         while(!reader_.read(hit));
-        clock_->start();
+        //clock_->start();
         while(hit.is_valid())
         {
             if(processed_hit_count_ % WRITE_INTERVAL == 0) 
@@ -278,7 +278,7 @@ class pixel_list_clusterer : public i_simple_consumer<mm_hit>,
             while(!reader_.read(hit));
         }   
         write_remaining_clusters();
-        clock_->stop_and_report("clusterer");
+        //clock_->stop_and_report("clusterer");
 
         std::cout << "CLUSTERER ENDED ---------- " << processed_hit_count_ <<" hits processed" <<std::endl;
     }

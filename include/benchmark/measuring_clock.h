@@ -58,7 +58,7 @@ class measuring_clock
         duration_ += std::chrono::duration_cast<std::chrono::nanoseconds>(clock_type::now() - start_point_);
         finish_callback_(exec_time_result(node_id, duration_.count()));
     }
-    measuring_clock(std::function<void(exec_time_result)> finish_callback, bool measure = true) :
+    measuring_clock(std::function<void(exec_time_result)> finish_callback, bool measure = false) :
     finish_callback_(finish_callback),
     measure_(measure)
     {

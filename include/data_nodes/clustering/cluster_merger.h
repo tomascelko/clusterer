@@ -339,7 +339,7 @@ public:
         cluster<hit_type> new_cl;
         uint32_t finish_producers_count = 0;
         reader_.read(new_cl); 
-        clock_->start();
+        //clock_->start();
         while(new_cl.is_valid())
         {
             ++processed;
@@ -348,7 +348,7 @@ public:
         }
         write_remaining_clusters();
         std::cout << processed_border_count << " " << processed_non_border_count << std::endl; 
-        clock_->stop_and_report("parallel_clusterer");
+        //clock_->stop_and_report("parallel_clusterer");
         this->writer_.close();
         std::cout << "CLUSTER MERGING ENDED ---------------------" << std::endl;
     }

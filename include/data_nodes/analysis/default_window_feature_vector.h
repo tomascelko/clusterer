@@ -3,6 +3,7 @@
 #include <iomanip>
 #include <iostream>
 #include <numeric>
+#include <variant>
 template <typename hit_type>
 class default_window_feature_vector
 {
@@ -159,6 +160,8 @@ class default_window_feature_vector
         if(hit_count < 2)
             return std::nan("");
         double mean = mean_x();
+        if(static_cast<double>(x2_sum_)/hit_count < (mean)*(mean))
+            return 0;
         return std::sqrt((static_cast<double>(x2_sum_)/hit_count) - (mean)*(mean));
     }
     double std_y() const
@@ -166,6 +169,8 @@ class default_window_feature_vector
         if(hit_count < 2)
             return std::nan("");
         double mean = mean_y();
+        if(static_cast<double>(y2_sum_)/hit_count < (mean)*(mean))
+            return 0;
         return std::sqrt((static_cast<double>(y2_sum_)/hit_count) - (mean)*(mean));
     }
     double mean_x() const

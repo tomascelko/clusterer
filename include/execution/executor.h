@@ -10,7 +10,7 @@
 #include "../mapped_mm_stream.h"
 #include "../mm_stream.h"
 #include "../benchmark/model_factory.h"
-
+#include "../data_structs/node_args.h"
 class model_executor
 {
     std::vector<file_path> data_files_;
@@ -135,14 +135,15 @@ class model_executor
     }
     
     template < typename... cl_args_type>
-    void run(architecture_type arch, cl_args_type ... cl_args)
+    void run(architecture_type arch, const node_args & args)
     {
          model_factory factory;  
 
         controller_ = new dataflow_controller();
         auto datasets_str = data_paths_as_absolute();
         auto calib_str = calib_paths_as_absolute();
-        factory.create_model(controller_, arch,  datasets_str, calib_str, output_dir_, cl_args...);
+        std::cout << "entering factory" << std::endl;
+        factory.create_model(controller_, arch,  datasets_str, calib_str, output_dir_, args);
         
         
         controller_->start_all();

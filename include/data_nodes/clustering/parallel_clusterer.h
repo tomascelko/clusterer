@@ -2,6 +2,7 @@
 #include "../../data_flow/dataflow_package.h"
 #include <queue>
 #include "../../data_structs/cluster.h"
+#include "../../data_structs/node_args.h"
 #include "../../utils.h"
 #include "../../devices/current_device.h"
 #include "../../benchmark/i_time_measurable.h"
@@ -24,7 +25,7 @@ class parallel_clusterer : public i_data_consumer<hit_type>,
     std::vector<default_pipe<cluster<hit_type>>*> merging_pipes_; 
     std::vector<double> first_toas_by_producers_; //used 
     public:
-    parallel_clusterer(node_descriptor<cluster<hit_type>, hit_type>* node_descr) :
+    parallel_clusterer(node_descriptor<cluster<hit_type>, hit_type>* node_descr, const node_args & args) :
     split_descr_(node_descr->split_descr),
     merging_node_(new cluster_merging<hit_type>(
         new node_descriptor<cluster<hit_type>, cluster<hit_type>>(node_descr->merge_descr, 
@@ -33,7 +34,7 @@ class parallel_clusterer : public i_data_consumer<hit_type>,
         for (uint32_t i = 0; i < split_descr_->pipe_count(); i++)
         {
 
-            clustering_node* cl_node = new clustering_node();
+            clustering_node* cl_node = new clustering_node(args);
             default_pipe<hit_type>* split_pipe = new default_pipe<hit_type> (name() + "_" + 
                 cl_node->name() + "_" + std::to_string(split_pipes_.size()));
             default_pipe<cluster<hit_type>> * merge_pipe = new default_pipe<cluster<hit_type>> (cl_node->name() + "_" + 

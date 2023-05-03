@@ -11,6 +11,7 @@
 #include "../../data_flow/dataflow_package.h"
 #include "../../utils.h"
 #include "../../data_structs/mm_hit.h"
+#include "../../data_structs/node_args.h"
 #include "../../utils.h"
 #include "../../benchmark/i_time_measurable.h"
 #include "../../benchmark/measuring_clock.h"
@@ -53,7 +54,7 @@ class pixel_list_clusterer : public i_simple_consumer<mm_hit>,
     protected:    
     
     const double CLUSTER_CLOSING_DT = 300;   //time after which the cluster is closed (> DIFF_DT, because of delays in the datastream)
-    const double CLUSTER_DIFF_DT = 200;     //time that marks the max difference of cluster last_toa()
+    double cluster_diff_dt = 200;     //time that marks the max difference of cluster last_toa()
     const std::vector<coord> EIGHT_NEIGHBORS = {{-1, -1}, {-1, 0}, {-1, 1},
                                                 { 0, -1}, { 0, 0}, { 0, 1},
                                                 { 1, -1}, { 1, 0}, { 1, 1}};
@@ -121,7 +122,7 @@ class pixel_list_clusterer : public i_simple_consumer<mm_hit>,
                 for (auto & neighbor_cl_it : pixel_lists_[neighbor_index])  //iterate over each cluster neighbor pixel can be in
                 //TODO do reverse iteration and break when finding a match - as there cannot two "already mergable" clusters on a single neighbor pixel
                 {
-                    if(std::abs(toa - neighbor_cl_it->cl.last_toa()) < CLUSTER_DIFF_DT && !neighbor_cl_it->selected) //TODO order
+                    if(std::abs(toa - neighbor_cl_it->cl.last_toa()) < cluster_diff_dt && !neighbor_cl_it->selected) //TODO order
                     {                                                                     //which of conditions is more likely to fail?
                         neighbor_cl_it->select();
                         uniq_neighbor_cluster_its.push_back(neighbor_cl_it);
@@ -228,20 +229,24 @@ class pixel_list_clusterer : public i_simple_consumer<mm_hit>,
         write_old_clusters();
         this->writer_.close();
     }
-    pixel_list_clusterer(node_descriptor<mm_hit, cluster<mm_hit>>* node_descr, uint32_t tile_size = 1) :
-    pixel_lists_(current_chip::chip_type::size_x() * current_chip::chip_type::size_y() / (tile_size * tile_size)),
-    tile_size_(tile_size),
+    pixel_list_clusterer(node_descriptor<mm_hit, cluster<mm_hit>>* node_descr, const node_args & args) :
+    pixel_lists_(current_chip::chip_type::size_x() * current_chip::chip_type::size_y() / (
+        args.get_int_arg(name(), "tile_size") * args.get_int_arg(name(), "tile_size"))),
+    tile_size_(args.get_int_arg(name(), "tile_size")),
     unfinished_clusters_count_(0),
     processed_hit_count_(0),
+    cluster_diff_dt(args.get_double_arg(name(), "max_dt")),
     i_multi_producer<cluster<mm_hit>>(node_descr->split_descr)
     {  
         return;
     }
-    pixel_list_clusterer(uint32_t tile_size = 1) :
-    pixel_lists_(current_chip::chip_type::size_x() * current_chip::chip_type::size_y() / (tile_size * tile_size)),
-    tile_size_(tile_size),
+    pixel_list_clusterer(const node_args & args) :
+    pixel_lists_(current_chip::chip_type::size_x() * current_chip::chip_type::size_y() / (
+         args.get_int_arg(name(), "tile_size") * args.get_int_arg(name(), "tile_size"))),
+    tile_size_(args.get_int_arg(name(), "tile_size")),
     unfinished_clusters_count_(0),
     processed_hit_count_(0),
+    cluster_diff_dt(args.get_double_arg(name(), "max_dt")),
     i_multi_producer<cluster<mm_hit>>(new trivial_split_descriptor<cluster<mm_hit>>())
     {  
         return;

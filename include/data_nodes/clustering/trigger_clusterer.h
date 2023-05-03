@@ -35,8 +35,7 @@ class trigger_clusterer : public i_simple_consumer<hit_type>,
     std::unique_ptr<clustering_alg_type> clusterer_;
     
     
-    
-    void wrapped_process_hit(hit_type & hit) //used for benchmarking
+    void wrapped_process_hit(hit_type & hit) 
     {
         if(processed_hit_count_ % WRITE_INTERVAL == 0) 
             clusterer_->write_old_clusters(hit.toa());
@@ -187,4 +186,6 @@ class frequency_diff_trigger : public abstract_trigger<hit_type, window_frequenc
         return triggered;      
     }
 };
+
+
 //TODO implement energy distr trigger but before that try to compile passing trigger type as an argument

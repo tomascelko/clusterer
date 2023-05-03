@@ -53,8 +53,10 @@ public:
     template <typename data_type>
     default_pipe<data_type>* connect_nodes(i_data_producer<data_type>* producer, i_data_consumer<data_type>* consumer)
     {
+        std::cout << "templated" << std::endl;
         default_pipe<data_type>* connecting_pipe = new default_pipe<data_type>(producer->name() + "__&__" + 
             consumer->name() + "_" + std::to_string(pipes_.size()));
+            std::cout << "pipe_created" << std::endl;
         return connect_nodes<data_type>(producer, consumer, connecting_pipe);
 
 
@@ -63,6 +65,7 @@ public:
     void connect_nodes(i_data_node* producer, i_data_node* consumer)
     {
         //TODO create workflow where we can find 
+        std::cout << "entering" << std::endl;
         if(dynamic_cast<i_data_producer<mm_hit>*>(producer) != nullptr)
             connect_nodes(dynamic_cast<i_data_producer<mm_hit>*>(producer), dynamic_cast<i_data_consumer<mm_hit>*>(consumer));
         else if(dynamic_cast<i_data_producer<burda_hit>*>(producer) != nullptr)

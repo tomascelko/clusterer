@@ -8,6 +8,8 @@
 #include "measuring_clock.h"
 #include "../data_nodes/nodes_package.h"
 #include "../mm_stream.h"
+#include "../data_structs/node_args.h"
+#include <tuple>
 #pragma once
 struct node
 {
@@ -143,10 +145,11 @@ class model_factory
     filenames_type::const_iterator calib_file_it;
     static constexpr double FREQUENCY_MULTIPLIER_ = 100.; 
     std::ofstream * window_print_stream;
-    template <typename arch_type, typename ... args_type>
-    i_data_node* create_node(node node, arch_type arch, args_type... args)
+    
+    template <typename arch_type>
+    i_data_node* create_node(node node, arch_type arch, const node_args & args)
     {
-        
+         
         if(node.type == "r")
             return new data_reader<burda_hit, std::ifstream>(*data_file_it, 2 << 10);
         else if(node.type == "rr")
@@ -181,67 +184,72 @@ class model_factory
         {
             if (arch.node_descriptors().find(node.type + std::to_string(node.id)) != arch.node_descriptors().end())
                 return new standard_clustering_type(
-                    dynamic_cast<node_descriptor<mm_hit, cluster<mm_hit>>*>(arch.node_descriptors()["sc" + std::to_string(node.id)]));
-                return new standard_clustering_type();
+                    dynamic_cast<node_descriptor<mm_hit, cluster<mm_hit>>*>(arch.node_descriptors()["sc" + std::to_string(node.id)]), args);
+                return new standard_clustering_type(args);
         }
         else if(node.type == "ec")
             return new energy_filtering_clusterer<mm_hit>();
         else if(node.type == "ppc")
             return new parallel_clusterer_type(
-                dynamic_cast<node_descriptor<cluster<mm_hit>, mm_hit>*>(arch.node_descriptors()["ppc" + std::to_string(node.id)]));
-        else if(node.type == "trc")
-            return new trigger_clusterer<mm_hit, standard_clustering_type, frequency_diff_trigger<mm_hit>>();
+                dynamic_cast<node_descriptor<cluster<mm_hit>, mm_hit>*>(arch.node_descriptors()["ppc" + std::to_string(node.id)]), args);
+        //else if(node.type == "trc")
+        //    return new trigger_clusterer<mm_hit, standard_clustering_type, frequency_diff_trigger<mm_hit>>();
         else if(node.type == "tic")
-            return new standard_clustering_type( args...);
+            return new standard_clustering_type(args);
         else if(node.type == "bbc")
-            return new halo_buffer_clusterer<mm_hit, standard_clustering_type>(args...);
-        else if(node.type == "trbbc")
-            return new trigger_clusterer<mm_hit, halo_buffer_clusterer<mm_hit, standard_clustering_type>, frequency_diff_trigger<mm_hit>>(
-                args...);
+            return new halo_buffer_clusterer<mm_hit, standard_clustering_type>(args);
+        //else if(node.type == "trbbc")
+        //    return new trigger_clusterer<mm_hit, halo_buffer_clusterer<mm_hit, standard_clustering_type>, frequency_diff_trigger<mm_hit>>(
+        //        args);
         else if(node.type == "co")
             return new cluster_sorting_combiner<mm_hit>();
         else if (node.type == "cv")
             return new clustering_validator<mm_hit>(std::cout);
         else if (node.type == "wfc")
-            return new window_feature_computer<default_window_feature_vector<mm_hit>, mm_hit>(args...);
+            return new window_feature_computer<default_window_feature_vector<mm_hit>, mm_hit>(args);
         else if (node.type == "tr")
             throw std::invalid_argument("node of given type was not implemented yet");
 
         throw std::invalid_argument("node of given type was not recognized");
         
     };
-    void set_output_streams(const std::string & output_dir, const std::string & time_str, const std::string & id)
+    void set_output_streams(const std::string & node_type, const std::string & output_dir, 
+        const std::string & time_str, const std::string & id)
     {
         if(output_dir.size() > 0 && ((output_dir[output_dir.size() - 1] == '/') || (output_dir[output_dir.size() - 1] == '\\')))
         {
-            this->print_stream = new mm_write_stream(output_dir + "clustered_" + id + "_" + time_str);
-            this->window_print_stream = new std::ofstream(output_dir + "window_features_" + id + "_" + time_str);
+            if(node_type[0] == 'p')
+                this->print_stream = new mm_write_stream(output_dir + "clustered_" + id + "_" + time_str);
+            else
+                this->window_print_stream = new std::ofstream(output_dir + "window_features_" + id + "_" + time_str);
         }
         else
         {
-            this->print_stream = new mm_write_stream(output_dir + id);
-            this->window_print_stream = new std::ofstream(output_dir + id);    
+            if(node_type[0] == 'p')
+                this->print_stream = new mm_write_stream(output_dir + id);
+            else
+                this->window_print_stream = new std::ofstream(output_dir);    
         }
     }
     public:
-    template <typename ...clustering_args_type>
+    
     void create_model(dataflow_controller * controller, architecture_type arch,
       const std::string& data_file, const std::string& calib_file, 
-      const std::string output_dir, clustering_args_type ... cl_args)
+      const std::string output_dir, const node_args & args)
     {
         create_model(controller, arch, std::vector<std::string>{data_file}, 
-        std::vector<std::string>{calib_file}, output_dir, cl_args...);
+        std::vector<std::string>{calib_file}, output_dir, args);
     }
     //TODO FINISH METHOD THAT GETS INPUT AS VECTORS
-    template <typename ...clustering_args_type>
+   
     void create_model(dataflow_controller * controller, architecture_type arch,
       const std::vector<std::string> & data_files, const std::vector<std::string> & calib_files,  
-       const std::string & output_dir, clustering_args_type ... cl_args)
+       const std::string & output_dir, const node_args & args)
     {
         auto t = std::time(nullptr);
         auto time = *std::localtime(&t);
         std::stringstream time_ss;
-        time_ss << std::put_time(&time, "%d-%m-%Y_%h_%m_%s");
+        time_ss << std::put_time(&time, "%d-%m-%Y_%H_%M_%S");
         
         std::vector<i_data_node*> data_nodes;
         data_file_it = data_files.cbegin();
@@ -249,12 +257,13 @@ class model_factory
         auto output_node_index = 0;
         for (auto node : arch.nodes())
         {
-            if(node.type == "p")
+            std::cout << "creating node " << node.type << std::endl;
+            if(node.type == "p" || node.type == "wp")
             {
-                set_output_streams(output_dir + std::to_string(output_node_index), time_ss.str(), std::to_string(output_node_index));
+                set_output_streams(node.type, output_dir, time_ss.str(), std::to_string(output_node_index));
                 output_node_index ++;
             }
-            data_nodes.emplace_back(create_node(node, arch, cl_args...));
+            data_nodes.emplace_back(create_node(node, arch, args));
             
             
             controller->add_node(data_nodes.back());
@@ -268,7 +277,10 @@ class model_factory
         {
             auto from_index = std::find(arch.nodes().begin(), arch.nodes().end(), edge.from) - arch.nodes().begin();
             auto to_index = std::find(arch.nodes().begin(), arch.nodes().end(), edge.to) - arch.nodes().begin();
+            std::cout << "edges " << from_index << " " << to_index << std::endl;
             controller->connect_nodes(data_nodes[from_index], data_nodes[to_index]);
+            
         }
+        std::cout << "edges connected" << std::endl;
     }
 };

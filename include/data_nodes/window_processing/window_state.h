@@ -1,5 +1,6 @@
 #pragma once
 #include "../analysis/default_window_feature_vector.h"
+#include <deque>
 template <typename hit_type>
 class default_window_state 
 {
@@ -12,16 +13,28 @@ class default_window_state
         variance in x and in y coordinate
 
     */
-   double last_hit_toa_ = 0;
-   double first_hit_toa_ = 0;
+    double last_hit_toa_ = 0;
+    double first_hit_toa_ = 0;
     double window_time_; //50ms
     double start_time_ = 0;
+    double differential_window_;
     default_window_feature_vector<hit_type> feature_vector_;
-
+    std::deque<default_window_feature_vector<hit_type>> previous_vectors_;
     public:
-    default_window_state(double window_time) :
-    window_time_(window_time)
+    default_window_state(double window_time, double differential_window = 0.) :
+    window_time_(window_time),
+    differential_window_(differential_window)
     {
+        if(differential_window >= window_time)
+        {
+            auto feature_vect_copy = feature_vector_;
+            feature_vect_copy.close();
+            for (size_t i = 0; double(i) < differential_window_ / window_time_; ++i)
+            {
+                previous_vectors_.push_back(feature_vect_copy);
+                //TODO copy feature vector and close it
+            }
+        }
 
     }
     bool can_add(const hit_type & hit) const
@@ -42,8 +55,14 @@ class default_window_state
     }
     void move_window()
     {
+        if(previous_vectors_.size() > 0)
+        {
+            previous_vectors_.pop_front();
+            previous_vectors_.push_back(feature_vector_);
+        }
         start_time_ += window_time_;
         feature_vector_ = default_window_feature_vector<hit_type>(start_time_);
+        
     }
     bool is_valid()
     {
@@ -51,7 +70,13 @@ class default_window_state
     }
     default_window_feature_vector<hit_type> to_feature_vector()
     {
+        feature_vector_.close();
+        if (previous_vectors_.size() > 0) 
+            return feature_vector_.diff_with_median(previous_vectors_);
         return feature_vector_;
+        
+        
+
     }
 };
 

@@ -85,8 +85,9 @@ private:
 public: 
     static constexpr uint64_t MAX_Q_LEN = 2ull << 31; //in bytes
     default_pipe(const std::string & name) :
-    name_(name),
-    queue_(MAX_Q_LEN){}
+    name_(name){
+        std::cout << "creating pipe" << std::endl;
+    }
     uint64_t processed_counter = 1;
     //not thread safe TODO move in block and out block to writer and reader so we can use the buffering with multiple writers
     //WILL be called from multiple threads on a same pipe

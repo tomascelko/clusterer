@@ -9,7 +9,7 @@ template<typename hit_type, typename clusterer_type, typename bb_cluster_type = 
 class halo_buffer_clusterer : public i_simple_consumer<hit_type>, public i_data_producer<cluster<hit_type>>, public i_time_measurable
 { 
     protected:
-    pixel_list_clusterer<cluster> clustering_node_;
+    //pixel_list_clusterer<cluster> clustering_node_;
     measuring_clock * clock_;
     double time_window_size_;
     double window_start_time_;
@@ -137,10 +137,11 @@ class halo_buffer_clusterer : public i_simple_consumer<hit_type>, public i_data_
 
         std::cout << "HALO BB CLUSTERER ENDED ---------- " <<std::endl;
     }
-    template <typename... underlying_clusterer_args_type>
-    halo_buffer_clusterer(double time_window_size = 1000000, underlying_clusterer_args_type... underlying_clusterer_args) :
-    clusterer_(std::make_unique<clusterer_type>(underlying_clusterer_args...)),
-    time_window_size_(time_window_size),
+    
+    halo_buffer_clusterer(const node_args & args) :
+    clusterer_(std::make_unique<clusterer_type>(args)),
+    time_window_size_(args.get_double_arg(name(), "window_size")),
+
     window_start_time_(0)
     
     {

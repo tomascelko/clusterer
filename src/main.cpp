@@ -42,7 +42,7 @@ Clustered - pions_180GeV_bias200V_60deg_alignment_test_F4-W00076_1.txt - 19-47 2
     calib_folder, output_folder);
     
     model_selector::print = true;
-    model_selector::select_model(model_selector::model_name::FULLY_PAR_CLUSTERER, executor, 2, "", 100000000.);
+    model_selector::select_model(model_selector::model_name::WINDOW_COMPUTER, executor, 4, "", 100000000.);
     std::cout << "ALL ENDED" << std::endl;
     delete bench;
     delete executor;

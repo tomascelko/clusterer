@@ -14,3 +14,4 @@
 #include "analysis/pixel_halo_width_calculator.h"
 #include "clustering_validation/clustering_validator.h"
 #include "window_processing/window_feature_computer.h"
+#include "window_processing/trigger_node.h"

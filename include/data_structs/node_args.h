@@ -19,9 +19,17 @@ class node_args
     {
         return args_data_.at(node_name).at(arg_name);
     }
+    const std::map<std::string, std::string> & at(const std::string & node_name) const
+    {
+        return args_data_.at(node_name);
+    }
+    std::map<std::string, std::string> & operator [](const std::string & node_name)
+    {
+        return args_data_[node_name];
+    }
     void load_from_file(const std::string & filename)
     {
-
+        //TODO - not implemented
     }
 
     node_args()
@@ -36,6 +44,7 @@ class node_args
         {"trigger", node_args_type(
             {
                 {"window_size", "200000000"},
+                {"diff_window_size", "0"},
                 {"trigger_time", "500000000"},
                 {"trigger_file", "example_trigger.nnt"}
             })

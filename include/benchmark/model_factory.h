@@ -143,7 +143,7 @@ class model_factory
     using filenames_type = const std::vector<std::string>; 
     filenames_type::const_iterator data_file_it;
     filenames_type::const_iterator calib_file_it;
-    static constexpr double FREQUENCY_MULTIPLIER_ = 100.; 
+    static constexpr double FREQUENCY_MULTIPLIER_ = 1; 
     std::ofstream * window_print_stream;
     
     template <typename arch_type>
@@ -201,13 +201,15 @@ class model_factory
         //else if(node.type == "trbbc")
         //    return new trigger_clusterer<mm_hit, halo_buffer_clusterer<mm_hit, standard_clustering_type>, frequency_diff_trigger<mm_hit>>(
         //        args);
+        else if(node.type == "tr")
+            return new trigger_node<mm_hit, interval_trigger<mm_hit>>(args);
         else if(node.type == "co")
             return new cluster_sorting_combiner<mm_hit>();
         else if (node.type == "cv")
             return new clustering_validator<mm_hit>(std::cout);
         else if (node.type == "wfc")
             return new window_feature_computer<default_window_feature_vector<mm_hit>, mm_hit>(args);
-        else if (node.type == "tr")
+        else 
             throw std::invalid_argument("node of given type was not implemented yet");
 
         throw std::invalid_argument("node of given type was not recognized");

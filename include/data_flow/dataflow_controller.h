@@ -11,7 +11,7 @@
 #include "../data_structs/cluster.h"
 #include "../data_structs/mm_hit.h"
 #include "../data_structs/burda_hit.h"
-#include "../data_nodes/analysis/default_window_feature_vector.h"
+#include "../data_nodes/window_processing/default_window_feature_vector.h"
 #pragma once
 class dataflow_controller
 {

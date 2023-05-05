@@ -42,6 +42,7 @@ class default_window_feature_vector
     std::vector<double> energy_distribution_ = std::vector<double>(ENERGY_DISTR_BIN_COUNT_);
 
 public:
+    
     std::map<std::string, std::vector<double>> vector_features;
     std::map<std::string, double> scalar_features;
     template <typename data_type, typename stream_type>
@@ -51,6 +52,10 @@ public:
     friend stream_type &operator>>(stream_type &fstream,
                                    default_window_feature_vector<data_type> &window_feature_vect);
     int64_t hit_count = 0;
+    double start_time()
+    {
+        return start_time_;
+    }
     bool closed = false;
     void close()
     {
@@ -116,6 +121,8 @@ public:
                 }
             }
         }
+        diff_vector.last_hit_toa_ = last_hit_toa_;
+        diff_vector.hit_count = hit_count;
         return diff_vector;
     }
     bool is_valid() const
@@ -125,6 +132,10 @@ public:
     uint32_t size() const
     {
         return 0;
+    }
+    double last_hit_toa() const
+    {
+        return last_hit_toa_;
     }
     static default_window_feature_vector<hit_type> end_token()
     {

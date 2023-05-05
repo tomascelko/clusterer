@@ -21,7 +21,8 @@ class model_selector
         PAR_WITH_LINEAR_MERGER,
         VALIDATION,
         WINDOW_COMPUTER,
-        FULLY_PAR_CLUSTERER
+        FULLY_PAR_CLUSTERER,
+        TRIGGER_SIMPLE_CLUSTERER
     };
     private:
     static constexpr const char * base_arch = "r1bm1,bm1s1" ;
@@ -173,7 +174,13 @@ class model_selector
             architecture_type(validation_arch), args);  
     else if (model_type == model_name::WINDOW_COMPUTER)
         executor->run(architecture_type(arch + ",s1wfc1,wfc1wp1"), args);
+    else if(model_type == model_name::TRIGGER_SIMPLE_CLUSTERER)
+    {
+        auto sub_arch = arch.substr(0,arch.find(','));
+        executor->run(architecture_type(sub_arch + ",bm1tr1,tr1s1,s1sc1,sc1" + default_output_node), args);
     }
+    }
+    
 };
 bool model_selector::print = true;
 bool model_selector::recurring = false;

@@ -6,7 +6,7 @@ make all --print-data-base --no-builtin-variables --no-builtin-rules --question
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Thu Apr 20 10:31:26 2023
+# Make data base, printed on Fri May  5 10:35:23 2023
 
 # Variables
 
@@ -97,7 +97,7 @@ GPG_AGENT_INFO = /run/user/1000/gnupg/S.gpg-agent:0:1
 # environment
 C_INCLUDE_PATH = /home/tomas/MFF/DT/allpix/install/include:
 # environment
-SESSION_MANAGER = local/tomas-VirtualBox:@/tmp/.ICE-unix/836,unix/tomas-VirtualBox:/tmp/.ICE-unix/836
+SESSION_MANAGER = local/tomas-VirtualBox:@/tmp/.ICE-unix/831,unix/tomas-VirtualBox:/tmp/.ICE-unix/831
 # environment
 G4INCLDATA = /home/tomas/MFF/DT/geant4/install/share/Geant4-11.0.2/data/G4INCL1.0
 # environment
@@ -105,7 +105,7 @@ XDG_RUNTIME_DIR = /run/user/1000
 # environment
 LIBRARY_PATH = /home/tomas/MFF/DT/allpix/install/lib:
 # environment
-WINDOWID = 56623110
+WINDOWID = 54525958
 # environment
 LD_PYTHON2_PATH = /usr/bin/python2/
 # environment
@@ -147,13 +147,13 @@ QT_QPA_PLATFORMTHEME = qt5ct
 # environment
 XDG_SEAT = seat0
 # environment
-SSH_AGENT_PID = 980
+SSH_AGENT_PID = 975
 # environment
 ORIGINAL_XDG_CURRENT_DESKTOP = MATE
 # environment
 GTK_MODULES = gail:atk-bridge
 # environment
-MANPATH = /home/tomas/MFF/DT/root/install/man:/home/tomas/.local/share/man:/usr/local/man:/usr/local/share/man:/usr/share/man
+MANPATH = /home/tomas/MFF/DT/root/install/man:/home/tomas/.local/man:/home/tomas/.local/share/man:/usr/local/man:/usr/local/share/man:/usr/share/man
 # environment
 VSCODE_AMD_ENTRYPOINT = vs/workbench/api/node/extensionHostProcess
 # environment
@@ -235,7 +235,7 @@ XDG_SEAT_PATH = /org/freedesktop/DisplayManager/Seat0
 # environment
 VSCODE_IPC_HOOK = /run/user/1000/vscode-4e534ead-1.77-main.sock
 # environment
-PYTHONPATH = /home/tomas/MFF/DT/root/install/lib
+PYTHONPATH = /home/tomas/MFF/DT/root/install/lib:/home/tomas/.local/lib/python3.8/site-packages/
 # makefile
 MAKEFLAGS = pqrRs
 # environment
@@ -274,9 +274,9 @@ CMAKE_COMMAND = /usr/bin/cmake
 ^F = $(notdir $^)
 # environment
 G4RADIOACTIVEDATA = /home/tomas/MFF/DT/geant4/install/share/Geant4-11.0.2/data/RadioactiveDecay5.6
+ 
 # environment
 CHROME_DESKTOP = code-url-handler.desktop
- 
 # environment
 MATE_DESKTOP_SESSION_ID = this-is-deprecated
 # default
@@ -294,7 +294,7 @@ LANG = C
 # environment
 TERM = xterm-256color
 # environment
-VSCODE_PID = 1515
+VSCODE_PID = 1477
 # environment
 DYLD_LIBRARY_PATH = /home/tomas/MFF/DT/root/install/lib
 # environment
@@ -308,9 +308,9 @@ G4ENSDFSTATEDATA = /home/tomas/MFF/DT/geant4/install/share/Geant4-11.0.2/data/G4
 
 # Directories
 
-# . (device 2053, inode 860492): 18 files, no impossibilities.
+# . (device 2053, inode 860492): 21 files, no impossibilities.
 
-# 18 files, no impossibilities in 1 directories.
+# 21 files, no impossibilities in 1 directories.
 
 # Implicit Rules
 
@@ -554,10 +554,10 @@ rebuild_cache:
 #  File has not been updated.
 #  recipe to execute (from 'Makefile', line 61):
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --cyan "Running CMake to regenerate build system..."
+ 
 	/usr/bin/cmake -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR)
 
 # files hash-table stats:
- 
 # Load=29/1024=3%, Rehash=0, Collisions=3/101=3%
 # VPATH Search Paths
 
@@ -565,12 +565,12 @@ rebuild_cache:
 
 # No general ('VPATH' variable) search path.
 
-# strcache buffers: 1 (0) / strings = 49 / storage = 576 B / avg = 11 B
-# current buf: size = 8162 B / used = 576 B / count = 49 / avg = 11 B
+# strcache buffers: 1 (0) / strings = 52 / storage = 623 B / avg = 11 B
+# current buf: size = 8162 B / used = 623 B / count = 52 / avg = 11 B
 
-# strcache performance: lookups = 158 / hit rate = 68%
+# strcache performance: lookups = 161 / hit rate = 67%
 # hash-table stats:
-# Load=49/8192=1%, Rehash=0, Collisions=2/158=1%
-# Finished Make data base on Thu Apr 20 10:31:26 2023
+# Load=52/8192=1%, Rehash=0, Collisions=2/161=1%
+# Finished Make data base on Fri May  5 10:35:23 2023
 
  

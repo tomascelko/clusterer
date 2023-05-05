@@ -10,10 +10,10 @@ make[2]: Entering directory '/home/tomas/MFF/DT/clusterer'
 cd /home/tomas/MFF/DT/clusterer && /usr/bin/cmake -E cmake_depends "Unix Makefiles" /home/tomas/MFF/DT/clusterer /home/tomas/MFF/DT/clusterer /home/tomas/MFF/DT/clusterer /home/tomas/MFF/DT/clusterer /home/tomas/MFF/DT/clusterer/CMakeFiles/cclusterer.dir/DependInfo.cmake --color=
 make[2]: Leaving directory '/home/tomas/MFF/DT/clusterer'
 make -f CMakeFiles/cclusterer.dir/build.make CMakeFiles/cclusterer.dir/build
+ 
 make[2]: Entering directory '/home/tomas/MFF/DT/clusterer'
 make[2]: Leaving directory '/home/tomas/MFF/DT/clusterer'
 make[1]: Leaving directory '/home/tomas/MFF/DT/clusterer'
-make: Leaving directory '/home/tomas/MFF/DT/clusterer'
  
 make[2]: *** No rule to make target 'include/data_nodes/burda_to_mm_hit_adapter.h', needed by 'CMakeFiles/cclusterer.dir/src/main.cpp.o'.
 make[2]: *** No rule to make target 'include/data_nodes/clusterer.h', needed by 'CMakeFiles/cclusterer.dir/src/main.cpp.o'.
@@ -26,3 +26,5 @@ make[2]: *** No rule to make target 'include/data_nodes/repeating_data_reader.h'
 make[1]: *** [CMakeFiles/Makefile2:76: CMakeFiles/cclusterer.dir/all] Error 2
 make: *** [Makefile:84: all] Error 2
 
+make: Leaving directory '/home/tomas/MFF/DT/clusterer'
+ 

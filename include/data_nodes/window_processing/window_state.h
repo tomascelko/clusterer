@@ -1,5 +1,5 @@
 #pragma once
-#include "../analysis/default_window_feature_vector.h"
+#include "default_window_feature_vector.h"
 #include <deque>
 template <typename hit_type>
 class default_window_state 
@@ -37,6 +37,10 @@ class default_window_state
         }
 
     }
+    double start_time() const
+    {
+        return start_time_;
+    }
     bool can_add(const hit_type & hit) const
     {
         return hit.toa() <= start_time_ + window_time_;
@@ -52,6 +56,10 @@ class default_window_state
         last_hit_toa_ = hit.toa();
         feature_vector_.update(hit);
 
+    }
+    double last_hit_toa() const
+    {
+        return last_hit_toa_;
     }
     void move_window()
     {

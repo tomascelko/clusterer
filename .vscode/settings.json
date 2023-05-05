@@ -61,6 +61,7 @@
         "cstring": "cpp",
         "charconv": "cpp",
         "cassert": "cpp",
-        "filesystem": "cpp"
+        "filesystem": "cpp",
+        "variant": "cpp"
     }
 }

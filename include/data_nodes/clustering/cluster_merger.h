@@ -150,7 +150,7 @@ class cluster_merging : public i_data_consumer<cluster<hit_type>>,
     std::deque<bb_cluster<hit_type>> unfinished_border_clusters_; //we could keep here unbordering clusters as well 
                                                                    //in order to preserve time orderedness
     node_descriptor<cluster<hit_type>, cluster<hit_type>>* node_descr_;
-    using bitmap_type = std::vector<std::vector<bool>>;
+    using bitmap_type = std::vector<std::vector<double>>;
     bitmap_type neighboring_matrix_;
     uint64_t processed_non_border_count = 0;
     uint64_t processed_border_count = 0;
@@ -165,7 +165,7 @@ class cluster_merging : public i_data_consumer<cluster<hit_type>>,
         for(auto & hit : bigger_bb_cl.cl.hits())
         {
             if (intersection_bb.lies_in_bb(hit.coordinates()))
-                neighboring_matrix_[hit.x()][hit.y()] = true;
+                neighboring_matrix_[hit.x()][hit.y()] = hit.toa();
         }
         bool is_neighbor = false;
         for(auto & hit : smaller_bb_cl.cl.hits())
@@ -175,7 +175,8 @@ class cluster_merging : public i_data_consumer<cluster<hit_type>>,
                 for(auto & neighbor_offset : NINE_NEIGHBORS)
                 {
                     if(hit.coordinates().is_valid_neighbor(neighbor_offset) &&
-                    neighboring_matrix_[hit.x() + neighbor_offset.x()][hit.y() + neighbor_offset.y()] == true)
+                    (neighboring_matrix_[hit.x() + neighbor_offset.x()][hit.y() + neighbor_offset.y()] >= 0) &&
+                    std::abs(neighboring_matrix_[hit.x() + neighbor_offset.x()][hit.y() + neighbor_offset.y()] - hit.toa()) < MERGE_TIME)
                     {
                         is_neighbor = true;
                         break;
@@ -187,7 +188,7 @@ class cluster_merging : public i_data_consumer<cluster<hit_type>>,
         }
         for(auto & hit : bigger_bb_cl.cl.hits())
         {
-            neighboring_matrix_[hit.x()][hit.y()] = false;
+            neighboring_matrix_[hit.x()][hit.y()] = -1;
 
         }
         return is_neighbor;
@@ -306,10 +307,11 @@ class cluster_merging : public i_data_consumer<cluster<hit_type>>,
             }
         }
     }
+    const double EMPTY_TIME_VALUE_ = -1.;
 public:
     cluster_merging(node_descriptor<cluster<hit_type>, cluster<hit_type>>* node_descr) :
     node_descr_(node_descr),
-    neighboring_matrix_(current_chip::chip_type::size_x(), std::vector<bool>(current_chip::chip_type::size_y(), false)),
+    neighboring_matrix_(current_chip::chip_type::size_x(), std::vector<double>(current_chip::chip_type::size_y(), EMPTY_TIME_VALUE_)),
     i_multi_producer<cluster<hit_type>>(node_descr->split_descr)
     {
         typename cluster<hit_type>::first_toa_comparer first_toa_comp;
@@ -350,7 +352,7 @@ public:
         std::cout << processed_border_count << " " << processed_non_border_count << std::endl; 
         //clock_->stop_and_report("parallel_clusterer");
         this->writer_.close();
-        std::cout << "CLUSTER MERGING ENDED ---------------------" << std::endl;
+        //std::cout << "CLUSTER MERGING ENDED ---------------------" << std::endl;
     }
     virtual ~cluster_merging() = default;
 

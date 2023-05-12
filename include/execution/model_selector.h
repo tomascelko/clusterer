@@ -26,58 +26,130 @@ class model_selector
     };
     private:
     static constexpr const char * base_arch = "r1bm1,bm1s1" ;
-    
-    static architecture_type build_arch(std::string & arch, model_name model_type, uint16_t core_count, 
-        const std::string& output_node)
+    static std::string create_split_arch(const node_args & args, const std::string & first_node,
+      const std::string & cluster_node, uint32_t core_count)
+    {
+        std::string arch = "";
+        std::string split_node;
+        std::vector<std::string> nodes_to_connect{first_node, "bm", "s", cluster_node};
+        if(args.get_arg<bool>("reader", "split"))
+            split_node = nodes_to_connect[0];
+        else if (args.get_arg<bool>("calibrator", "split"))
+            split_node = nodes_to_connect[1];
+        else if (args.get_arg<bool>("sorter", "split"))
+           split_node = nodes_to_connect[2];
+        else split_node = nodes_to_connect[0];
+        bool splitted = false;
+        for (uint32_t node_index = 0; node_index < nodes_to_connect.size() - 1;  ++ node_index)
+        {
+            auto node = nodes_to_connect[node_index];
+            if (splitted || node == split_node)
+            {
+                for(uint16_t i = 1; i <= core_count; i++)
+                {
+                    std::string this_index = splitted ? std::to_string(i) : "1";
+                    std::string next_index = std::to_string(i);
+                    std::string next_node = nodes_to_connect[node_index + 1] + next_index;
+                    if(node_index != 0 || i != 1)
+                        arch += ",";
+                    arch += node + this_index + next_node;
+                }
+                splitted = true;
+            }
+            else
+            {
+                arch += node + "1" + nodes_to_connect[node_index + 1] + "1";
+            }
+            
+        }
+        
+            
+        return arch;
+    }
+    static std::map<std::string, abstract_node_descriptor*> create_split_descriptors(const node_args & args,
+         uint32_t core_count)
+    {
+        if(args.get_arg<bool>("reader", "split") || 
+        (!args.get_arg<bool>("reader", "split") && !args.get_arg<bool>("sorter", "split") &&
+         !args.get_arg<bool>("calibrator", "split")))
+        {
+            return std::map<std::string, abstract_node_descriptor*> {
+                {
+                    "r1",
+                    new node_descriptor<burda_hit, burda_hit>(
+                        new trivial_merge_descriptor<burda_hit>(),
+                        new temporal_hit_split_descriptor<burda_hit>(core_count), "reader descriptor")
+                },
+                {
+                    "rr1",
+                    new node_descriptor<burda_hit, burda_hit>(
+                        new trivial_merge_descriptor<burda_hit>(),
+                        new temporal_hit_split_descriptor<burda_hit>(core_count), "recurring reader descriptor")
+                }
+            };
+        }
+        else if(args.get_arg<bool>("calibrator", "split"))
+        {
+            return std::map<std::string, abstract_node_descriptor*> {
+                {
+                    "bm1",
+                    new node_descriptor<burda_hit, mm_hit>(
+                        new trivial_merge_descriptor<burda_hit>(),
+                        new temporal_hit_split_descriptor<mm_hit>(core_count), "calibrator descriptor")
+                }
+            };
+        }
+        else if(args.get_arg<bool>("sorter", "split"))
+        {
+            return std::map<std::string, abstract_node_descriptor*> {
+                {
+                    "s1",
+                    new node_descriptor<mm_hit, mm_hit>(
+                        new trivial_merge_descriptor<mm_hit>(),
+                        new temporal_hit_split_descriptor<mm_hit>(core_count), "sorter descriptor")
+                }
+            };
+        }
+        throw std::invalid_argument("");
+        
+        
+
+    }
+    static void add_merge_arch(model_name model_type, std::string & arch, 
+        std::map<std::string, abstract_node_descriptor*> & descriptors,
+        const std::string & clustering_node, const std::string & output_node, uint32_t core_count)
     {
         auto trivial_hit_merge_descr = new trivial_merge_descriptor<mm_hit>();
         auto trivial_burda_hit_merge_descr = new trivial_merge_descriptor<burda_hit>();
-
         auto hit_sorter_split_descr = new temporal_hit_split_descriptor<mm_hit>(core_count);
         auto default_merge_descr = new temporal_clustering_descriptor<mm_hit>(core_count);
         auto two_clustering_split_descriptor = new clustering_two_split_descriptor<cluster<mm_hit>>();
         auto two_clustering_merge_descriptor =  new temporal_clustering_descriptor<mm_hit>(2);
         auto trivial_merger_split_descr = new trivial_split_descriptor<cluster<mm_hit>>();
-        
+        auto burda_split_descriptor = new temporal_hit_split_descriptor<mm_hit>(core_count);
         if(model_type == model_name::PAR_WITH_MERGER)
         {
-            for(uint16_t i = 1; i <= core_count; i++)
+            for (uint i = 1; i <= core_count; ++i)
             {
-                std::string str_index = std::to_string(i);
-                std::string sc = "sc" + str_index;
-                arch += ",s1" + sc;
-                arch += "," + sc + "m1";
+                arch += "," + clustering_node + std::to_string(i) + "m1";
             }
             arch += ",m1" + output_node + "1";
-            return architecture_type(arch, 
-            std::map<std::string, abstract_node_descriptor*>{
-                    {"s1", new node_descriptor<mm_hit, mm_hit>(trivial_hit_merge_descr, 
-                        hit_sorter_split_descr, "sorter_descriptor")},
-                    {"m1", new node_descriptor<cluster<mm_hit>,cluster<mm_hit>>(default_merge_descr, 
-                        trivial_merger_split_descr, "merger_desc")}
-                    });
+            descriptors.insert(std::make_pair("m1", 
+            new node_descriptor<cluster<mm_hit>,cluster<mm_hit>>(default_merge_descr, 
+                        trivial_merger_split_descr, "merger_desc")));
+            
         }
         else if (model_type == model_name::PAR_WITH_LINEAR_MERGER || model_type ==  model_name::FULLY_PAR_CLUSTERER)
         {
             
-            std::map<std::string, abstract_node_descriptor*> descriptors{
-                {"bm1", new node_descriptor<burda_hit, mm_hit>(trivial_burda_hit_merge_descr, 
-                    hit_sorter_split_descr, "burda_to_mm_descriptor")}
-            };
             if(output_node == "p" && model_type == model_name::PAR_WITH_LINEAR_MERGER)
                         arch += ",co1p1";
             for(uint16_t i = 1; i <= core_count; i++)
             {
                 std::string str_index = std::to_string(i);
-                std::string so = "s" + str_index;
-                std::string sc = "sc" + str_index;
+                std::string sc = clustering_node + str_index;
                 std::string merg_low = "m" + str_index;
-                    
                 std::string merg_high = "m" + std::to_string(((i) % (core_count)) + 1); //modulo in 1 based indexing
-                
-                if(i > 1)
-                    arch += ",bm1" + so;
-                arch += "," + so + sc;
                 arch += "," + sc + merg_low;
                 arch += "," + sc + merg_high;
                 if(model_type == model_name::FULLY_PAR_CLUSTERER)
@@ -87,8 +159,7 @@ class model_selector
                     arch += "," + merg_low + "co1";
                     
                 }
-
-                descriptors.insert({"sc" + str_index, 
+                descriptors.insert({clustering_node + str_index, 
                     new node_descriptor<mm_hit, cluster<mm_hit>>(trivial_hit_merge_descr, 
                         two_clustering_split_descriptor, 
                         "clustering_" + str_index + "_descriptor")});
@@ -98,30 +169,39 @@ class model_selector
                         "merger_" + str_index + "_descriptor")});
 
             }
-            return architecture_type(arch, descriptors);
-        } 
-        throw std::invalid_argument("Specified model does not support explicit paralelism");
+        }
+        else
+            throw std::invalid_argument("Specified model does not support explicit paralelism");
+    }
+    static architecture_type build_parallel_arch(model_name model_type, 
+        const std::string & first_node, uint16_t core_count, 
+        const std::string & output_node, const node_args & args, const std::string & clusterer_node = "sc")
+    {
+         
+        std::map<std::string, abstract_node_descriptor*> descriptors = create_split_descriptors(args, core_count);
+        std::string arch = create_split_arch(args, first_node, clusterer_node, core_count);
+        add_merge_arch(model_type, arch, descriptors, clusterer_node, output_node, core_count);
+        return architecture_type(arch, descriptors);       
     }
     public:
     template <typename executor_type, typename ...clustering_args>
     static void select_model(model_name model_type , executor_type* executor, 
-        uint16_t core_count, const std::string & output_folder, const node_args & args)
+        uint16_t core_count, const std::string & output_folder, node_args & args)
     {
         
         std::string validation_arch = "rc1cv1,rc2cv1";
-        auto default_split_descr = new temporal_clustering_descriptor<mm_hit>(core_count);
-        auto default_merge_descr = new temporal_clustering_descriptor<mm_hit>(core_count);
+
         auto multi_merge_descr_1 = new temporal_merge_descriptor<cluster<mm_hit>>(2, 1);
         auto multi_merge_descr_2 = new temporal_merge_descriptor<cluster<mm_hit>>(2, 2,  false);
         auto hit_sorter_split_descr = new temporal_hit_split_descriptor<mm_hit>(core_count);
         auto trivial_hit_merge_descr = new trivial_merge_descriptor<mm_hit>();
-        auto trivial_merger_split_descr = new trivial_split_descriptor<cluster<mm_hit>>();
     std::string arch = base_arch;
     std::string output_node;
+    std::string first_node = "r";
     if(recurring)
     {
         arch = "r" + arch;
-        std::cout << "recurring" << std::endl;
+        first_node = "rr";
     }
     if(print)
         output_node = "p";
@@ -134,11 +214,7 @@ class model_selector
          executor->run(architecture_type(arch + ",s1sc1,sc1" + default_output_node), args);
     else if (model_type == model_name::ENERGY_TRIG_CLUSTERER)
         executor->run(architecture_type(arch + ",s1ec1"), args);
-    else if (model_type == model_name::PAR_WITH_SPLITTER)
-        executor->run(
-            architecture_type(arch + ",s1ppc1,ppc1"+ default_output_node , std::map<std::string, abstract_node_descriptor*>{
-                {"ppc1",new node_descriptor<cluster<mm_hit>, mm_hit>(default_merge_descr, default_split_descr, "packed_parallel_clusterer_descriptor")}
-                }), args); 
+ 
     else if(model_type == model_name::PAR_WITH_TREE_MERGER)
         executor->run(
             architecture_type(arch + 
@@ -151,7 +227,7 @@ class model_selector
                 }), args);
     else if (model_type == model_name::PAR_WITH_MERGER)
         executor->run(
-            build_arch(arch, model_type, core_count, output_node), args
+            build_parallel_arch(model_type, first_node, core_count, output_node, args, "sc"), args
             );
     else if (model_type == model_name::TRIG_CLUSTERER)
         executor->run(
@@ -167,7 +243,7 @@ class model_selector
             architecture_type(arch + ",s1trbbc1,trbbc1" + default_output_node), args); 
     else if (model_type == model_name::PAR_WITH_LINEAR_MERGER || model_type == model_name::FULLY_PAR_CLUSTERER)
         executor->run(
-            build_arch(arch, model_type, core_count, output_node), args
+            build_parallel_arch(model_type, first_node, core_count, output_node, args, "sc"), args
         );
     else if (model_type == model_name::VALIDATION)
         executor->run(

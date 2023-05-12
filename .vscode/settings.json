@@ -63,5 +63,6 @@
         "cassert": "cpp",
         "filesystem": "cpp",
         "variant": "cpp"
-    }
+    },
+    "C_Cpp.default.configurationProvider": "ms-vscode.makefile-tools"
 }

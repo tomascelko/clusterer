@@ -9,7 +9,7 @@ class window_feature_computer : public i_simple_consumer<data_type>, public i_si
     window_state window_state_;
     public:
     window_feature_computer(const node_args & args) :
-    window_state_(args.get_double_arg(name(), "window_size"), args.get_double_arg(name(), "diff_window_size"))
+    window_state_(args.get_arg<double>(name(), "window_size"), args.get_arg<double>(name(), "diff_window_size"))
     {
         
     }

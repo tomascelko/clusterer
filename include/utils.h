@@ -188,3 +188,8 @@ class class_exists<T, std::enable_if_t<(sizeof(T) > 0)>>
 {
     static constexpr bool value = true;
 };
+
+static bool ends_with(const std::string & str, const std::string & suffix)
+{
+    return str.size() > suffix.size() && str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
+}

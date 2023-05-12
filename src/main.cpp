@@ -134,39 +134,44 @@ void testOnnx()
 
 int main(int argc, char **argv)
 {
-    testOnnx();
+    //testOnnx();
     const uint32_t TILE_SIZE = 2;
     const uint32_t TIME_WINDOW_SIZE = 50000000; // 50ms
     std::vector<std::string> args(argv + 1, argc + argv);
+    uint32_t core_count = args.size() > 0 ? std::stoi(args[0]) : 4;
+    std::string freq_multiplier = args.size() > 1 ? args[1] : "1";
     std::cout << "created" << std::endl;
-    args = {"/home/tomas/MFF/DT/clusterer/test_data/small/", "../../test_data/calib/", "pmm", "4"};
+    args = {"../../test_data/small/", "../../test_data/calib/", "pmm", "4"};
     std::string data_folder = args[0];
-    std::vector<std::string> cluster_comparison_datasets = {"/home/tomas/MFF/DT/clusterer/test_data/validation/small/\
-new28-12-2022-19-28-17.ini",
-                                                            "/home/tomas/MFF/DT/clusterer/test_data/validation/small/\
+    std::vector<std::string> cluster_comparison_datasets = {
+        "/home/tomas/MFF/DT/clusterer/output/clustered_0_06-05-2023_19_44_5706-05-2023-19-44-57.ini",
+        "/home/tomas/MFF/DT/clusterer/test_data/validation/small/\
 Clustered - pions_180GeV_bias200V_60deg_alignment_test_F4-W00076_1.txt - 19-47 28-12-2022.ini"};
     std::string calib_folder = args[1];
     std::string arch_type = args[2];
-    uint16_t clustering_cores = std::stoi(args[3]);
+    //uint16_t clustering_cores = std::stoi(args[3]);
 
     std::string output_folder = "../../output/";
     std::string data_file = "../../test_data/small/pions_180GeV_bias200V_60deg_alignment_test_F4-W00076_1.txt";
     node_args n_args;
-    n_args["trigger"]["trigger_file"] = "../../test_data/trigger/interval/test.ift";
-    //TODO: update model selector to pass n_args in model factory to nodes
+    //n_args["trigger"]["trigger_file"] = "../../test_data/trigger/interval/test.ift";
+    n_args["trigger"]["trigger_file"] =  "../../test_data/trigger/nn/test3.nnt";
+    n_args["trigger"]["data_file"] = "../../test_data/trigger/nn/window_features_test.wf";
+    
+    n_args["reader"]["freq_multiplier"] = freq_multiplier;
 
-
-    // benchmarker *bench = new benchmarker(data_folder, calib_folder, "../output/");
-    //  model_executor * comp_executor = new model_executor(cluster_comparison_datasets,
-    //  std::vector<std::string>(), "/home/tomas/MFF/DT/clusterer/output/");
+    benchmarker *bench = new benchmarker(data_folder, calib_folder, "../../output/");
+      //model_executor * comp_executor = new model_executor(cluster_comparison_datasets,
+      //std::vector<std::string>(), output_folder);
     model_executor *executor = new model_executor(std::vector<std::string>{data_file},
                                                   calib_folder, output_folder);
+
 
     model_selector::print = false;
     model_selector::recurring = true;
     std::cout << "selecting model" << std::endl;
     auto start_time = std::chrono::high_resolution_clock::now();
-    model_selector::select_model(model_selector::model_name::TRIGGER_SIMPLE_CLUSTERER, executor, 5, "", n_args);
+    model_selector::select_model(model_selector::model_name::TRIGGER_SIMPLE_CLUSTERER, executor, core_count, "", n_args);
     auto end_time = std::chrono::high_resolution_clock::now();
     std::cout << "Runtime: " << std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count() << "ms" << std::endl;
     std::cout << "ALL NODES ENDED" << std::endl;

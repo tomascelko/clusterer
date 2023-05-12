@@ -260,7 +260,7 @@ class energy_filtering_clusterer : public i_simple_consumer<mm_hit>, public i_si
         write_remaining_clusters();
         this->writer_.write(cluster<mm_hit>::end_token()); //write empty cluster as end token
         this->writer_.flush();
-        std::cout << "CLUSTERER ENDED -------------------" << std::endl;    
+        //std::cout << "CLUSTERER ENDED -------------------" << std::endl;    
     }
     energy_filtering_clusterer() :
     pixel_lists_(MAX_PIXEL_COUNT),

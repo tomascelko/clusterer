@@ -28,7 +28,7 @@ class data_printer : public i_simple_consumer<data_type>, public i_simple_produc
 
         }
         out_stream_->close();
-        std::cout << "PRINTER ENDED ----------------" << std::endl;
+        //std::cout << "PRINTER ENDED ----------------" << std::endl;
     }
 
     virtual ~data_printer() = default;

@@ -124,6 +124,7 @@ class mm_read_stream
     bool calib_ = true;
     void open_streams(const std::string& ini_file)
     {
+        std::cout << ini_file << std::endl;
         std::string path_suffix = ini_file.substr(ini_file.find_last_of("\\/") + 1);
         std::string path_prefix = ini_file.substr(0, ini_file.find_last_of("\\/") + 1);
         if(ini_file.find_last_of("\\/") == std::string::npos)

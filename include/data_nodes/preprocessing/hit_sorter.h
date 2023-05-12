@@ -84,7 +84,7 @@ public:
             }
         //write last (invalid) hit
         this->writer_.close();
-        std::cout << "HIT SORTER ENDED ---------------------" << std::endl;
+        //std::cout << "HIT SORTER ENDED ---------------------" << std::endl;
         
 
     }

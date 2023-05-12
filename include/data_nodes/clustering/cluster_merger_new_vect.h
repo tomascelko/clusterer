@@ -258,7 +258,7 @@ public:
         clock_->stop_and_report("parallel_clusterer");
         writer_.write(cluster<hit_type>::end_token());
         writer_.flush();
-        std::cout << "CLUSTER MERGING ENDED ---------------------" << std::endl;
+        //std::cout << "CLUSTER MERGING ENDED ---------------------" << std::endl;
     }
     virtual ~cluster_merging() = default;
 

@@ -7,6 +7,7 @@
 #include <map>
 #include <deque>
 #include <fstream>
+#include <algorithm>
 template <typename hit_type>
 class default_window_feature_vector
 {
@@ -75,6 +76,25 @@ public:
     }
     default_window_feature_vector(double start_time = 0) : start_time_(start_time)
     {
+    }
+    std::vector<double> to_vector() const
+    {
+        std::vector<double> result;
+        for(auto && attribute_name : attribute_names())
+        {
+            if(scalar_features.find(attribute_name) != scalar_features.end())
+            {
+                //TODO remove start toa feature
+                result.push_back(scalar_features.at(attribute_name));
+            }
+            else
+            {
+                const std::vector<double> & vector_attribute = vector_features.at(attribute_name);
+
+                result.insert(result.end(), vector_attribute.cbegin(), vector_attribute.cend());  
+            }     
+        }
+        return result;
     }
     default_window_feature_vector<hit_type> diff_with_median(const std::deque<default_window_feature_vector<hit_type>> & previous_vectors)
     {
@@ -158,16 +178,17 @@ public:
     void read_vector(stream_type & stream, std::vector<double> & result)
     {
         char symbol;
-        stream >> symbol;
-        stream >> symbol;
-        stream >> symbol;
-        std::string vector_str;
+        stream.get(symbol);
+        stream.get(symbol);
+        stream.get(symbol);
+
+        std::string vector_str = "";
         while (symbol != ']')
         {
             vector_str += symbol;
-            stream >> symbol;
+            stream.get(symbol);
         }
-        
+        std::cout << vector_str << std::endl;
         std::stringstream vector_ss(vector_str);
         while (!vector_ss.eof())
         {
@@ -321,8 +342,17 @@ stream_type &operator>>(stream_type &fstream, default_window_feature_vector<data
         }
         else
         {
+            std::string scalar_feature_str;
             double scalar_feature;
-            fstream >> scalar_feature;
+            fstream >> scalar_feature_str;
+            std::cout << scalar_feature_str << std::endl;
+            if(scalar_feature_str == "nan")
+                scalar_feature = std::numeric_limits<double>::quiet_NaN();
+            else
+            {
+                std::replace(scalar_feature_str.begin(), scalar_feature_str.end() ,'.', ',');
+                scalar_feature = std::stod(scalar_feature_str);
+            }
             window_feature_vect.scalar_features[feature_name] = scalar_feature;     
         }
     }

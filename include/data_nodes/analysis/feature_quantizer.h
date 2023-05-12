@@ -34,7 +34,7 @@ class lvq_quantizer : public i_simple_consumer<feature_vect_type>, public i_simp
 
         }
         out_stream_->close();
-        std::cout << "FEATURE COMPUTER ENDED ----------------" << std::endl;
+        //std::cout << "FEATURE COMPUTER ENDED ----------------" << std::endl;
     }
 
     virtual ~data_printer() = default;

@@ -34,6 +34,7 @@ class multi_pipe_writer
         }
         return false;
     }
+    
     void flush()
     {
         for(auto & writer : writers_)

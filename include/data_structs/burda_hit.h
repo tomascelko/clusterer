@@ -46,9 +46,16 @@ public:
     {
         return linear_coord_;
     }
-    uint64_t toa() const
+    static constexpr double fast_clock_dt = 1.5625; 
+    
+    static constexpr double slow_clock_dt = 25.;
+    uint64_t tick_toa() const
     {
         return toa_;
+    }
+    double toa() const
+    {
+        return slow_clock_dt * toa_ - fast_clock_dt * fast_toa_;
     }
     short fast_toa() const
     {

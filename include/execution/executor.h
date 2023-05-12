@@ -4,10 +4,9 @@
 #include <map>
 #include <vector>
 #include <functional>
-#include "../data_flow/dataflow_package.h"
-
-#include "../data_nodes/nodes_package.h"
-#include "../mapped_mm_stream.h"
+//#include "../data_flow/dataflow_package.h"
+#include "../data_flow/dataflow_controller.h"
+//#include "../data_nodes/nodes_package.h"
 #include "../mm_stream.h"
 #include "../benchmark/model_factory.h"
 #include "../data_structs/node_args.h"
@@ -92,7 +91,9 @@ class model_executor
                         break;
                     case calib_type::same:
                         result.push_back(calib_folders_[0].as_absolute());
-                        break;  
+                        break;
+                    case calib_type::none:
+                        break;
                     default:
                         throw std::invalid_argument("invalid calibration type (choose one of auto/manual/same)");
                         break;
@@ -134,7 +135,6 @@ class model_executor
         }
     }
     
-    template < typename... cl_args_type>
     void run(architecture_type arch, const node_args & args)
     {
          model_factory factory;  

@@ -103,6 +103,6 @@ class pixel_halo_width_calculator: public i_simple_consumer<cluster_type<hit_typ
             ++iter_counter;
         }
 
-        std::cout << "HALO WIDTH CALCULATOR ENDED ---------------------" << std::endl;
+        //std::cout << "HALO WIDTH CALCULATOR ENDED ---------------------" << std::endl;
     }
 };

@@ -135,12 +135,12 @@ class halo_buffer_clusterer : public i_simple_consumer<hit_type>, public i_data_
 
         clock_->stop_and_report("clusterer");
 
-        std::cout << "HALO BB CLUSTERER ENDED ---------- " <<std::endl;
+        //std::cout << "HALO BB CLUSTERER ENDED ---------- " <<std::endl;
     }
     
     halo_buffer_clusterer(const node_args & args) :
     clusterer_(std::make_unique<clusterer_type>(args)),
-    time_window_size_(args.get_double_arg(name(), "window_size")),
+    time_window_size_(args.get_arg<double>(name(), "window_size")),
 
     window_start_time_(0)
     

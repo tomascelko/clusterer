@@ -6,12 +6,12 @@
 #include "../../utils.h"
 #pragma once
 template <typename data_type, typename istream_type>
-class data_reader : public i_simple_producer<data_type>, public i_controlable_source
+class data_reader : public i_multi_producer<data_type>, public i_controlable_source
 {
     protected:
     
     using buffer_type = data_buffer<data_type>;
-    const uint32_t SLEEP_DURATION = 100;
+    uint32_t sleep_duration_;
     std::unique_ptr<buffer_type> buffer_a_;
     std::unique_ptr<buffer_type> buffer_b_;
     uint32_t max_buffer_size_;
@@ -51,15 +51,31 @@ class data_reader : public i_simple_producer<data_type>, public i_controlable_so
     }
 public:
 
-    data_reader(const std::string& file_name, uint32_t buffer_size) :
+
+    data_reader(node_descriptor<data_type, data_type> * node_descriptor, 
+        const std::string& file_name, const node_args & args) :
     input_stream_(std::move(std::make_unique<istream_type>(file_name))),
-    max_buffer_size_(buffer_size),
-    buffer_a_(std::make_unique<buffer_type>(buffer_size)),
-    buffer_b_(std::make_unique<buffer_type>(buffer_size))
+    sleep_duration_(args.get_arg<double>(name(), "sleep_duration_full_memory")),
+    //max_buffer_size_(buffer_size),
+    //buffer_a_(std::make_unique<buffer_type>(buffer_size)),
+    //buffer_b_(std::make_unique<buffer_type>(buffer_size)),
+    i_multi_producer<data_type>(node_descriptor->split_descr)
     {
-        buffer_a_->reserve(buffer_size);
-        buffer_b_->reserve(buffer_size);
+        //buffer_a_->reserve(buffer_size);
+        //buffer_b_->reserve(buffer_size);
     }
+    data_reader(const std::string& file_name, const node_args & args) :
+    input_stream_(std::move(std::make_unique<istream_type>(file_name))),
+    sleep_duration_(args.get_arg<double>(name(), "sleep_duration_full_memory")),
+    //max_buffer_size_(buffer_size),
+    //buffer_a_(std::make_unique<buffer_type>(buffer_size)),
+    //buffer_b_(std::make_unique<buffer_type>(buffer_size)),
+    i_multi_producer<data_type>(new trivial_split_descriptor<data_type>())
+    {
+        //buffer_a_->reserve(buffer_size);
+        //buffer_b_->reserve(buffer_size);
+    }
+    
     virtual void pause_production() override
     {
         paused_ = true;
@@ -70,7 +86,7 @@ public:
     }
     std::string name() override
     {
-        return "mm_reader";
+        return "reader";
     }
     virtual void start() override
     {
@@ -80,10 +96,25 @@ public:
             io_utils::skip_bom(*istream_optional);
             io_utils::skip_comment_lines(*istream_optional);
         }
-        reading_buffer_ = buffer_a_.get();
+        data_type data;
+        *input_stream_ >> data;
+        while (data.is_valid())
+        {
+            //std::cout << "reading_next" << sstd::endl;
+            this->writer_.write(std::move(data));
+            while(paused_)
+            {
+                std::this_thread::sleep_for(std::chrono::milliseconds(sleep_duration_));
+            }
+            *input_stream_ >> data;
+        }
+        /*reading_buffer_ = buffer_a_.get();
         bool should_continue = read_data();
-        ready_buffer_ = buffer_a_.get();
-        this->writer_.write_bulk(ready_buffer_);
+        //ready_buffer_ = buffer_a_.get();
+        for(uint i = 0; i < ready_buffer_[i].size(); ++i)
+        {
+            this->writer_.write(ready_buffer_[i]);
+        }
         if(!should_continue)
             return;
         reading_buffer_= buffer_b_.get();
@@ -97,9 +128,13 @@ public:
                 std::this_thread::sleep_for(std::chrono::milliseconds(SLEEP_DURATION));
             }
         }
-        this->writer_.write_bulk(ready_buffer_);
-        this->writer_.flush(); 
-        std::cout << "READER ENDED ----------" << std::endl;  
+        for(uint i = 0; i < ready_buffer_->size(); ++i)
+        {
+            this->writer_.write(ready_buffer_[i]);
+        }
+        this->writer_.flush(); */
+        this->writer_.close();
+        //std::cout << "READER ENDED ----------" << std::endl;  
     }
     bool read_next()
     {

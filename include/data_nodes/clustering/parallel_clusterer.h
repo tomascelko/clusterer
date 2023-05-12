@@ -98,7 +98,7 @@ class parallel_clusterer : public i_data_consumer<hit_type>,
             split_writers_[i].write(hit_type::end_token());
             split_writers_[i].flush();
         }
-        std::cout << "SPLITTER ENDED ---------------------" << std::endl;
+        //std::cout << "SPLITTER ENDED ---------------------" << std::endl;
     }
     virtual ~parallel_clusterer() = default;
 

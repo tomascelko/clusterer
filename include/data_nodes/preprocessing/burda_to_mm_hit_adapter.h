@@ -22,7 +22,7 @@ class burda_to_mm_hit_adapter : public i_simple_consumer<burda_hit>, public i_mu
     private:
     mm_hit_type convert_hit(const burda_hit & in_hit)
     {
-        double toa = slow_clock_dt * in_hit.toa() - fast_clock_dt * in_hit.fast_toa(); 
+        double toa = in_hit.toa(); 
         short y = in_hit.linear_coord() / chip_width_;
         short x = in_hit.linear_coord() % chip_width_;
         if(calibrate_)

@@ -231,22 +231,22 @@ class pixel_list_clusterer : public i_simple_consumer<mm_hit>,
     }
     pixel_list_clusterer(node_descriptor<mm_hit, cluster<mm_hit>>* node_descr, const node_args & args) :
     pixel_lists_(current_chip::chip_type::size_x() * current_chip::chip_type::size_y() / (
-        args.get_int_arg(name(), "tile_size") * args.get_int_arg(name(), "tile_size"))),
-    tile_size_(args.get_int_arg(name(), "tile_size")),
+        args.get_arg<int>(name(), "tile_size") * args.get_arg<int>(name(), "tile_size"))),
+    tile_size_(args.get_arg<int>(name(), "tile_size")),
     unfinished_clusters_count_(0),
     processed_hit_count_(0),
-    cluster_diff_dt(args.get_double_arg(name(), "max_dt")),
+    cluster_diff_dt(args.get_arg<double>(name(), "max_dt")),
     i_multi_producer<cluster<mm_hit>>(node_descr->split_descr)
     {  
         return;
     }
     pixel_list_clusterer(const node_args & args) :
     pixel_lists_(current_chip::chip_type::size_x() * current_chip::chip_type::size_y() / (
-         args.get_int_arg(name(), "tile_size") * args.get_int_arg(name(), "tile_size"))),
-    tile_size_(args.get_int_arg(name(), "tile_size")),
+         args.get_arg<int>(name(), "tile_size") * args.get_arg<int>(name(), "tile_size"))),
+    tile_size_(args.get_arg<int>(name(), "tile_size")),
     unfinished_clusters_count_(0),
     processed_hit_count_(0),
-    cluster_diff_dt(args.get_double_arg(name(), "max_dt")),
+    cluster_diff_dt(args.get_arg<double>(name(), "max_dt")),
     i_multi_producer<cluster<mm_hit>>(new trivial_split_descriptor<cluster<mm_hit>>())
     {  
         return;
@@ -285,7 +285,7 @@ class pixel_list_clusterer : public i_simple_consumer<mm_hit>,
         write_remaining_clusters();
         //clock_->stop_and_report("clusterer");
 
-        std::cout << "CLUSTERER ENDED ---------- " << processed_hit_count_ <<" hits processed" <<std::endl;
+        //std::cout << "CLUSTERER ENDED ---------- " << processed_hit_count_ <<" hits processed" <<std::endl;
     }
     virtual ~pixel_list_clusterer() = default;
     //i_time_measurable

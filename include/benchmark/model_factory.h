@@ -151,11 +151,29 @@ class model_factory
     {
          
         if(node.type == "r")
-            return new data_reader<burda_hit, std::ifstream>(*data_file_it, 2 << 10);
+        {    if (arch.node_descriptors().find(node.type + std::to_string(node.id)) != arch.node_descriptors().end())
+                return new data_reader<burda_hit, std::ifstream>{
+                    dynamic_cast<node_descriptor<burda_hit, burda_hit>*>(
+                        arch.node_descriptors()["r" + std::to_string(node.id)]), 
+                        *data_file_it, args};
+            else
+                    return new data_reader<burda_hit, std::ifstream>{
+                        *data_file_it, args};
+        }
         else if(node.type == "rr")
-            return new repeating_data_reader<burda_hit, std::ifstream>{*data_file_it, 2 << 21, FREQUENCY_MULTIPLIER_};  
+            {
+                if (arch.node_descriptors().find(node.type + std::to_string(node.id)) != arch.node_descriptors().end())
+                    return new repeating_data_reader<burda_hit, std::ifstream>{
+                        dynamic_cast<node_descriptor<burda_hit, burda_hit>*>(arch.node_descriptors()["rr" + std::to_string(node.id)]), 
+                            *data_file_it, args};
+                else
+                    return new repeating_data_reader<burda_hit, std::ifstream>{
+                        *data_file_it, args};
+            }
         else if(node.type == "rc")
-            return new data_reader<cluster<mm_hit>, mm_read_stream>(*data_file_it, 2 << 10);
+        {
+            return new data_reader<cluster<mm_hit>, mm_read_stream>(*data_file_it, args);
+        }
         else if(node.type == "bm")
         {
             if (arch.node_descriptors().find(node.type + std::to_string(node.id)) != arch.node_descriptors().end())
@@ -163,13 +181,14 @@ class model_factory
                     dynamic_cast<node_descriptor<burda_hit, mm_hit>*>(arch.node_descriptors()["bm" + std::to_string(node.id)]), 
                         calibration(*calib_file_it, current_chip::chip_type::size()));
             else
-                    return new burda_to_mm_hit_adapter<mm_hit>(calibration(*calib_file_it, current_chip::chip_type::size()));
+                return new burda_to_mm_hit_adapter<mm_hit>(calibration(*calib_file_it, current_chip::chip_type::size()));
         }
         else if(node.type == "s")
         {
             if (arch.node_descriptors().find(node.type + std::to_string(node.id)) != arch.node_descriptors().end())
                 return new hit_sorter<mm_hit>(
-                    dynamic_cast<node_descriptor<mm_hit, mm_hit>*>(arch.node_descriptors()["s" + std::to_string(node.id)]));
+                    dynamic_cast<node_descriptor<mm_hit, mm_hit>*>(
+                        arch.node_descriptors()["s" + std::to_string(node.id)]));
             else
                 return new hit_sorter<mm_hit>();
         } 
@@ -202,7 +221,7 @@ class model_factory
         //    return new trigger_clusterer<mm_hit, halo_buffer_clusterer<mm_hit, standard_clustering_type>, frequency_diff_trigger<mm_hit>>(
         //        args);
         else if(node.type == "tr")
-            return new trigger_node<mm_hit, interval_trigger<mm_hit>>(args);
+            return new trigger_node<mm_hit>(args);
         else if(node.type == "co")
             return new cluster_sorting_combiner<mm_hit>();
         else if (node.type == "cv")
@@ -259,7 +278,7 @@ class model_factory
         auto output_node_index = 0;
         for (auto node : arch.nodes())
         {
-            std::cout << "creating node " << node.type << std::endl;
+            //std::cout << "creating node " << node.type << std::endl;
             if(node.type == "p" || node.type == "wp")
             {
                 set_output_streams(node.type, output_dir, time_ss.str(), std::to_string(output_node_index));
@@ -271,7 +290,7 @@ class model_factory
             controller->add_node(data_nodes.back());
             if(node.type[0] == 'r')
                 ++data_file_it;
-            if(node.type == "bm")
+            if(node.type == "bm" && calib_files.size() > 1)
                 ++calib_file_it;
             
         }   
@@ -279,10 +298,10 @@ class model_factory
         {
             auto from_index = std::find(arch.nodes().begin(), arch.nodes().end(), edge.from) - arch.nodes().begin();
             auto to_index = std::find(arch.nodes().begin(), arch.nodes().end(), edge.to) - arch.nodes().begin();
-            std::cout << "edges " << from_index << " " << to_index << std::endl;
+            //std::cout << "edges " << from_index << " " << to_index << std::endl;
             controller->connect_nodes(data_nodes[from_index], data_nodes[to_index]);
             
         }
-        std::cout << "edges connected" << std::endl;
+        //std::cout << "edges connected" << std::endl;
     }
 };

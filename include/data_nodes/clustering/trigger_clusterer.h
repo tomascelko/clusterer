@@ -120,7 +120,7 @@ class trigger_clusterer : public i_simple_consumer<hit_type>,
         clock_->stop_and_report("trigger clusterer");
 
 
-        std::cout << "TRIGGER CLUSTERER ENDED -------------------" << std::endl;    
+        //std::cout << "TRIGGER CLUSTERER ENDED -------------------" << std::endl;    
     }
     template <typename ... underlying_clusterer_args_type>
     trigger_clusterer(underlying_clusterer_args_type... underlying_clusterer_args ) :

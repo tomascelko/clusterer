@@ -114,7 +114,7 @@ class strict_halo_buffer_clusterer : public i_simple_consumer<hit_type>, public 
         this->writer_.write(cluster<mm_hit>::end_token()); //write empty cluster as end token
         this->writer_.flush();
 
-        std::cout << "CLUSTERER ENDED ---------- " << processed_hit_count_ <<" hits processed" <<std::endl;
+        //std::cout << "CLUSTERER ENDED ---------- " << processed_hit_count_ <<" hits processed" <<std::endl;
     }
     halo_buffer_clusterer(double time_window_size, clusterer_type* clusterer) :
     clusterer_(std::unique_ptr<clusterer_type>(clusterer)),

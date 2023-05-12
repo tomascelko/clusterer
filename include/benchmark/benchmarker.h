@@ -7,7 +7,7 @@
 #include "i_time_measurable.h"
 #include "measuring_clock.h"
 #include "../data_nodes/nodes_package.h"
-#include "../mapped_mm_stream.h"
+//#include "../mapped_mm_stream.h"
 #include "../mm_stream.h"
 #include "model_factory.h"
 //TODO try more repeats
@@ -196,6 +196,15 @@ class benchmarker
                 }
             }
         }
+        for(uint32_t i = 0; i < buffer_repetitions_.size(); ++i)
+        {
+            stream << buffer_repetitions_[i];
+            for(uint32_t j = 0; j < statistic_repeats_; ++j)
+            {
+                stream << "," << total_exec_times_[i][j] ;
+            }
+            stream << std::endl;
+        }
     }
     void run_benchmark_for_dataset()
     {
@@ -304,38 +313,51 @@ class benchmarker
         print_results(std::cout);
     }
 */
-    template <typename... cl_arg_types>
-    void run(architecture_type arch, cl_arg_types... cl_args)
+    std::vector<std::vector<double>> total_exec_times_;
+    uint32_t statistic_repeats_ = 1;
+    std::vector<uint32_t> buffer_repetitions_ = {300};//{1, 3, 5, 7, 10, 15, 20, 30, 50, 100, 200};
+
+    void run(architecture_type arch, node_args & args)
     {
-    const uint16_t REPEATS = 1;
-
+    
     model_factory factory;
+    
         for (uint32_t i = 0; i < data_files_.size(); ++i)
-        {   
-            for(uint32_t j = 0; j < REPEATS; j++)
+        {
+            for (auto &&buffer_rep_ : buffer_repetitions_)
+            {
+                std::cout << "buffer repetition count " << buffer_rep_ << std::endl; 
+            total_exec_times_.emplace_back(std::vector<double>());
+            for(uint32_t j = 0; j < statistic_repeats_; j++)
             { 
-
+            args["reader"]["repetition_count"] = std::to_string(buffer_rep_);
             controller_  = new dataflow_controller();
             current_dataset_ = data_files_[i];
             switch(calibration_mode_)
             {
                 case calib_type::automatic:
-                    factory.create_model(controller_, arch,  data_files_[i].as_absolute(), auto_find_calib_file(data_files_[i]), output_dir_, cl_args...);
+                    factory.create_model(controller_, arch,  data_files_[i].as_absolute(), auto_find_calib_file(data_files_[i]), output_dir_, args);
                     break;
                 case calib_type::manual:
-                    factory.create_model(controller_, arch, data_files_[i].as_absolute(), calib_folders_[i].as_absolute(), output_dir_, cl_args...);
+                    factory.create_model(controller_, arch, data_files_[i].as_absolute(), calib_folders_[i].as_absolute(), output_dir_, args);
                     break;
                 case calib_type::same:
-                    factory.create_model(controller_, arch, data_files_[i].as_absolute(), calib_folders_[0].as_absolute(), output_dir_,  cl_args...);
+                    factory.create_model(controller_, arch, data_files_[i].as_absolute(), calib_folders_[0].as_absolute(), output_dir_, args);
                     break;  
                 default:
                     throw std::invalid_argument("invalid calibration type (choose one of auto/manual/same)");
                     break;
             }
-            
+             
+            auto start_time = std::chrono::high_resolution_clock::now();
             run_benchmark_for_dataset();
+            auto end_time = std::chrono::high_resolution_clock::now();
             delete controller_;
             std::cout << "FINISHED" << std::endl;
+            total_exec_times_.back().push_back(
+                std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count());
+            } 
+            
             }
         }
         print_results(std::cout);

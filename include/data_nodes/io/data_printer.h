@@ -1,9 +1,10 @@
 #include "../../data_flow/dataflow_package.h"
 
 template <typename data_type, typename stream_type>
-class data_printer : public i_simple_consumer<data_type>, public i_simple_producer<data_type>
+class data_printer : public i_data_consumer<data_type>, public i_simple_producer<data_type>
 {
     std::unique_ptr<stream_type> out_stream_;
+    multi_pipe_reader<data_type> reader_;
     public:
     data_printer(stream_type* print_stream) :
     out_stream_(std::unique_ptr<stream_type>(print_stream))
@@ -13,6 +14,10 @@ class data_printer : public i_simple_consumer<data_type>, public i_simple_produc
     std::string name() override
     {
         return "printer";
+    }
+    void connect_input(default_pipe<data_type>* input_pipe) override
+    {
+        reader_.add_pipe(input_pipe);
     }
     virtual void start() override
     {

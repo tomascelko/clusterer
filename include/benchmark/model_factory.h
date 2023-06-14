@@ -143,8 +143,10 @@ class model_factory
     using filenames_type = const std::vector<std::string>; 
     filenames_type::const_iterator data_file_it;
     filenames_type::const_iterator calib_file_it;
+    std::vector<std::string> all_data_files;
     static constexpr double FREQUENCY_MULTIPLIER_ = 1; 
     std::ofstream * window_print_stream;
+    std::ostream * appending_output_stream;
     
     template <typename arch_type>
     i_data_node* create_node(node node, arch_type arch, const node_args & args)
@@ -223,69 +225,98 @@ class model_factory
         else if(node.type == "tr")
             return new trigger_node<mm_hit>(args);
         else if(node.type == "co")
-            return new cluster_sorting_combiner<mm_hit>();
+            return new cluster_sorting_combiner<cluster<mm_hit>>();
+        else if(node.type == "cow")
+            return new cluster_sorting_combiner<default_window_feature_vector<mm_hit>>();
         else if (node.type == "cv")
-            return new clustering_validator<mm_hit>(std::cout);
+            return new clustering_validator<mm_hit>();
         else if (node.type == "wfc")
             return new window_feature_computer<default_window_feature_vector<mm_hit>, mm_hit>(args);
+        else if (node.type == "tc")
+        {
+            if (arch.node_descriptors().find(node.type + std::to_string(node.id)) != arch.node_descriptors().end())
+            return new temporal_clusterer<cluster>(
+                    dynamic_cast<node_descriptor<mm_hit, cluster<mm_hit>>*>(
+                        arch.node_descriptors()["tc" + std::to_string(node.id)]), args);
+            else
+                    return new temporal_clusterer<cluster>(args);
+                          
+        }
         else 
             throw std::invalid_argument("node of given type was not implemented yet");
 
         throw std::invalid_argument("node of given type was not recognized");
         
     };
-    void set_output_streams(const std::string & node_type, const std::string & output_dir, 
+    std::string set_output_streams(const std::string & node_type, const std::string & output_dir, 
         const std::string & time_str, const std::string & id)
     {
+        std::string file_name;
+        std::string input_file_name = file_path(all_data_files[0]).last_folder();
         if(output_dir.size() > 0 && ((output_dir[output_dir.size() - 1] == '/') || (output_dir[output_dir.size() - 1] == '\\')))
         {
             if(node_type[0] == 'p')
-                this->print_stream = new mm_write_stream(output_dir + "clustered_" + id + "_" + time_str);
+            {
+                file_name = output_dir +  "clustered_" + input_file_name + id + "_" + time_str;
+            }
             else
-                this->window_print_stream = new std::ofstream(output_dir + "window_features_" + id + "_" + time_str);
+                file_name = output_dir + "window_features_" +  input_file_name + id + "_" + time_str;
         }
         else
         {
             if(node_type[0] == 'p')
-                this->print_stream = new mm_write_stream(output_dir + id);
+                file_name = output_dir + id;
             else
-                this->window_print_stream = new std::ofstream(output_dir);    
+                file_name = output_dir;    
         }
+
+        if(node_type[0] == 'p')
+        {
+            this->print_stream = new mm_write_stream(file_name);
+        }
+        else
+        {
+            this->window_print_stream = new std::ofstream(file_name); 
+        }
+        return file_name;
+
     }
     public:
     
-    void create_model(dataflow_controller * controller, architecture_type arch,
+    std::vector<std::string> create_model(dataflow_controller * controller, architecture_type arch,
       const std::string& data_file, const std::string& calib_file, 
       const std::string output_dir, const node_args & args)
     {
-        create_model(controller, arch, std::vector<std::string>{data_file}, 
+        return create_model(controller, arch, std::vector<std::string>{data_file}, 
         std::vector<std::string>{calib_file}, output_dir, args);
     }
     //TODO FINISH METHOD THAT GETS INPUT AS VECTORS
    
-    void create_model(dataflow_controller * controller, architecture_type arch,
+    std::vector<std::string> create_model(dataflow_controller * controller, architecture_type & arch,
       const std::vector<std::string> & data_files, const std::vector<std::string> & calib_files,  
        const std::string & output_dir, const node_args & args)
     {
+        all_data_files = data_files;
         auto t = std::time(nullptr);
         auto time = *std::localtime(&t);
         std::stringstream time_ss;
-        time_ss << std::put_time(&time, "%d-%m-%Y_%H_%M_%S");
-        
+        time_ss << std::put_time(&time, "%d_%m_%Y_%H_%M_%S");
         std::vector<i_data_node*> data_nodes;
         data_file_it = data_files.cbegin();
         calib_file_it = calib_files.cbegin();
         auto output_node_index = 0;
+        std::vector<std::string> output_names;
         for (auto node : arch.nodes())
         {
             //std::cout << "creating node " << node.type << std::endl;
-            if(node.type == "p" || node.type == "wp")
+            if(node.type == "p" || node.type == "wp" || node.type == "cv")
             {
-                set_output_streams(node.type, output_dir, time_ss.str(), std::to_string(output_node_index));
+                output_names.push_back(set_output_streams(node.type, output_dir, time_ss.str(), 
+                    std::to_string(output_node_index)));
                 output_node_index ++;
             }
             data_nodes.emplace_back(create_node(node, arch, args));
-            
+            data_nodes.back()->set_id(node.id);
             
             controller->add_node(data_nodes.back());
             if(node.type[0] == 'r')
@@ -302,6 +333,8 @@ class model_factory
             controller->connect_nodes(data_nodes[from_index], data_nodes[to_index]);
             
         }
+        return output_names;
         //std::cout << "edges connected" << std::endl;
     }
+
 };

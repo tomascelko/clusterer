@@ -64,7 +64,8 @@ class pixel_list_clusterer : public i_simple_consumer<mm_hit>,
     uint32_t unfinished_clusters_count_;
     bool finished_ = false;
     protected:
-    const uint32_t WRITE_INTERVAL = 2 << 3;
+    uint32_t WRITE_INTERVAL = 2 << 2;
+    bool manual_write_check_ = false;
     uint64_t processed_hit_count_;
     measuring_clock * clock_;
     double current_toa_ = 0;
@@ -74,6 +75,7 @@ class pixel_list_clusterer : public i_simple_consumer<mm_hit>,
     {
         return cl.last_toa() < last_toa - CLUSTER_CLOSING_DT; 
     }
+    
     void merge_clusters(unfinished_cluster<mm_hit> & bigger_cluster, unfinished_cluster<mm_hit> & smaller_cluster) 
     //merging clusters to biggest cluster will however disrupt time orderedness - after merging bigger cluster can lower its first toa
     //which causes time unorderedness, can hovewer improve performance
@@ -147,6 +149,14 @@ class pixel_list_clusterer : public i_simple_consumer<mm_hit>,
     std::string name() override 
     {
         return "clusterer";
+    }
+    void set_manual_writing()
+    {
+        manual_write_check_ = true;
+    }
+    void set_auto_writing()
+    {
+        manual_write_check_ = false;
     }
     virtual bool open_cl_exists() override 
     {
@@ -277,7 +287,7 @@ class pixel_list_clusterer : public i_simple_consumer<mm_hit>,
         //clock_->start();
         while(hit.is_valid())
         {
-            if(processed_hit_count_ % WRITE_INTERVAL == 0) 
+            if(processed_hit_count_ % WRITE_INTERVAL == 0 && !manual_write_check_)
                 write_old_clusters(hit.toa());
             process_hit(hit);
             while(!reader_.read(hit));

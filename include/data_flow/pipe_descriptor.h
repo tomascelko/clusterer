@@ -13,6 +13,7 @@ class split_descriptor : public virtual abstract_pipe_descriptor
 {
     public:
     virtual uint32_t get_pipe_index(const data_type & data) = 0;
+    virtual ~split_descriptor() = default;
 };
 
 template <typename data_type>
@@ -21,6 +22,7 @@ class merge_descriptor : public virtual abstract_pipe_descriptor
     public:
     virtual bool is_on_border(const data_type & data) = 0;
     virtual bool should_be_forwarded(const data_type & data) = 0;
+    virtual ~merge_descriptor() = default;
 };
 
 class abstract_node_descriptor
@@ -35,13 +37,18 @@ class abstract_node_descriptor
 template<typename merge_type, typename split_type>
 struct node_descriptor : public abstract_node_descriptor
 {
-    merge_descriptor<merge_type> * merge_descr;
-    split_descriptor<split_type> * split_descr;
+    merge_descriptor<merge_type>* merge_descr;
+    split_descriptor<split_type> *split_descr;
     node_descriptor(merge_descriptor<merge_type> * merge_descr,  split_descriptor<split_type> * split_descr,
         const std::string & descr_id) :
     merge_descr(merge_descr),
     split_descr(split_descr)
     {}
+    virtual ~node_descriptor()
+    {
+        delete merge_descr;
+        delete split_descr;
+    }
 
 };
 

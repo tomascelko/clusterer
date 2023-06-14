@@ -187,10 +187,11 @@ class onnx_trigger : public abstract_window_trigger<hit_type, default_window_fea
         std::vector<double> scale(const std::vector<double> & feat_vector)
         {
             std::vector<double> scaled_vector;
+            const double epsilon_std = 0.0000001;
             scaled_vector.resize(feat_vector.size());
             for (uint32_t i = 0; i < scaled_vector.size(); ++i)
             {
-                scaled_vector[i] = (feat_vector[i] - means_[i])/(stds_[i] == 0 ? 1 : stds_[i]);
+                scaled_vector[i] = (feat_vector[i] - means_[i])/(stds_[i] < epsilon_std ? 1 : stds_[i]);
             }
             return scaled_vector;
         }
@@ -228,6 +229,7 @@ public:
 
     using state_type = default_window_feature_vector<hit_type>;
     std_log_scaler scaler_;
+    Ort::Env env;
     onnx_trigger(const std::map<std::string, std::string> &args) : 
         scaler_(args.at("data_file")),
         abstract_window_trigger<hit_type, default_window_feature_vector<hit_type>>(std::stod(args.at("trigger_time")))
@@ -236,7 +238,7 @@ public:
         
         std::string model_name = args.at("trigger_file");
         std::basic_string<ORTCHAR_T> model_file = model_name;
-        Ort::Env env(ORT_LOGGING_LEVEL_WARNING, "example-model-explorer");
+        env = Ort::Env(OrtLoggingLevel::ORT_LOGGING_LEVEL_VERBOSE, "example-model-explorer");
         Ort::SessionOptions session_options;
         session = std::move(std::make_unique<Ort::Session>(env, model_file.c_str(), session_options));
 
@@ -265,14 +267,15 @@ public:
         for (std::size_t i = 0; i < session->GetOutputCount(); i++)
         {
             output_names.emplace_back(session->GetOutputNameAllocated(i, allocator).get());
-            auto output_shapes = session->GetOutputTypeInfo(i).GetTensorTypeAndShapeInfo().GetShape();
-            std::cout << "\t" << output_names.at(i) << " : " << print_shape(output_shapes) << std::endl;
+            //auto output_shapes = session->GetOutputTypeInfo(i).GetTensorTypeAndShapeInfo().GetShape();
+            //std::cout << "\t" << output_names.at(i) << " : " << print_shape(output_shapes) << std::endl;
         }
 
         // Assume model has 1 input node and 1 output node.
-        assert(input_names.size() == 1 && output_names.size() == 1);
+        //assert(input_names.size() == 1 && output_names.size() == 1);
         // Create a single Ort tensor of random numbers
         input_shape = input_shapes;
+    
         total_number_elements = calculate_product(input_shape);
 
         // pass data through model
@@ -301,7 +304,8 @@ public:
     {
 
         
-        std::vector<double> input_tensor_doubles = scaler_.scale(feat_vector.to_vector());
+        std::vector<double> input_tensor_doubles = feat_vector.to_vector();//scaler_.scale(feat_vector.to_vector());
+        input_tensor_doubles.erase(input_tensor_doubles.begin());
         std::vector<float> input_tensor_values;
         for (double value : input_tensor_doubles)
         {
@@ -323,22 +327,26 @@ public:
         //std::cout << "Running model..." << std::endl;
         try
         {
-            Ort::Value output(nullptr);
-            session->Run(Ort::RunOptions{nullptr}, input_names_char.data(), input_tensors.data(),
-                                               input_names_char.size() ,output_names_char.data(), &output, output_names_char.size());
+            //Ort::Value output(nullptr);
+            //OrtValue * output[2] = {nullptr};
+            auto output = session->Run(Ort::RunOptions{nullptr}, input_names_char.data(), input_tensors.data(),
+                                               input_names_char.size() ,output_names_char.data(), output_names_char.size());
             //std::cout << "Done!" << std::endl;
 
             //std::cout << "\n output_tensor shape: " << print_shape(output.GetTensorTypeAndShapeInfo().GetShape()) << std::endl;
 
             // double-check the dimensions of the output tensors
             // NOTE: the number of output tensors is equal to the number of output nodes specifed in the Run() call
-            assert( output.IsTensor());
-            auto trigger_type = output.GetTypeInfo();
+            assert( output[0].IsTensor());
+            auto trigger_type = output[0].GetTypeInfo();
 
-            float trigger_prob = (output.GetTensorMutableData<float>())[0];
-
+            int32_t trigger_prob = (output[0].GetTensorMutableData<int32_t>())[0];
+            
             //std::cout << trigger_prob << std::endl;
+            if (trigger_prob >= 0.5)
+                std::cout << "triggered" << std::endl;
             return trigger_prob >= 0.5;
+           
         }
         catch (const Ort::Exception &exception)
         {

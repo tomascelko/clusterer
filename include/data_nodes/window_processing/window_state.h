@@ -18,9 +18,19 @@ class default_window_state
     double window_time_; //50ms
     double start_time_ = 0;
     double differential_window_;
+    uint64_t hit_count_ = 0;
     default_window_feature_vector<hit_type> feature_vector_;
     std::deque<default_window_feature_vector<hit_type>> previous_vectors_;
     public:
+    uint64_t hit_count() const
+    {
+        return hit_count_;
+    }
+    double window_time() const
+    {
+        return window_time_;
+    }
+    
     default_window_state(double window_time, double differential_window = 0.) :
     window_time_(window_time),
     differential_window_(differential_window)
@@ -36,6 +46,10 @@ class default_window_state
             }
         }
 
+    }
+    double mean_frequency() const
+    {
+        return hit_count_ * 1000000000 / window_time_; //multiply by milion to convert from nanoseconds to seconds
     }
     double start_time() const
     {
@@ -54,6 +68,7 @@ class default_window_state
     void update(const hit_type & hit)
     {
         last_hit_toa_ = hit.toa();
+        ++hit_count_;
         feature_vector_.update(hit);
 
     }
@@ -69,6 +84,7 @@ class default_window_state
             previous_vectors_.push_back(feature_vector_);
         }
         start_time_ += window_time_;
+        hit_count_ = 0;
         feature_vector_ = default_window_feature_vector<hit_type>(start_time_);
         
     }

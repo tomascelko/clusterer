@@ -52,7 +52,7 @@ class node_args
         {"clusterer",
             node_args_type({
                 {"tile_size", "1"},
-                {"max_dt", "300"}
+                {"max_dt", "200"}
             })
         },
         {"trigger", node_args_type(
@@ -64,16 +64,16 @@ class node_args
                 {"data_file", ""}
             })
         },
-        {"hallo_bb_clusterer", node_args_type(
+        {"halo_bb_clusterer", node_args_type(
             {
-                {"window_size", "100000"}
+                {"window_size", "1000"}
             })
 
         },
         {"window_computer", node_args_type(
             {
                 {"window_size", "200000000"},
-                {"diff_window_size", "0" }
+                {"diff_window_size", "1000000000" }
             })    
         }
         

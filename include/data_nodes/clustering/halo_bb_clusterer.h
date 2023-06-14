@@ -110,7 +110,8 @@ class halo_buffer_clusterer : public i_simple_consumer<hit_type>, public i_data_
         if(hit.toa() - window_start_time_ > time_window_size_)
         {
             process_buffer();
-            window_start_time_ = hit.toa();
+            window_start_time_ = hit.toa();//std::floor(hit.toa() / time_window_size_) * time_window_size_;
+            clusterer_->write_old_clusters(hit.toa());
         }
         hit_buffer_.emplace_back(hit);
         hit_buffer_valid_.emplace_back(true);
@@ -123,8 +124,9 @@ class halo_buffer_clusterer : public i_simple_consumer<hit_type>, public i_data_
     {
         hit_type hit;
         this->reader_.read(hit);
-        clock_->start();
+        //clock_->start();
         clusterer_->set_tile(2);
+        clusterer_->set_manual_writing();
         while(hit.is_valid())
         {
             process_hit(hit);
@@ -133,7 +135,7 @@ class halo_buffer_clusterer : public i_simple_consumer<hit_type>, public i_data_
         }   
         write_remaining_clusters();
 
-        clock_->stop_and_report("clusterer");
+        //clock_->stop_and_report("clusterer");
 
         //std::cout << "HALO BB CLUSTERER ENDED ---------- " <<std::endl;
     }

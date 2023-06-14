@@ -134,23 +134,37 @@ class model_executor
             calibration_mode_ = calib_type::manual;
         }
     }
-    
-    void run(architecture_type arch, const node_args & args)
+    model_executor(std::vector<std::string> files,
+        const std::string & output_dir):
+    output_dir_(output_dir),
+    calibration_mode_(calib_type::none)
+    {
+        for (auto file : files)
+                data_files_.emplace_back(file_path(file));
+    }
+    std::vector<std::string> results_;
+    std::vector<std::string> & results()
+    {
+        return results_;
+    }
+    std::vector<std::string> run(architecture_type && arch, const node_args & args, bool debug = false)
     {
          model_factory factory;  
 
-        controller_ = new dataflow_controller();
+        controller_ = new dataflow_controller(arch.node_descriptors(), debug); //arch.node_descriptors());
         auto datasets_str = data_paths_as_absolute();
-        auto calib_str = calib_paths_as_absolute();
-        std::cout << "entering factory" << std::endl;
-        factory.create_model(controller_, arch,  datasets_str, calib_str, output_dir_, args);
+        std::vector<std::string> calib_str; 
+        //std::cout << "entering factory" << std::endl;
+        if (calibration_mode_ != calib_type::none)
+            calib_str = calib_paths_as_absolute();
+        auto output_filenames = factory.create_model(controller_, arch,  datasets_str, calib_str, output_dir_, args);
         
         
         controller_->start_all();
         controller_->wait_all();
+        results_ = controller_->results();
         controller_->remove_all();
         delete controller_;
-        std::cout << "FINISHED" << std::endl;
-            
+        return output_filenames;
     }
 };

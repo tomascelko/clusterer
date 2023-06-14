@@ -18,7 +18,7 @@ class mm_write_stream
     static constexpr std::string_view INI_SUFFIX = ".ini";
     static constexpr std::string_view CL_SUFFIX = "_cl.txt";
     static constexpr std::string_view PX_SUFFIX = "_px.txt";
-    static constexpr uint32_t FLUSH_INTERVAL = 2 << 23;
+    static constexpr uint32_t FLUSH_INTERVAL = 2 << 21;
     uint64_t current_line = 0;
     uint64_t current_byte = 0;
     uint64_t clusters_written_ = 0;
@@ -35,11 +35,9 @@ class mm_write_stream
             //handle special case where no path is given
             path_prefix = "";
         }
-        auto time = std::time(nullptr);
-        auto loc_time = *std::localtime(&time);
-        auto current_time = std::put_time(&loc_time, "%d-%m-%Y-%H-%M-%S");
+
         std::ostringstream sstream;
-        sstream << path_suffix << current_time;
+        sstream << path_suffix;
         std::string ini_file_name = sstream.str() + std::string(INI_SUFFIX); 
         std::string px_file_name = sstream.str() + std::string(PX_SUFFIX);
         std::string cl_file_name = sstream.str() + std::string(CL_SUFFIX);
@@ -76,7 +74,7 @@ class mm_write_stream
     {
         //TODO write PX FILE FIRST AS A WHOLE
         *cl_buffer_ << double_to_str(cluster.first_toa()) << " "; 
-        *cl_buffer_ << cluster.hit_count() << " " << current_line << " " << current_byte << std::endl;
+        *cl_buffer_ << cluster.hit_count() << " " << current_line << " " << current_byte << "\n";
         ++clusters_written_;
         //px_buffer_.precision(6);
         for(const auto & hit : cluster.hits())
@@ -124,7 +122,7 @@ class mm_read_stream
     bool calib_ = true;
     void open_streams(const std::string& ini_file)
     {
-        std::cout << ini_file << std::endl;
+        //std::cout << ini_file << std::endl;
         std::string path_suffix = ini_file.substr(ini_file.find_last_of("\\/") + 1);
         std::string path_prefix = ini_file.substr(0, ini_file.find_last_of("\\/") + 1);
         if(ini_file.find_last_of("\\/") == std::string::npos)
@@ -150,6 +148,10 @@ class mm_read_stream
 
             }
                 
+        }
+        if(!cl_file_ || !px_file_ || !cl_file_->is_open() || !px_file_->is_open())
+        {
+            throw std::invalid_argument("Error, Could not open CL or PX file");
         }
 
     }

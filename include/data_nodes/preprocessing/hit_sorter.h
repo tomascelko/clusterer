@@ -60,6 +60,7 @@ public:
         data_type hit;
         int processed = 0;
         this->reader_.read(hit);
+        int x = 0;
         while(hit.is_valid())
         { //data not end
             processed ++;
@@ -67,15 +68,17 @@ public:
             
             if(processed % DEQUEUE_CHECK_INTEVAL == 0)
                 while (priority_queue_.top().toa() < hit.toa() - DEQUEUE_TIME)
-                {
+                {                    
                     data_type old_hit = priority_queue_.top();
                     this->writer_.write(std::move(old_hit));
                     priority_queue_.pop();
                 }
+
             this->reader_.read(hit);
 
         
         }
+        
         while (!priority_queue_.empty())
             {
                 data_type old_hit = priority_queue_.top();

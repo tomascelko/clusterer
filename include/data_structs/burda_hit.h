@@ -57,6 +57,7 @@ public:
     {
         return slow_clock_dt * toa_ - fast_clock_dt * fast_toa_;
     }
+    
     short fast_toa() const
     {
         return fast_toa_;

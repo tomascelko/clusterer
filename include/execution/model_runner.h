@@ -2,7 +2,7 @@
 #include <string>
 #include "executor.h"
 
-class model_selector
+class model_runner
 {
     public:
     static bool print;
@@ -10,22 +10,46 @@ class model_selector
     enum class model_name
     {
         SIMPLE_CLUSTERER,
-        ENERGY_TRIG_CLUSTERER,
+        TRIGGER_SIMPLE_CLUSTERER,
         TILE_CLUSTERER,
         TRIG_CLUSTERER,
-        BB_CLUSTERER,
-        TRIG_BB_CLUSTERER,
         PAR_WITH_SPLITTER,
-        PAR_WITH_MERGER,
-        PAR_WITH_TREE_MERGER,
-        PAR_WITH_LINEAR_MERGER,
+        PAR_SIMPLE_MERGER,
+        PAR_TREE_MERGER,
+        PAR_LINEAR_MERGER,
         VALIDATION,
         WINDOW_COMPUTER,
-        FULLY_PAR_CLUSTERER,
-        TRIGGER_SIMPLE_CLUSTERER
+        PAR_MULTIFILE_CLUSTERER,
+
+        //to be deprecated:
+        ENERGY_TRIG_CLUSTERER,
+        TRIG_BB_CLUSTERER
+    };
+    enum class clustering_type
+    {
+        STANDARD,
+        TILED,
+        HALO_BB,
+        TEMPORAL
     };
     private:
     static constexpr const char * base_arch = "r1bm1,bm1s1" ;
+    static std::string get_clustering_str(clustering_type clustering)
+    {
+        switch(clustering)
+        {
+            case clustering_type::STANDARD:
+                return "sc";
+            case clustering_type::TEMPORAL:
+                return "tc";
+            case clustering_type::HALO_BB:
+                return "bbc";
+            case clustering_type::TILED:
+                return "tic";
+            default:
+                throw std::invalid_argument("Invalid clustering type");
+        }
+    }
     static std::string create_split_arch(const node_args & args, const std::string & first_node,
       const std::string & cluster_node, uint32_t core_count)
     {
@@ -119,16 +143,11 @@ class model_selector
         std::map<std::string, abstract_node_descriptor*> & descriptors,
         const std::string & clustering_node, const std::string & output_node, uint32_t core_count)
     {
-        auto trivial_hit_merge_descr = new trivial_merge_descriptor<mm_hit>();
-        auto trivial_burda_hit_merge_descr = new trivial_merge_descriptor<burda_hit>();
-        auto hit_sorter_split_descr = new temporal_hit_split_descriptor<mm_hit>(core_count);
-        auto default_merge_descr = new temporal_clustering_descriptor<mm_hit>(core_count);
-        auto two_clustering_split_descriptor = new clustering_two_split_descriptor<cluster<mm_hit>>();
-        auto two_clustering_merge_descriptor =  new temporal_clustering_descriptor<mm_hit>(2);
-        auto trivial_merger_split_descr = new trivial_split_descriptor<cluster<mm_hit>>();
-        auto burda_split_descriptor = new temporal_hit_split_descriptor<mm_hit>(core_count);
-        if(model_type == model_name::PAR_WITH_MERGER)
+        
+        if(model_type == model_name::PAR_SIMPLE_MERGER)
         {
+            auto trivial_merger_split_descr = new trivial_split_descriptor<cluster<mm_hit>>();
+            auto default_merge_descr = new temporal_clustering_descriptor<mm_hit>(core_count);
             for (uint i = 1; i <= core_count; ++i)
             {
                 arch += "," + clustering_node + std::to_string(i) + "m1";
@@ -139,22 +158,27 @@ class model_selector
                         trivial_merger_split_descr, "merger_desc")));
             
         }
-        else if (model_type == model_name::PAR_WITH_LINEAR_MERGER || model_type ==  model_name::FULLY_PAR_CLUSTERER)
+        else if (model_type == model_name::PAR_LINEAR_MERGER || model_type ==  model_name::PAR_MULTIFILE_CLUSTERER)
         {
             
-            if(output_node == "p" && model_type == model_name::PAR_WITH_LINEAR_MERGER)
+            if(output_node == "p" && model_type == model_name::PAR_LINEAR_MERGER)
                         arch += ",co1p1";
             for(uint16_t i = 1; i <= core_count; i++)
             {
+                auto trivial_hit_merge_descr = new trivial_merge_descriptor<mm_hit>();
+
+                auto two_clustering_split_descriptor = new clustering_two_split_descriptor<cluster<mm_hit>>();
+                auto two_clustering_merge_descriptor =  new temporal_clustering_descriptor<mm_hit>(2);
+                auto trivial_merger_split_descr = new trivial_split_descriptor<cluster<mm_hit>>();
                 std::string str_index = std::to_string(i);
                 std::string sc = clustering_node + str_index;
                 std::string merg_low = "m" + str_index;
                 std::string merg_high = "m" + std::to_string(((i) % (core_count)) + 1); //modulo in 1 based indexing
                 arch += "," + sc + merg_low;
                 arch += "," + sc + merg_high;
-                if(model_type == model_name::FULLY_PAR_CLUSTERER)
+                if(model_type == model_name::PAR_MULTIFILE_CLUSTERER)
                     arch += "," + merg_low + output_node + str_index;
-                if(model_type == model_name::PAR_WITH_LINEAR_MERGER)
+                if(model_type == model_name::PAR_LINEAR_MERGER)
                 {
                     arch += "," + merg_low + "co1";
                     
@@ -185,19 +209,25 @@ class model_selector
     }
     public:
     template <typename executor_type, typename ...clustering_args>
-    static void select_model(model_name model_type , executor_type* executor, 
-        uint16_t core_count, const std::string & output_folder, node_args & args)
+    static std::vector<std::string> run_model(model_name model_type , executor_type* executor, 
+        uint16_t core_count, node_args & args, bool debug_mode = false, clustering_type clustering_alg_type = clustering_type::STANDARD)
     {
         
         std::string validation_arch = "rc1cv1,rc2cv1";
 
-        auto multi_merge_descr_1 = new temporal_merge_descriptor<cluster<mm_hit>>(2, 1);
+        auto multi_merge_descr_11 = new temporal_merge_descriptor<cluster<mm_hit>>(2, 1);
+        auto multi_merge_descr_12 = new temporal_merge_descriptor<cluster<mm_hit>>(2, 1);
+        auto multi_split_descr_11 = new temporal_merge_descriptor<cluster<mm_hit>>(2, 1);
+        auto multi_split_descr_12 = new temporal_merge_descriptor<cluster<mm_hit>>(2, 1);
+        
         auto multi_merge_descr_2 = new temporal_merge_descriptor<cluster<mm_hit>>(2, 2,  false);
+        auto multi_split_descr_2 = new temporal_merge_descriptor<cluster<mm_hit>>(2, 2,  false);
         auto hit_sorter_split_descr = new temporal_hit_split_descriptor<mm_hit>(core_count);
         auto trivial_hit_merge_descr = new trivial_merge_descriptor<mm_hit>();
     std::string arch = base_arch;
     std::string output_node;
     std::string first_node = "r";
+    std::string clustering_node = get_clustering_str(clustering_alg_type);
     if(recurring)
     {
         arch = "r" + arch;
@@ -210,53 +240,72 @@ class model_selector
     std::string default_output_node = output_node + "1";
     uint32_t TILE_SIZE = 4;
     uint32_t TIME_WINDOW_SIZE = 50000000;
-    if(model_type == model_name::SIMPLE_CLUSTERER)
-         executor->run(architecture_type(arch + ",s1sc1,sc1" + default_output_node), args);
-    else if (model_type == model_name::ENERGY_TRIG_CLUSTERER)
-        executor->run(architecture_type(arch + ",s1ec1"), args);
- 
-    else if(model_type == model_name::PAR_WITH_TREE_MERGER)
-        executor->run(
+    std::string sub_arch;
+    switch (model_type)
+    {
+
+    case model_name::SIMPLE_CLUSTERER:
+        return executor->run(architecture_type(arch + ",s1" + clustering_node + "1,"+ 
+        clustering_node + "1" + default_output_node), args, debug_mode);
+        break;
+    case model_name::ENERGY_TRIG_CLUSTERER:
+        return executor->run(architecture_type(arch + ",s1ec1"), args);
+        break;
+    case model_name::PAR_TREE_MERGER:
+        return executor->run(
             architecture_type(arch + 
             ",s1sc1,s1sc2,s1sc3,s1sc4,sc1m1,sc2m1,sc3m2,sc4m2,m1" + default_output_node + ",m2" + default_output_node + ",m3" + default_output_node + ",m2m3,m1m3", 
             std::map<std::string, abstract_node_descriptor*>{
                 {"s1", new node_descriptor<mm_hit, mm_hit>(trivial_hit_merge_descr, hit_sorter_split_descr, "sorter_descriptor")},
-                {"m1", new node_descriptor<cluster<mm_hit>,cluster<mm_hit>>(multi_merge_descr_1, multi_merge_descr_1, "merger1_desc")},
-                {"m2", new node_descriptor<cluster<mm_hit>,cluster<mm_hit>>(multi_merge_descr_1, multi_merge_descr_1, "merger2_descr")},
-                {"m3", new node_descriptor<cluster<mm_hit>,cluster<mm_hit>>(multi_merge_descr_2, multi_merge_descr_2, "merger3_descr")}
-                }), args);
-    else if (model_type == model_name::PAR_WITH_MERGER)
-        executor->run(
-            build_parallel_arch(model_type, first_node, core_count, output_node, args, "sc"), args
-            );
-    else if (model_type == model_name::TRIG_CLUSTERER)
-        executor->run(
-            architecture_type(arch + ",s1tr1,tr1" + default_output_node), args);
-    else if (model_type == model_name::TILE_CLUSTERER)
-        executor->run(
-            architecture_type(arch + ",s1tic1,tic1"+ default_output_node), args);
-    else if (model_type == model_name::BB_CLUSTERER)
-        executor->run(
-            architecture_type(arch + ",s1bbc1,bbc1" + default_output_node), args);
-    else if (model_type == model_name::TRIG_BB_CLUSTERER)
-        executor->run(
-            architecture_type(arch + ",s1trbbc1,trbbc1" + default_output_node), args); 
-    else if (model_type == model_name::PAR_WITH_LINEAR_MERGER || model_type == model_name::FULLY_PAR_CLUSTERER)
-        executor->run(
-            build_parallel_arch(model_type, first_node, core_count, output_node, args, "sc"), args
-        );
-    else if (model_type == model_name::VALIDATION)
-        executor->run(
-            architecture_type(validation_arch), args);  
-    else if (model_type == model_name::WINDOW_COMPUTER)
-        executor->run(architecture_type(arch + ",s1wfc1,wfc1wp1"), args);
-    else if(model_type == model_name::TRIGGER_SIMPLE_CLUSTERER)
-    {
-        auto sub_arch = arch.substr(0,arch.find(','));
-        executor->run(architecture_type(sub_arch + ",bm1tr1,tr1s1,s1sc1,sc1" + default_output_node), args);
+                {"m1", new node_descriptor<cluster<mm_hit>,cluster<mm_hit>>(multi_merge_descr_11, multi_split_descr_11, "merger1_desc")},
+                {"m2", new node_descriptor<cluster<mm_hit>,cluster<mm_hit>>(multi_merge_descr_12, multi_split_descr_12, "merger2_descr")},
+                {"m3", new node_descriptor<cluster<mm_hit>,cluster<mm_hit>>(multi_merge_descr_2, multi_split_descr_2, "merger3_descr")}
+                }), args, debug_mode);
+        break;
+    case model_name::PAR_SIMPLE_MERGER:
+        return executor->run(
+            build_parallel_arch(model_type, first_node, core_count, output_node, args, clustering_node), args,
+            debug_mode);
+        break;
+    case model_name::TRIG_CLUSTERER:
+        return executor->run(
+            architecture_type(arch + ",s1tr1,tr1" + default_output_node), args, debug_mode);
+        break;
+    case model_name::TILE_CLUSTERER:
+        return executor->run(
+            architecture_type(arch + ",s1tic1,tic1"+ default_output_node), args, debug_mode);
+        break;
+    case model_name::TRIG_BB_CLUSTERER:
+        return executor->run(
+            architecture_type(arch + ",s1trbbc1,trbbc1" + default_output_node), args, debug_mode); 
+        break;
+    case model_name::PAR_LINEAR_MERGER:
+    case model_name::PAR_MULTIFILE_CLUSTERER:
+        return executor->run(
+            build_parallel_arch(model_type, first_node, core_count, output_node, args, clustering_node), args,
+        debug_mode);
+        break;
+    case model_name::VALIDATION:
+        return executor->run(
+            architecture_type(validation_arch), args, debug_mode);
+        break;
+    case model_name::WINDOW_COMPUTER:
+        if(print)
+            return executor->run(architecture_type(arch + ",s1wfc1,wfc1wp1"), args, debug_mode);
+        else
+            return executor->run(architecture_type(arch + ",s1wfc1,wfc1cow1"), args, debug_mode);
+        break;
+    case model_name::TRIGGER_SIMPLE_CLUSTERER:
+        sub_arch = arch.substr(0,arch.find(','));
+        return executor->run(architecture_type(sub_arch + ",bm1tr1,tr1s1,s1"+ clustering_node +"1," + clustering_node +"1" + default_output_node), args, debug_mode);
+        break;
+    default:
+        throw std::invalid_argument("Invalid model name passed");
     }
+    throw std::invalid_argument("Invalid model name passed");
     }
     
+    
 };
-bool model_selector::print = true;
-bool model_selector::recurring = false;
+bool model_runner::print = true;
+bool model_runner::recurring = false;

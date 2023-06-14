@@ -35,7 +35,7 @@ class basic_path
     }
     std::string last_folder() const
     {
-        const uint32_t sep_position = path_.string().find_last_of("/\\");
+        const int32_t sep_position = path_.string().find_last_of("/\\");
         std::string temp =  path_.string().substr(sep_position + 1);
 
         return temp;

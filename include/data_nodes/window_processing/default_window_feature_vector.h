@@ -43,7 +43,10 @@ class default_window_feature_vector
     std::vector<double> energy_distribution_ = std::vector<double>(ENERGY_DISTR_BIN_COUNT_);
 
 public:
-    
+    static constexpr uint64_t avg_size()
+    {
+        return (attribute_names().size() - 1 + ENERGY_DISTR_BIN_COUNT_) * sizeof(double);
+    }
     std::map<std::string, std::vector<double>> vector_features;
     std::map<std::string, double> scalar_features;
     template <typename data_type, typename stream_type>
@@ -70,13 +73,34 @@ public:
         scalar_features[attribute_names()[6]] = total_energy_;
         scalar_features[attribute_names()[7]] = max_e_;
         scalar_features[attribute_names()[8]] = hit_count > 0 ? hit_count / cluster_count_lower_bound_ : 0;
-        vector_features[attribute_names()[9]] = energy_distribution_;
+        scalar_features[attribute_names()[9]] = hit_count > 0 ? total_energy_ / cluster_count_lower_bound_ : 0;
+        std::vector<double> energy_distr_norm;
+        vector_features[attribute_names()[10]] = normalized(energy_distribution_);
         closed = true;
         
     }
     default_window_feature_vector(double start_time = 0) : start_time_(start_time)
     {
     }
+
+    std::vector<double> normalized(const std::vector<double> &  vect)
+    {
+        std::vector<double> result;
+        const double EPSILON = 0.00001;
+        double sum = 0;
+        for (const auto value : vect)
+        {
+            sum += std::abs(value);
+        }
+        if(sum < EPSILON)
+            return vect;
+        for (const auto value : vect)
+        {
+            result.push_back(value / (double)sum);
+        }
+        return result;
+    }
+
     std::vector<double> to_vector() const
     {
         std::vector<double> result;
@@ -151,7 +175,7 @@ public:
     }
     uint32_t size() const
     {
-        return 0;
+        return avg_size();
     }
     double last_hit_toa() const
     {
@@ -193,8 +217,8 @@ public:
         while (!vector_ss.eof())
         {
             double value;
-            vector_ss >> value;
-            result.push_back(value);
+            if(vector_ss >> value)
+                result.push_back(value);
         }
     }
     /*std::vector<std::string> str() const
@@ -214,7 +238,7 @@ public:
     static std::vector<std::string> attribute_names()
     {
         return std::vector<std::string>{"start_toa[ms]", "mean_x[px]", "mean_y[px]", "std_x[px]", "std_y[px]",
-                                        "hit_count[]", "tot_e[keV]", "max_e[keV]", "cl_size_upp_bound[]", "e_distrib[[]]"};
+                                        "hit_count[]", "total_energy[keV]", "max_energy_hit[keV]", "mean_temp_cluster_size[]", "mean_temp_cluster_energy[keV]", "e_distrib[[]]"};
     }
     void set_scalar(const std::string &key, double value)
     {
@@ -304,6 +328,10 @@ public:
             return std::nan("");
         return y_sum_ / (double)hit_count;
     }
+    double time() const
+    {
+        return start_time_;
+    }
 };
 template <typename data_type, typename stream_type>
 stream_type &operator<<(stream_type &fstream, const default_window_feature_vector<data_type> &window_feature_vect)
@@ -316,7 +344,7 @@ stream_type &operator<<(stream_type &fstream, const default_window_feature_vecto
         {
             std::vector<double> vector_feature;
             window_feature_vect.write_vector(fstream, window_feature_vect.vector_features.at(feature_name));
-            
+
         }
         else
         {

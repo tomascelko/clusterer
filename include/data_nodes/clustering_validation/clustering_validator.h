@@ -3,11 +3,11 @@
 template <typename hit_type>
 class clustering_validator : public i_data_consumer<cluster<hit_type>>
 {
-    std::ostream& out_stream_;
-    multi_cluster_pipe_reader<hit_type> reader_;
+    //std::ostream* out_stream_;
+    multi_pipe_reader<cluster<hit_type>> reader_;
     public:
-    clustering_validator(std::ostream& print_stream) :
-    out_stream_((print_stream))
+    clustering_validator() //:
+    //out_stream_()
     {
         //out_stream_ = std::move(std::make_unique<std::ostream>(print_stream));
     }
@@ -19,12 +19,12 @@ class clustering_validator : public i_data_consumer<cluster<hit_type>>
     {
         reader_.add_pipe(input_pipe);
     }
-    std::vector<cluster<hit_type>> clusters_0;
-    std::vector<cluster<hit_type>> clusters_1;
+    std::deque<cluster<hit_type>> clusters_0;
+    std::deque<cluster<hit_type>> clusters_1;
     const double EPSILON_FTOA = 0.01;
     uint64_t intersection_size = 0;
     uint64_t union_size = 0;
-    std::vector<cluster<hit_type>>& get_clusters(bool pick_first)
+    std::deque<cluster<hit_type>>& get_clusters(bool pick_first)
     {
         if(pick_first)
             return clusters_0;
@@ -33,10 +33,11 @@ class clustering_validator : public i_data_consumer<cluster<hit_type>>
     void compare_clusters()
     {
         bool is_first_older = clusters_0[0].first_toa() < clusters_1[1].first_toa();
-        std::vector<cluster<hit_type>>& oldest_cls = get_clusters(is_first_older);
+        std::deque<cluster<hit_type>>& oldest_cls = get_clusters(is_first_older);
         cluster<hit_type>& oldest_cl = oldest_cls[0];
-        std::vector<cluster<hit_type>>& to_compare_cls = get_clusters(!is_first_older);
+        std::deque<cluster<hit_type>>& to_compare_cls = get_clusters(!is_first_older);
         ++union_size;
+        bool matched = false;
         for (auto it = to_compare_cls.begin(); it != to_compare_cls.end(); ++it)
         {
             if(std::abs(it->first_toa() - oldest_cl.first_toa()) > EPSILON_FTOA)
@@ -45,10 +46,11 @@ class clustering_validator : public i_data_consumer<cluster<hit_type>>
             {
                 to_compare_cls.erase(it);
                 ++intersection_size;
+                matched = true;
                 break;
             }
         }
-        oldest_cls.erase(oldest_cls.begin());
+        oldest_cls.pop_front();
         
     
     }
@@ -71,12 +73,18 @@ class clustering_validator : public i_data_consumer<cluster<hit_type>>
             this->reader_.read(cl);
 
         }
-        out_stream_ << "Intersection: " << intersection_size << std::endl;
-        out_stream_ << "Union: " << union_size << std::endl; 
-        out_stream_ << "IoU: " << intersection_size / (double) union_size;
-        out_stream_.flush();
-        std::cout << "PRINTER ENDED ----------------" << std::endl;
-    }
+        //out_stream_ << "Intersection: " << intersection_size << std::endl;
+        //out_stream_ << "Union: " << union_size << std::endl; 
+        union_size += clusters_0.size() + clusters_1.size();
 
+        result_ = std::to_string(intersection_size / (double) union_size);
+        
+        std::cout << "VALIDATOR ENDED ----------------" << std::endl;
+    }
+    std::string result_;
+    std::string result() override
+    {
+        return result_;
+    }
     virtual ~clustering_validator() = default;
 };

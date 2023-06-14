@@ -6,7 +6,7 @@ class repeating_data_reader : public data_reader<data_type, istream_type>
 {
      uint32_t repetition_count_ = 1;
     double freq_multiplier_;
-    uint64_t buffer_size_;
+    int64_t buffer_size_;
     using buffer_type = typename data_reader<data_type, istream_type>::buffer_type;
     std::unique_ptr<buffer_type> buffer_;
 
@@ -26,10 +26,10 @@ class repeating_data_reader : public data_reader<data_type, istream_type>
         data_type data;
         *this->input_stream_ >> data;
         uint64_t processed_count = 0;
-        rep_buffer_.reserve(buffer_size_);
-        while (data.is_valid() && processed_count < buffer_size_)
+        if(buffer_size_ > 0)
+            rep_buffer_.reserve(buffer_size_);
+        while (data.is_valid() && (processed_count < buffer_size_ || buffer_size_ <= 0))
         {
-            //std::cout << "reading_next" << sstd::endl;
             rep_buffer_.emplace_back(data);
             *this->input_stream_ >> data;
             ++processed_count;
@@ -46,20 +46,24 @@ class repeating_data_reader : public data_reader<data_type, istream_type>
         buffer_size_(args.get_arg<int>(name(), "repetition_size")),
         freq_multiplier_(args.get_arg<double>(name(), "freq_multiplier")),
         repetition_count_(args.get_arg<int>(name(), "repetition_count"))
-    {}
+    {
+        init_read_data();
+    }
     repeating_data_reader(const std::string & filename, const node_args & args) :
         data_reader<data_type, istream_type>(filename, args),
         buffer_size_(args.get_arg<int>(name(), "repetition_size")),
         freq_multiplier_(args.get_arg<double>(name(), "freq_multiplier")),
         repetition_count_(args.get_arg<int>(name(), "repetition_count"))
-    {}
+    {
+        init_read_data();
+    }
     std::string name() override
     {
         return "reader";
     }
     virtual void start() override
     {
-        init_read_data();
+        
         //buffer_type & rep_buffer = (*buffer_);
         
         uint64_t toa_offset = (rep_buffer_[rep_buffer_.size() - 1].tick_toa() - rep_buffer_[0].tick_toa()) * 2;

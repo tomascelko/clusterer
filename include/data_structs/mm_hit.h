@@ -50,6 +50,10 @@ public:
     {
         return coord_.y_;
     }
+    double time() const
+    {
+        return toa();
+    }
     double toa() const
     {
         return toa_;

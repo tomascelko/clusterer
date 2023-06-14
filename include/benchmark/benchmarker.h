@@ -21,13 +21,14 @@ class benchmarker
     using measured_dataset_matrix_type = std::map<dataset_name_type, measured_runs_type>;
     using benchmark_results_type = std::map<node_id_type, measured_dataset_matrix_type>;
     bool print_debug_info = true;
-    dataflow_controller * controller_;
+    std::unique_ptr<dataflow_controller> controller_;
     std::vector<file_path> data_files_;
     file_path current_dataset_;
     std::vector<basic_path> calib_folders_;
     std::vector<std::unique_ptr<measuring_clock>> clocks_;
     benchmark_results_type results_;
     std::string output_dir_; 
+    std::vector<double> freq_scales_;
     enum class calib_type
     {
         manual,
@@ -77,7 +78,17 @@ class benchmarker
        load_all_datasets(folder);
        load_all_calib_files(calib_folder);
     }
-    benchmarker(std::vector<std::string>& data_files, std::vector<std::string>& calib_files,
+    benchmarker(const std::vector<std::string>& data_files, const std::string & calib_folder, const std::string & output_dir): //automatic names based search of calib file
+    calibration_mode_(calib_type::automatic),
+    output_dir_(output_dir)
+    {
+       for (auto & data_file : data_files) 
+        {
+             data_files_.emplace_back(file_path(data_file));
+        }
+       load_all_calib_files(calib_folder);
+    }
+    benchmarker(const std::vector<std::string>& data_files, const std::vector<std::string>& calib_files,
         const std::string & output_dir): //automatic names based search of calib file
     output_dir_(output_dir)
     {
@@ -196,19 +207,19 @@ class benchmarker
                 }
             }
         }
-        for(uint32_t i = 0; i < buffer_repetitions_.size(); ++i)
+        for(uint32_t i = 0; i < data_files_.size(); ++i)
         {
-            stream << buffer_repetitions_[i];
+            stream << "Data File:" << data_files_[i].filename() << std::endl;
             for(uint32_t j = 0; j < statistic_repeats_; ++j)
             {
-                stream << "," << total_exec_times_[i][j] ;
+                stream  << "Time: " << total_exec_times_[i][j] << "ms" ;
             }
             stream << std::endl;
         }
     }
     void run_benchmark_for_dataset()
     {
-        std::cout << "Testing dataset "  << current_dataset_.filename() << std::endl;
+        //std::cout << "Testing dataset "  << current_dataset_.filename() << std::endl;
         for (i_data_node * node : controller_->nodes())
         {
             auto measurable = dynamic_cast<i_time_measurable*>(node);
@@ -228,6 +239,7 @@ class benchmarker
         controller_->remove_all();
         clocks_.clear();
     }
+
     std::string auto_find_calib_file(const file_path& data_path)
     {
         std::vector<std::string> matching_files;
@@ -314,52 +326,83 @@ class benchmarker
     }
 */
     std::vector<std::vector<double>> total_exec_times_;
-    uint32_t statistic_repeats_ = 1;
-    std::vector<uint32_t> buffer_repetitions_ = {300};//{1, 3, 5, 7, 10, 15, 20, 30, 50, 100, 200};
-
-    void run(architecture_type arch, node_args & args)
+    uint32_t statistic_repeats_ =  5;
+    void clean_clustering_files(const std::vector<std::string> & files)
+    {
+        const std::string ini_suffix = ".ini";
+        const std::string cl_suffix = "_cl.txt";
+        const std::string px_suffix = "_px.txt";
+        for (const auto & file : files)
+        {
+            std::remove((file + ini_suffix).c_str());
+            std::remove((file + cl_suffix).c_str());
+            std::remove((file + px_suffix).c_str());
+        }
+    }
+    //std::vector<uint32_t> buffer_repetitions_ = {300};//{1, 3, 5, 7, 10, 15, 20, 30, 50, 100, 200};
+    void set_freq_scales(const std::vector<double> & freq_scales)
+    {
+        freq_scales_ = freq_scales;
+    }
+    std::vector<std::string> run(architecture_type && arch, node_args & args, bool debug = false)
     {
     
-    model_factory factory;
-    
+        model_factory factory;
+        std::vector<std::string> output_filenames;
+        double freq_multiplier;
+        if(args["reader"].count("freq_multiplier") > 0)
+        {
+            freq_multiplier = std::stod(args["reader"]["freq_multiplier"]);
+            std::cout << "FREQ multipl" << freq_multiplier << std::endl;
+            
+        }
+        controller_  =  std::make_unique<dataflow_controller>(arch.node_descriptors(), debug);
         for (uint32_t i = 0; i < data_files_.size(); ++i)
         {
-            for (auto &&buffer_rep_ : buffer_repetitions_)
-            {
-                std::cout << "buffer repetition count " << buffer_rep_ << std::endl; 
+
             total_exec_times_.emplace_back(std::vector<double>());
+            
             for(uint32_t j = 0; j < statistic_repeats_; j++)
             { 
-            args["reader"]["repetition_count"] = std::to_string(buffer_rep_);
-            controller_  = new dataflow_controller();
-            current_dataset_ = data_files_[i];
-            switch(calibration_mode_)
-            {
-                case calib_type::automatic:
-                    factory.create_model(controller_, arch,  data_files_[i].as_absolute(), auto_find_calib_file(data_files_[i]), output_dir_, args);
-                    break;
-                case calib_type::manual:
-                    factory.create_model(controller_, arch, data_files_[i].as_absolute(), calib_folders_[i].as_absolute(), output_dir_, args);
-                    break;
-                case calib_type::same:
-                    factory.create_model(controller_, arch, data_files_[i].as_absolute(), calib_folders_[0].as_absolute(), output_dir_, args);
-                    break;  
-                default:
-                    throw std::invalid_argument("invalid calibration type (choose one of auto/manual/same)");
-                    break;
-            }
-             
-            auto start_time = std::chrono::high_resolution_clock::now();
-            run_benchmark_for_dataset();
-            auto end_time = std::chrono::high_resolution_clock::now();
-            delete controller_;
-            std::cout << "FINISHED" << std::endl;
-            total_exec_times_.back().push_back(
-                std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count());
+                current_dataset_ = data_files_[i];
+                std::vector<std::string> temporary_output;
+                if (freq_scales_.size() > 0)
+                {
+                    args["reader"]["freq_multiplier"] = std::to_string((freq_multiplier/(freq_scales_[i]/1000000)));
+                    std::cout << "FINAL FREQ" << args["reader"]["freq_multiplier"] << std::endl;
+                }
+                switch(calibration_mode_)
+                {
+                    case calib_type::automatic:
+                        temporary_output = factory.create_model(controller_.get(), arch,  data_files_[i].as_absolute(), auto_find_calib_file(data_files_[i]), output_dir_, args);
+                        break;
+                    case calib_type::manual:
+                        temporary_output = factory.create_model(controller_.get(), arch, data_files_[i].as_absolute(), calib_folders_[i].as_absolute(), output_dir_, args);
+                        break;
+                    case calib_type::same:
+                        temporary_output = factory.create_model(controller_.get(), arch, data_files_[i].as_absolute(), calib_folders_[0].as_absolute(), output_dir_, args);
+                        break;  
+                    default:
+                        throw std::invalid_argument("invalid calibration type (choose one of auto/manual/same)");
+                        break;
+                }
+                if(temporary_output.size() > 0)
+                    output_filenames.insert(output_filenames.end(), temporary_output.begin(), temporary_output.end());
+                
+                auto start_time = std::chrono::high_resolution_clock::now();
+                run_benchmark_for_dataset();
+                auto end_time = std::chrono::high_resolution_clock::now();
+                clean_clustering_files(temporary_output);
+                //delete controller_;
+                //std::cout << "FINISHED" << std::endl;
+                total_exec_times_.back().push_back(
+                    std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count());
             } 
+            //}
             
-            }
         }
-        print_results(std::cout);
+        controller_.reset();
+        //print_results(std::cout);
+        return output_filenames;
     }
 };

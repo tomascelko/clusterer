@@ -1,16 +1,16 @@
 #include "pipe.h"
 #pragma once
-template <typename hit_type>
-class multi_cluster_pipe_reader
+template <typename data_type>
+class multi_pipe_reader
 {
-    using reader_type = pipe_reader<cluster<hit_type>>;
+    using reader_type = pipe_reader<data_type>;
     std::vector<reader_type> readers_;
-    std::vector<cluster<hit_type>> cluster_buffer_;
+    std::vector<data_type> cluster_buffer_;
     uint32_t reading_index_;
     uint64_t bytes_read_ = 0;
     bool is_initiating_phase_ = true;
     public:
-    multi_cluster_pipe_reader(const std::vector<default_pipe<cluster<hit_type>>*> & pipes)
+    multi_pipe_reader(const std::vector<default_pipe<data_type>*> & pipes)
     {
         readers_.reserve(pipes.size());
         cluster_buffer_.reserve(pipes.size());
@@ -19,7 +19,7 @@ class multi_cluster_pipe_reader
             readers_.emplace_back(reader_type{pipe});
         }
     }
-    multi_cluster_pipe_reader(){}
+    multi_pipe_reader(){}
     uint64_t bytes_read()
     {
         return bytes_read_;
@@ -28,22 +28,22 @@ class multi_cluster_pipe_reader
     {
         return reading_index_;
     }
-    void add_pipe(default_pipe<cluster<hit_type>>* pipe)
+    void add_pipe(default_pipe<data_type>* pipe)
     {
         readers_.emplace_back(reader_type{pipe});
     }
 
-    bool read(cluster<hit_type> & cl)
+    bool read(data_type & cl)
     {
         double min_toa = LONG_LONG_MAX;
         uint32_t argmin_toa = -1;
 
         for(uint32_t i = 0; i < readers_.size(); ++i)
         {
-            const cluster<hit_type> & current = readers_[i].peek();
-            if(current.is_valid() && current.first_toa() < min_toa)
+            const data_type & current = readers_[i].peek();
+            if(current.is_valid() && current.time() < min_toa)
             {
-                min_toa = current.first_toa();
+                min_toa = current.time();
                 argmin_toa = i;
             }
         }

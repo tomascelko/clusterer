@@ -82,17 +82,17 @@ class burda_to_mm_hit_adapter : public i_simple_consumer<burda_hit>, public i_mu
             mm_hit_type converted_hit = convert_hit(hit);
             if(converted_hit.e() < 0)
             {
-                std::cout << "negative energy found" << std::endl;
+                //std::cout << "negative energy found" << std::endl;
             }
             if(converted_hit.e() > 100000)
             {
-                std::cout << "above 100000 energy found" << std::endl;
+                //std::cout << "above 100000 energy found" << std::endl;
             }
             this->writer_.write(std::move(converted_hit));
             reader_.read(hit);
         }
         this->writer_.close();
-        std::cout << "ADAPTER ENDED ---------------------" << std::endl;
+        //std::cout << "ADAPTER ENDED ---------------------" << std::endl;
     }
     virtual ~burda_to_mm_hit_adapter() = default;
 };

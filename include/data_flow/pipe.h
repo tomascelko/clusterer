@@ -3,33 +3,52 @@
 #include "readerwriterqueue.h"
 #include "concurrentqueue.h"
 #pragma once
+
 template <typename data_type>
 class data_block
 {
     std::vector<data_type> data_block_;
     int32_t to_delete_index_;
-    uint32_t max_capacity_;
+    uint64_t byte_capacity_;
     uint64_t byte_size_ = 0;
+    bool fixed_size_;
     public:
+    bool is_fixed_size() const
+    {
+        return fixed_size_;
+    }
+
+
     uint64_t byte_size()
     {
         return byte_size_;
     }
-    static constexpr uint32_t block_size()
+    uint64_t size()
     {
-        return 2<<7;
+        return data_block_.size();
     }
-    data_block() :
-    max_capacity_(data_block<data_type>::block_size()),
-    to_delete_index_(0)
+    static constexpr uint32_t max_block_byte_size()
     {
-        data_block_.reserve(data_block<data_type>::block_size());
+        return 2<<17;
     }
+    static constexpr double closing_time()
+    {
+        return 200.;
+    }
+    data_block(uint64_t avg_data_size = data_type::avg_size()) :
+    byte_capacity_(data_block<data_type>::max_block_byte_size()),
+    to_delete_index_(0),
+    fixed_size_(true)
+    {
+        data_block_.reserve(2*data_block<data_type>::max_block_byte_size()/avg_data_size);
+    }
+
+    
     bool try_add_hit(data_type && data)
     {
         data_block_.emplace_back(data);
         byte_size_ += data.size();
-        return data_block_.size() < max_capacity_;
+        return byte_size_ < max_block_byte_size();
     }
     bool try_remove_hit(data_type & hit)
     {
@@ -56,10 +75,12 @@ class data_block
     {
         return data_block_[to_delete_index_];
     }
-    void clear()
+    void clear(uint64_t avg_data_size = data_type::avg_size())
     {
         byte_size_ = 0;
         data_block_.clear();
+        data_block_.reserve(2 * data_block<data_type>::max_block_byte_size() / avg_data_size);
+        
     }
     
 };
@@ -71,9 +92,15 @@ class default_pipe : public abstract_pipe
     //todo use simple one producer one consumer queue and create multi default_pipe : public default_pipe with this multi concurrent queue
 private:
     const uint32_t CHECK_FULL_PIPE_INTERVAL = 500;
+    const uint32_t HISTORY_LENGTH = 300;
+    const uint64_t MAX_QUEUE_SIZE = 2 << 28; 
+    const uint64_t FULL_QUEUE_SLEEP_TIME = 100; //in miliseconds
     queue_type<data_block<data_type>> queue_;
     std::atomic<uint64_t> bytes_used_ = 0;
     std::string name_;
+    uint64_t total_bytes_processed_ = 0;
+    i_data_node * producer_;
+    i_data_node * consumer_;
     void emplace_impl(data_block<data_type> && block, moodycamel::ReaderWriterQueue<data_block<data_type>> & queue)
     {
         queue_.emplace(block);
@@ -84,10 +111,21 @@ private:
     }
 public: 
     static constexpr uint64_t MAX_Q_LEN = 2ull << 31; //in bytes
-    default_pipe(const std::string & name) :
-    name_(name){
+    default_pipe(const std::string & name, i_data_node * producer = nullptr, i_data_node * consumer = nullptr) :
+    name_(name),
+    producer_(producer),
+    consumer_(consumer)
+    {
     }
     uint64_t processed_counter = 1;
+    i_data_node * producer() override
+    {
+        return producer_;
+    }
+    i_data_node * consumer() override
+    {
+        return consumer_;
+    }
     //not thread safe TODO move in block and out block to writer and reader so we can use the buffering with multiple writers
     //WILL be called from multiple threads on a same pipe
     virtual uint64_t bytes_used() override
@@ -98,12 +136,22 @@ public:
     {
         return name_;
     }
+    uint64_t mean_data_size()
+    {
+        if(processed_counter == 1)
+            return data_type::avg_size();
+        return total_bytes_processed_ / processed_counter;
+    }
     void blocking_enqueue(data_block<data_type> && new_block)
     {
-        ++processed_counter; //potentially rally condition
-        bytes_used_ += new_block.byte_size();   
+        while(bytes_used_ > MAX_QUEUE_SIZE)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(FULL_QUEUE_SLEEP_TIME));
+        }
+        processed_counter += new_block.size(); //potentially rally condition
+        bytes_used_ += new_block.byte_size(); 
+        total_bytes_processed_ += new_block.byte_size();  
         emplace_impl(std::move(new_block), queue_); //TODO or call enqueue when using multi queue
-        
     }
     //not thread safe TODO move in block and out block to writer and reader so we can use the buffering with multiple writers
     //WILL NOT be called from multiple threads on a same pipe

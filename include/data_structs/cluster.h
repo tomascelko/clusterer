@@ -59,6 +59,7 @@ public:
     {
         return hits_.size() > 0;
     }
+
     virtual ~cluster() = default;
     
     double first_toa() const
@@ -139,6 +140,11 @@ public:
         *px_stream << "#" << std::endl;
         //return result.str();
     }*/
+    double time() const
+    {
+        return first_toa();
+    }
+
     virtual std::pair<double, double> center()
     {
         double mean_x = 0;
@@ -165,6 +171,8 @@ public:
         {
             return false;
         }
+        if(std::abs(other.first_toa() - first_toa()) > 0.1)
+            return false;
         auto hit_comparer = [](const data_type & left, const data_type & right){
             if(left.toa() < right.toa())
                 return true;

@@ -137,7 +137,7 @@ class cluster_merging : public i_data_consumer<cluster<hit_type>>,
                             public i_time_measurable  
 {
     const uint32_t DEQUEUE_CHECK_INTERVAL = 10; //time when to check for dequeing from sorting queue 
-    const double MERGE_TIME = 300.; //max time difference between cluster to be merged
+    const double MERGE_TIME = 200.; //max time difference between cluster to be merged
     //const double SORTING_DEQUEUE_TIME = 1000000000.; //max unorderednes caused by parallelization
     const double MAX_CLUSTER_TIMESPAN = 2000.; //maximum total timespan of a cluster, must be set to speedup merging
     const std::vector<coord> NINE_NEIGHBORS = { {-1, -1}, {-1, 0}, {-1, 1},
@@ -145,7 +145,7 @@ class cluster_merging : public i_data_consumer<cluster<hit_type>>,
                                                 { 1, -1}, { 1, 0}, { 1, 1},
                                                 { 0,  0} };
     //pipe_writer<cluster<hit_type>> writer_;
-    multi_cluster_pipe_reader<hit_type> reader_;
+    multi_pipe_reader<cluster<hit_type>> reader_;
     std::priority_queue<cluster<hit_type>, std::vector<cluster<hit_type>>, typename cluster<hit_type>::first_toa_comparer> priority_queue_;
     std::deque<bb_cluster<hit_type>> unfinished_border_clusters_; //we could keep here unbordering clusters as well 
                                                                    //in order to preserve time orderedness
@@ -349,7 +349,7 @@ public:
             reader_.read(new_cl);
         }
         write_remaining_clusters();
-        std::cout << processed_border_count << " " << processed_non_border_count << std::endl; 
+        //std::cout << processed_border_count << " " << processed_non_border_count << std::endl; 
         //clock_->stop_and_report("parallel_clusterer");
         this->writer_.close();
         //std::cout << "CLUSTER MERGING ENDED ---------------------" << std::endl;

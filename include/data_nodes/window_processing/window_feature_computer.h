@@ -17,6 +17,11 @@ class window_feature_computer : public i_simple_consumer<data_type>, public i_si
     {
         return "window_computer";
     }
+    double max_frequency_ = 0;
+    std::string result() override
+    {
+        return std::to_string(max_frequency_);
+    }
     virtual void start() override
     {
         data_type hit;
@@ -34,12 +39,15 @@ class window_feature_computer : public i_simple_consumer<data_type>, public i_si
             else
             {
                 uint32_t empty_count = window_state_.get_empty_count(hit);
+                if(window_state_.mean_frequency() > max_frequency_)
+                    max_frequency_ = window_state_.mean_frequency();
                 this->writer_.write(window_state_.to_feature_vector());
                 window_state_.move_window();
                 for(uint32_t i = 0; i < empty_count; i++)
                 {
                     this->writer_.write(window_state_.to_feature_vector());    
                     window_state_.move_window();
+                    window_state_.update(hit);
                 }
 
 

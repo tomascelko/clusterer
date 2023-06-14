@@ -13,6 +13,7 @@ class trigger_node : public i_simple_consumer<data_type>, public i_simple_produc
     bool triggered_ = false;
     std::deque<data_type> hit_buffer_;
     double window_size_;
+    uint64_t discarded_hit_count_ = 0;
     public:
     trigger_node(const node_args & args) :
     window_state_(args.get_arg<double>(name(), "window_size"), args.get_arg<double>(name(), "diff_window_size")),
@@ -20,12 +21,14 @@ class trigger_node : public i_simple_consumer<data_type>, public i_simple_produc
     {
         const std::string INTERVAL_SUFFIX = ".ift";
         const std::string NN_SUFFIX = ".nnt";
+        const std::string SVM_SUFFIX = "svmt";
         std::string trigger_file = args.get_arg<std::string>(name(), "trigger_file");
         if (ends_with(trigger_file, INTERVAL_SUFFIX))
             trigger_ = std::move(std::make_unique<interval_trigger<data_type>>(args.at(name())));
-        if (ends_with(trigger_file, NN_SUFFIX))
+        else if (ends_with(trigger_file, NN_SUFFIX) || ends_with(trigger_file, SVM_SUFFIX))
             trigger_ = std::move(std::make_unique<onnx_trigger<data_type>>(args.at(name())));
-        
+        else
+            throw std::invalid_argument("unsupperted trigger file passed - '" + trigger_file + "'" );
     }
     std::string name() override
     {
@@ -46,6 +49,7 @@ class trigger_node : public i_simple_consumer<data_type>, public i_simple_produc
             hit_buffer_.front().toa() + window_size_ < current_time)
         {
             hit_buffer_.pop_front();
+            ++discarded_hit_count_;
         }
     }
 
@@ -72,8 +76,7 @@ class trigger_node : public i_simple_consumer<data_type>, public i_simple_produc
         {
             if(window_state_.can_add(hit))
             {
-                window_state_.update(hit);
-                
+                window_state_.update(hit);       
             }
             else
             {
@@ -90,7 +93,7 @@ class trigger_node : public i_simple_consumer<data_type>, public i_simple_produc
 
             }
             if(triggered_)
-                    this->writer_.write(std::move(hit));
+                this->writer_.write(std::move(hit));
             else
                 hit_buffer_.push_back(hit);
             ++processed; 
@@ -100,6 +103,7 @@ class trigger_node : public i_simple_consumer<data_type>, public i_simple_produc
         }
         this->writer_.write(data_type::end_token());
         this->writer_.flush();
+        std::cout << "Discarded hit portion: " << discarded_hit_count_ /(double) processed << std::endl;
         //std::cout << "TRIGGER COMPUTER ENDED ----------------" << std::endl;
     }
 

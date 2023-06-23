@@ -219,7 +219,7 @@ public:
     }
 
     template <typename T>
-    Ort::Value vec_to_tensor(std::vector<T> &data, const std::vector<long> &shape)
+    Ort::Value vec_to_tensor(std::vector<T> &data, const std::vector<int64_t> &shape)
     {
         Ort::MemoryInfo mem_info =
             Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault);
@@ -246,7 +246,7 @@ public:
 
         // print name/shape of inputs
         Ort::AllocatorWithDefaultOptions allocator;
-        std::vector<long> input_shapes;
+        std::vector<int64_t> input_shapes;
         std::cout << "Input Node Name/Shape (" << input_names.size() << "):" << std::endl;
         for (std::size_t i = 0; i < session->GetInputCount(); i++)
         {
@@ -296,7 +296,7 @@ public:
     std::vector<const char *> output_names_char;
     std::vector<std::string> input_names;
     std::vector<std::string> output_names;
-    std::vector<long int> input_shape;
+    std::vector<int64_t> input_shape;
     int total_number_elements;
 
     std::unique_ptr<Ort::Session> session;

@@ -35,7 +35,7 @@ class multi_pipe_reader
 
     bool read(data_type & cl)
     {
-        double min_toa = LONG_LONG_MAX;
+        double min_toa = std::numeric_limits<double>::max();
         uint32_t argmin_toa = -1;
 
         for(uint32_t i = 0; i < readers_.size(); ++i)

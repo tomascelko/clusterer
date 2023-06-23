@@ -94,8 +94,6 @@ public:
             connect_nodes(dynamic_cast<i_data_producer<burda_hit>*>(producer), dynamic_cast<i_data_consumer<burda_hit>*>(consumer));
         else if (dynamic_cast<i_data_producer<cluster<mm_hit>>*>(producer) != nullptr)
             connect_nodes(dynamic_cast<i_data_producer<cluster<mm_hit>>*>(producer), dynamic_cast<i_data_consumer<cluster<mm_hit>>*>(consumer));
-        else if (dynamic_cast<i_data_producer<cluster<burda_hit>>*>(producer) != nullptr)
-            connect_nodes(dynamic_cast<i_data_producer<cluster<burda_hit>>*>(producer), dynamic_cast<i_data_consumer<cluster<burda_hit>>*>(consumer));
         else if (dynamic_cast<i_data_producer<default_window_feature_vector<mm_hit>>*>(producer) != nullptr)
             connect_nodes(dynamic_cast<i_data_producer<default_window_feature_vector<mm_hit>>*>(producer), 
             dynamic_cast<i_data_consumer<default_window_feature_vector<mm_hit>>*>(consumer));

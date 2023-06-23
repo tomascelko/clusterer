@@ -50,19 +50,32 @@ class model_runner
                 throw std::invalid_argument("Invalid clustering type");
         }
     }
+    static std::string create_split_node(const node_args & args,const std::string & first_node)
+    {
+        
+        if(args.get_arg<bool>("reader", "split") && !args.get_arg<bool>("trigger", "use_trigger"))
+            return first_node;
+
+        else if (args.get_arg<bool>("trigger", "use_trigger") &&
+                    args.get_arg<bool>("trigger", "split"))
+            return "tr";
+        else if (args.get_arg<bool>("calibrator", "split"))
+            return "bm";
+        else if (args.get_arg<bool>("sorter", "split"))
+           return  "s";
+        else if(!args.get_arg<bool>("trigger", "use_trigger"))
+            return first_node;
+        else
+            return "tr";
+    }
     static std::string create_split_arch(const node_args & args, const std::string & first_node,
       const std::string & cluster_node, uint32_t core_count)
     {
         std::string arch = "";
-        std::string split_node;
         std::vector<std::string> nodes_to_connect{first_node, "bm", "s", cluster_node};
-        if(args.get_arg<bool>("reader", "split"))
-            split_node = nodes_to_connect[0];
-        else if (args.get_arg<bool>("calibrator", "split"))
-            split_node = nodes_to_connect[1];
-        else if (args.get_arg<bool>("sorter", "split"))
-           split_node = nodes_to_connect[2];
-        else split_node = nodes_to_connect[0];
+        if(args.get_arg<bool>("trigger", "use_trigger"))
+            nodes_to_connect.insert(nodes_to_connect.begin() + 2, "tr");
+        std::string split_node = create_split_node(args, first_node);
         bool splitted = false;
         for (uint32_t node_index = 0; node_index < nodes_to_connect.size() - 1;  ++ node_index)
         {
@@ -93,9 +106,9 @@ class model_runner
     static std::map<std::string, abstract_node_descriptor*> create_split_descriptors(const node_args & args,
          uint32_t core_count)
     {
-        if(args.get_arg<bool>("reader", "split") || 
+        if((args.get_arg<bool>("reader", "split") || 
         (!args.get_arg<bool>("reader", "split") && !args.get_arg<bool>("sorter", "split") &&
-         !args.get_arg<bool>("calibrator", "split")))
+         !args.get_arg<bool>("calibrator", "split"))) && !args.get_arg<bool>("trigger", "use_trigger"))
         {
             return std::map<std::string, abstract_node_descriptor*> {
                 {
@@ -131,6 +144,17 @@ class model_runner
                     new node_descriptor<mm_hit, mm_hit>(
                         new trivial_merge_descriptor<mm_hit>(),
                         new temporal_hit_split_descriptor<mm_hit>(core_count), "sorter descriptor")
+                }
+            };
+        }
+        else // (args.get_arg<bool>("trigger", "use_trigger"))
+        {
+            return std::map<std::string, abstract_node_descriptor*> {
+                {
+                    "tr1",
+                    new node_descriptor<mm_hit, mm_hit>(
+                        new trivial_merge_descriptor<mm_hit>(),
+                        new temporal_hit_split_descriptor<mm_hit>(core_count), "trigger descriptor")
                 }
             };
         }
@@ -227,19 +251,24 @@ class model_runner
     std::string arch = base_arch;
     std::string output_node;
     std::string first_node = "r";
+    bool trigger = args.get_arg<bool>("trigger", "use_trigger");
     std::string clustering_node = get_clustering_str(clustering_alg_type);
+    if(trigger)
+    {
+        arch =  "r1bm1,bm1tr1,tr1s1";   
+    }
     if(recurring)
     {
         arch = "r" + arch;
         first_node = "rr";
     }
+    
     if(print)
         output_node = "p";
     else
         output_node = "co";
     std::string default_output_node = output_node + "1";
-    uint32_t TILE_SIZE = 4;
-    uint32_t TIME_WINDOW_SIZE = 50000000;
+
     std::string sub_arch;
     switch (model_type)
     {

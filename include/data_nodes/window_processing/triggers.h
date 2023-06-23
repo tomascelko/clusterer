@@ -125,7 +125,7 @@ public:
     }
 };
 
-template <typename hit_type>
+template <typename hit_type, typename output_type>
 class onnx_trigger : public abstract_window_trigger<hit_type, default_window_feature_vector<hit_type>>
 {
 
@@ -228,11 +228,13 @@ public:
     }
 
     using state_type = default_window_feature_vector<hit_type>;
-    std_log_scaler scaler_;
+    //std_log_scaler scaler_;
     Ort::Env env;
-    onnx_trigger(const std::map<std::string, std::string> &args) : 
-        scaler_(args.at("data_file")),
-        abstract_window_trigger<hit_type, default_window_feature_vector<hit_type>>(std::stod(args.at("trigger_time")))
+    std::function<bool(output_type)> trigger_func_;
+    double inference_time;
+    onnx_trigger(const std::map<std::string, std::string> &args, const std::function<bool(output_type)> & trigger_func) : 
+        abstract_window_trigger<hit_type, default_window_feature_vector<hit_type>>(std::stod(args.at("trigger_time"))),
+        trigger_func_(trigger_func)
     {
         // onnxruntime setup
         
@@ -304,7 +306,7 @@ public:
     {
 
         
-        std::vector<double> input_tensor_doubles = feat_vector.to_vector();//scaler_.scale(feat_vector.to_vector());
+        std::vector<double> input_tensor_doubles = feat_vector.to_vector(true);//scaler_.scale(feat_vector.to_vector());
         input_tensor_doubles.erase(input_tensor_doubles.begin());
         std::vector<float> input_tensor_values;
         for (double value : input_tensor_doubles)
@@ -329,10 +331,13 @@ public:
         {
             //Ort::Value output(nullptr);
             //OrtValue * output[2] = {nullptr};
+            //auto start_time = std::chrono::high_resolution_clock::now();
             auto output = session->Run(Ort::RunOptions{nullptr}, input_names_char.data(), input_tensors.data(),
                                                input_names_char.size() ,output_names_char.data(), output_names_char.size());
+            //auto end_time = std::chrono::high_resolution_clock::now();
+            //inference_time =  std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
+            
             //std::cout << "Done!" << std::endl;
-
             //std::cout << "\n output_tensor shape: " << print_shape(output.GetTensorTypeAndShapeInfo().GetShape()) << std::endl;
 
             // double-check the dimensions of the output tensors
@@ -340,12 +345,12 @@ public:
             assert( output[0].IsTensor());
             auto trigger_type = output[0].GetTypeInfo();
 
-            int32_t trigger_prob = (output[0].GetTensorMutableData<int32_t>())[0];
-            
+            output_type trigger_result = (output[0].GetTensorMutableData<output_type>())[0];
+
             //std::cout << trigger_prob << std::endl;
-            if (trigger_prob >= 0.5)
-                std::cout << "triggered" << std::endl;
-            return trigger_prob >= 0.5;
+            //if (trigger_result < 0.0)
+            //    std::cout << "triggered" << std::endl;
+            return trigger_func_(trigger_result);
            
         }
         catch (const Ort::Exception &exception)

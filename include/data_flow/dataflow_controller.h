@@ -13,13 +13,7 @@
 #include "../data_structs/mm_hit.h"
 #include "../data_structs/burda_hit.h"
 #include "../data_nodes/window_processing/default_window_feature_vector.h"
-#if defined(WIN32)
-#include "windows.h"
-#elif _APPLE_
-#include "windows.h"
-#elif __linux__ || __unix__
-#include "unistd.h"
-#endif
+
 #pragma once
 class dataflow_controller
 {
@@ -74,6 +68,7 @@ public:
         nodes_.clear();
         pipes_.clear();
         data_sources_.clear();
+        std::cout << "dataflow finished" << std::endl;
     }
 
     template <typename data_type>
@@ -129,23 +124,7 @@ public:
         consumer->connect_input(pipe);
         return pipe;
     }
-    uint64_t get_free_memory()
-    {
-        #if defined(WIN32)
-        MEMORYSTATUSEX status;
-        status.dwLength = sizeof(status);
-        GlobalMemoryStatusEx(&status);
-        return status.ullTotalPhys - status.ullAvailPhys;
 
-        #elif _APPLE_
-
-        #elif __linux__ || __unix__
-       
-        long pages = sysconf(_SC_AVPHYS_PAGES);
-        long page_size = sysconf(_SC_PAGE_SIZE);
-        return pages * page_size;
-        #endif
-    }
     uint64_t get_used_memory()
     {
         
@@ -169,7 +148,7 @@ public:
     void control_memory_usage(uint64_t min_memory = 2ull << 31, double max_pipe_memory = 2ull << 28) //29
     {
         uint64_t used_memory = get_used_memory();
-        uint64_t free_memory = get_free_memory();
+        //uint64_t free_memory = get_free_memory();
         const uint64_t EPSILON_MEMORY = 2ull << 27; //CHANGED FROM 27
         memory_control_counter_ ++;
         //std::cout<< "USED MEMORY" << used_memory / 1000000. << std::endl;
@@ -186,13 +165,17 @@ public:
                     controlable->pause_production();
                 }
                 if(used_memory < max_pipe_memory - EPSILON_MEMORY)
-                    {
-                    controlable->continue_production();
-                    
-                    }
+                {
+                    controlable->continue_production();    
+                }
             }
             
         }
+    }
+    bool is_full_memory(uint64_t max_pipe_memory = 2ull << 30)
+    {
+        uint64_t used_memory = get_used_memory();
+        return used_memory > max_pipe_memory;
     }
     std::vector<uint64_t> get_memory_per_lane()
     {
@@ -239,15 +222,20 @@ public:
     bool is_done_ = false;
     void start_all()
     {
+        is_done_ = false;
         for (uint32_t i = 0; i < nodes_.size(); i++)
         {
             threads_.emplace_back(std::move(std::thread([this, i](){nodes_[i]->start();})));
+        }
+        for(auto data_source : data_sources_)
+        {
+            data_source->store_controller(this);
         }
         threads_.emplace_back(std::move(std::thread([this](){
                 while(!is_done_)
                 {
                     std::this_thread::sleep_for(std::chrono::milliseconds(500));
-                    control_memory_usage();
+                    //control_memory_usage();
                     if(debug_mode_)
                         print_pipe_state();
                     if(data_sources_.size() > 1)

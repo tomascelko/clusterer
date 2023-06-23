@@ -138,16 +138,16 @@ public:
     }
     uint64_t mean_data_size()
     {
-        if(processed_counter == 1)
+        if(processed_counter <= 1)
             return data_type::avg_size();
         return total_bytes_processed_ / processed_counter;
     }
     void blocking_enqueue(data_block<data_type> && new_block)
     {
-        while(bytes_used_ > MAX_QUEUE_SIZE)
+        /*while(bytes_used_ > MAX_QUEUE_SIZE)
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(FULL_QUEUE_SLEEP_TIME));
-        }
+        }*/
         processed_counter += new_block.size(); //potentially rally condition
         bytes_used_ += new_block.byte_size(); 
         total_bytes_processed_ += new_block.byte_size();  

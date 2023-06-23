@@ -73,10 +73,8 @@ class repeating_data_reader : public data_reader<data_type, istream_type>
             for(uint32_t hit_index = 0; hit_index < rep_buffer_.size(); ++hit_index)
             {
                 this->writer_.write(offset_hit(rep_buffer_[hit_index], toa_offset * rep_index));
-                while(this->paused_)
-                {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(this->sleep_duration_));
-                }
+                ++this->total_hits_read_;
+                this->perform_memory_check();
             }
         
         }

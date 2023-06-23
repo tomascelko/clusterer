@@ -223,7 +223,14 @@ class model_factory
         //    return new trigger_clusterer<mm_hit, halo_buffer_clusterer<mm_hit, standard_clustering_type>, frequency_diff_trigger<mm_hit>>(
         //        args);
         else if(node.type == "tr")
-            return new trigger_node<mm_hit>(args);
+        {
+            if (arch.node_descriptors().find(node.type + std::to_string(node.id)) != arch.node_descriptors().end())
+            return new trigger_node<mm_hit>(
+                    dynamic_cast<node_descriptor<mm_hit, mm_hit>*>(
+                        arch.node_descriptors()["tr" + std::to_string(node.id)]), args);
+            else
+                    return new trigger_node<mm_hit>(args);
+        }
         else if(node.type == "co")
             return new cluster_sorting_combiner<cluster<mm_hit>>();
         else if(node.type == "cow")

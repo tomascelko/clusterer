@@ -101,7 +101,7 @@ public:
         return result;
     }
 
-    std::vector<double> to_vector() const
+    std::vector<double> to_vector(bool replace_nan = false) const
     {
         std::vector<double> result;
         for(auto && attribute_name : attribute_names())
@@ -111,13 +111,19 @@ public:
                 //TODO remove start toa feature
                 result.push_back(scalar_features.at(attribute_name));
             }
-            else
+            else if (vector_features.find(attribute_name) != vector_features.end())
             {
                 const std::vector<double> & vector_attribute = vector_features.at(attribute_name);
 
                 result.insert(result.end(), vector_attribute.cbegin(), vector_attribute.cend());  
             }     
         }
+        if(replace_nan)
+            for(auto & item : result)
+            {
+                if (std::isnan(item))
+                    item = 0.;
+            }
         return result;
     }
     default_window_feature_vector<hit_type> diff_with_median(const std::deque<default_window_feature_vector<hit_type>> & previous_vectors)
@@ -129,7 +135,6 @@ public:
         default_window_feature_vector<hit_type> diff_vector;
         for (auto & attribute_name : attribute_names())
         {
-
             std::vector<vector_type> attribute_vectors;
             std::vector<scalar_type> attribute_scalars;
             for (auto & previous_vector : previous_vectors)

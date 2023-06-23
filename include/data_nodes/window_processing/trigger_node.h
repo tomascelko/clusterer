@@ -4,7 +4,7 @@
 
 #include "triggers.h"
 template <typename data_type, typename window_state = default_window_state<data_type>>
-class trigger_node : public i_simple_consumer<data_type>, public i_simple_producer<data_type>
+class trigger_node : public i_simple_consumer<data_type>, public i_multi_producer<data_type>
 {
     //TODO EVERYTHING
     window_state window_state_;
@@ -14,22 +14,60 @@ class trigger_node : public i_simple_consumer<data_type>, public i_simple_produc
     std::deque<data_type> hit_buffer_;
     double window_size_;
     uint64_t discarded_hit_count_ = 0;
-    public:
-    trigger_node(const node_args & args) :
-    window_state_(args.get_arg<double>(name(), "window_size"), args.get_arg<double>(name(), "diff_window_size")),
-    window_size_(args.get_arg<double>(name(), "window_size"))
+    
+    void initialize_trigger(const node_args & args)
     {
         const std::string INTERVAL_SUFFIX = ".ift";
         const std::string NN_SUFFIX = ".nnt";
-        const std::string SVM_SUFFIX = "svmt";
+        const std::string SVM_SUFFIX = ".svmt";
+        const std::string OSVM_SUFFIX = ".osvmt"; 
         std::string trigger_file = args.get_arg<std::string>(name(), "trigger_file");
+        std::function<bool(double)> default_trigger_func = [](double trigger_probability
+            ){
+                return trigger_probability > 0.5;
+                };
         if (ends_with(trigger_file, INTERVAL_SUFFIX))
             trigger_ = std::move(std::make_unique<interval_trigger<data_type>>(args.at(name())));
-        else if (ends_with(trigger_file, NN_SUFFIX) || ends_with(trigger_file, SVM_SUFFIX))
-            trigger_ = std::move(std::make_unique<onnx_trigger<data_type>>(args.at(name())));
+        else if (ends_with(trigger_file, NN_SUFFIX))
+        {
+            trigger_ = std::move(std::make_unique<onnx_trigger<data_type, float>>(args.at(name()),
+                default_trigger_func));
+        }
+        else if (ends_with(trigger_file, SVM_SUFFIX))
+        {
+            std::function<bool(int)> trigger_func = [](int should_trigger){
+                return should_trigger > 0.5;
+            };
+            trigger_ = std::move(std::make_unique<onnx_trigger<data_type, int>>(args.at(name()),
+                trigger_func));
+        }
+        else if (ends_with(trigger_file, OSVM_SUFFIX))
+        {
+            std::function<bool(int)> trigger_func = [](int outlier_mark){
+                return outlier_mark < 0;
+                };
+            trigger_ = std::move(std::make_unique<onnx_trigger<data_type, int>>(args.at(name()),
+             trigger_func));
+        }
         else
             throw std::invalid_argument("unsupperted trigger file passed - '" + trigger_file + "'" );
     }
+    public:
+    trigger_node(const node_args & args):
+    window_state_(args.get_arg<double>(name(), "window_size"), args.get_arg<double>(name(), "diff_window_size")),
+    window_size_(args.get_arg<double>(name(), "window_size")),
+    i_multi_producer<data_type>(new trivial_split_descriptor<data_type>())
+    {
+        initialize_trigger(args);
+    }
+    trigger_node( node_descriptor<mm_hit, mm_hit> * node_descriptor,const node_args & args) :
+    window_state_(args.get_arg<double>(name(), "window_size"), args.get_arg<double>(name(), "diff_window_size")),
+    window_size_(args.get_arg<double>(name(), "window_size")),
+     i_multi_producer<data_type>(node_descriptor->split_descr)
+    {
+        initialize_trigger(args);
+    }
+    
     std::string name() override
     {
         return "trigger";
@@ -86,7 +124,7 @@ class trigger_node : public i_simple_consumer<data_type>, public i_simple_produc
                 window_state_.move_window();
                 for(uint32_t i = 0; i < empty_count; i++)
                 {
-                    //indow_state_.to_feature_vector();    
+                    window_state_.to_feature_vector();    
                     window_state_.move_window();
                 }
 
@@ -101,8 +139,8 @@ class trigger_node : public i_simple_consumer<data_type>, public i_simple_produc
             this->reader_.read(hit);
 
         }
-        this->writer_.write(data_type::end_token());
-        this->writer_.flush();
+        this->writer_.close();
+        
         std::cout << "Discarded hit portion: " << discarded_hit_count_ /(double) processed << std::endl;
         //std::cout << "TRIGGER COMPUTER ENDED ----------------" << std::endl;
     }

@@ -12,7 +12,7 @@
 #include <iostream>
 #include <fstream>
 #include <cstdio>
-
+#pragma once
 class benchmarking_dataset
 {
     public:
@@ -33,6 +33,11 @@ class benchmarking_dataset
         "../../../clusterer_data/calib/F4-W00076",
         "../../../clusterer_data/calib/F4-W00076"
         
+    };
+    std::vector<std::string> trigger_files{
+        "../../../clusterer_data/trigger/trained_beam_change.nnt",
+        "../../../clusterer_data/trigger/trained_beam_change.svmt",
+        "../../../clusterer_data/trigger/trained_beam_change.osvmt",
     };
     std::map<std::string, std::vector<uint32_t>> aggregation = {
         {"pion", std::vector<uint32_t>{0,1}},
@@ -123,8 +128,9 @@ class performance_test
         {
             for(auto const & particle_index : particle_index_pair.second)
             {
-                aggregated_results[particle_index_pair.first].insert(aggregated_results[particle_index_pair.first].end(), 
-                    results[particle_index].begin(), results[particle_index].end());
+                if(particle_index < results.size())
+                    aggregated_results[particle_index_pair.first].insert(aggregated_results[particle_index_pair.first].end(), 
+                        results[particle_index].begin(), results[particle_index].end());
             }
         }
         return aggregated_results;
@@ -137,6 +143,35 @@ class performance_test
         int64_t dataset_size = std::stoi(n_args["reader"]["repetition_count"]) *std::stoi(n_args["reader"]["repetition_size"]);
         benchmarker executor = benchmarker(dataset_.files,
                                                   dataset_.calib_files, output_folder_);
+        if(adapt_frequencies_)
+            executor.set_freq_scales(base_frequencies_);
+        auto output_from_run = model_runner::run_model(model_name, &executor, args...);
+        if (output_from_run.size() > 0)
+        {
+            output_files.insert(output_files.end(), output_from_run.begin(), output_from_run.end());
+            
+        }
+        std::map<std::string, std::vector<double>> aggregated_results = aggregate_results(executor.total_exec_times_);
+        for (auto const & particle_value_pair : aggregated_results)
+        {
+            std::vector<double> measurement_speeds(particle_value_pair.second.size(), 0);
+            std::transform(particle_value_pair.second.begin(), particle_value_pair.second.end(), measurement_speeds.begin(),
+             [dataset_size](auto time){
+                return dataset_size/(1000 * time);
+                });
+            auto statistics = compute_mean_and_std(measurement_speeds);
+
+            *result_stream_ << particle_value_pair.first << ":" << statistics.mean << " " << statistics.std << std::endl;
+        }
+        return output_files;
+    }
+    template<typename... other_clustering_args>
+    std::vector<std::string> benchmark_single_file(model_runner::model_name model_name, int data_index,  other_clustering_args... args )
+    {
+        std::vector<std::string> output_files;
+        int64_t dataset_size = std::stoi(n_args["reader"]["repetition_count"]) *std::stoi(n_args["reader"]["repetition_size"]);
+        benchmarker executor = benchmarker(std::vector<std::string>{dataset_.files[data_index]},
+                                                  std::vector<std::string>{dataset_.calib_files[data_index]}, output_folder_);
         if(adapt_frequencies_)
             executor.set_freq_scales(base_frequencies_);
         auto output_from_run = model_runner::run_model(model_name, &executor, args...);
@@ -196,7 +231,7 @@ class performance_test
         n_args["reader"]["repetition_count"] = "100";
         n_args["reader"]["freq_multiplier"] = "1";
         std::vector<std::string> output_files;
-        /**result_stream_ << "#Model Simple clusterer" << std::endl; 
+        *result_stream_ << "#Model Simple clusterer" << std::endl; 
         output_files = benchmark_dataset(model_runner::model_name::SIMPLE_CLUSTERER, core_count, n_args, 
             debug_mode_, model_runner::clustering_type::STANDARD);
         
@@ -205,8 +240,6 @@ class performance_test
         output_files = benchmark_dataset(model_runner::model_name::PAR_LINEAR_MERGER,  core_count, n_args, 
             debug_mode_, model_runner::clustering_type::STANDARD);
         
-   
-*/
         *result_stream_ << "#Parallel clusterer, linear merger, multioutput" << std::endl;
         output_files = benchmark_dataset(model_runner::model_name::PAR_MULTIFILE_CLUSTERER,  core_count, n_args, 
             debug_mode_, model_runner::clustering_type::STANDARD);  
@@ -305,11 +338,33 @@ class performance_test
         adapt_frequencies_ = false;
 
     }
+    void test_triggers(node_args n_args, uint32_t core_count)
+    {
+        n_args["reader"]["repetition_size"] = "1000000";
+        n_args["reader"]["repetition_count"] = "200";
+        n_args["reader"]["freq_multiplier"] = "1"; 
+        int test_file_index = 0;
+        n_args["trigger"]["use_trigger"] = "true";
+        for (auto & trigger_name : dataset_.trigger_files)
+        {
+            n_args["trigger"]["trigger_file"] = trigger_name;
+            *result_stream_ << "#Simple clusterer " << trigger_name << std::endl; 
+            benchmark_single_file(model_runner::model_name::SIMPLE_CLUSTERER, test_file_index, 
+                core_count, n_args, debug_mode_, model_runner::clustering_type::STANDARD);
+            *result_stream_ << "#Parallel clusterer " << trigger_name << std::endl;
+            benchmark_single_file(model_runner::model_name::PAR_LINEAR_MERGER, test_file_index, 
+                core_count, n_args, debug_mode_, model_runner::clustering_type::STANDARD);
+            *result_stream_ << "#Parallel clusterer + multioutput " << trigger_name << std::endl;
+            benchmark_single_file(model_runner::model_name::PAR_MULTIFILE_CLUSTERER, test_file_index, 
+                core_count, n_args, debug_mode_, model_runner::clustering_type::STANDARD);
+            
+        }
+    }
     void run_all_benchmarks(const std::string & binary_path = "")
     {
         dataset_.prepend_path(binary_path);
         output_folder_ = binary_path + "../../output/";
-        const uint64_t core_count = 16;
+        const uint64_t core_count = 4;
         node_args n_args;
         n_args["reader"]["repetition_size"] = "1000000";
         n_args["reader"]["repetition_count"] = "200";
@@ -317,11 +372,11 @@ class performance_test
         model_runner::print = false;
         model_runner::recurring = true;
         this->n_args = n_args;
-        /*
+        
         *result_stream_ << "%Testing BASE MODELS|mean throughput [Mhit/s]|model|" << std::endl;
         test_base_models(n_args, core_count);
         result_stream_->flush();
-        
+        return;
         *result_stream_ << "%Testing SPLIT NODE|mean throughput [Mhit/s]|model|" << std::endl;
         test_split_node(n_args, core_count);
         result_stream_->flush();
@@ -336,11 +391,15 @@ class performance_test
         *result_stream_ << "%Testing FREQUENCY|mean throughput [Mhit/s]|model|XY_PLOTTABLE" << std::endl;
         test_frequencies(n_args, core_count);
         result_stream_->flush();
-        */
+        
         model_runner::print = true;
         model_runner::recurring = true;
         *result_stream_ << "%Testing models with writing|mean throughput [Mhit/s]|model|" << std::endl;
         test_printing_models(n_args, core_count);
+        result_stream_->flush();
+        
+       *result_stream_ << "%Testing trigger models|mean throughput [Mhit/s]|model|" << std::endl;
+        test_triggers(n_args, core_count);
         result_stream_->flush();
     //clean_clustering_files(freq_ground_truth_names);
     }

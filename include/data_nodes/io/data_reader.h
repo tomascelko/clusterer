@@ -20,6 +20,8 @@ class data_reader : public i_multi_producer<data_type>, public i_controlable_sou
     buffer_type* reading_buffer_;
     buffer_type* ready_buffer_ = nullptr;
     bool paused_ = false;
+    dataflow_controller * controller_;
+    const uint32_t PIPE_CHECK_INTERVAL = 1000000;
     void swap_buffers()
     {
         buffer_type* temp_buffer = reading_buffer_;
@@ -84,9 +86,26 @@ public:
     {
         paused_ = false;
     }
+    virtual void store_controller(dataflow_controller * controller) override
+    {
+        controller_ = controller;
+    }
     std::string name() override
     {
         return "reader";
+    }
+    void perform_memory_check()
+    {
+        if(total_hits_read_ % PIPE_CHECK_INTERVAL == 0)
+            {
+                paused_ = controller_->is_full_memory();
+                while (paused_)
+                {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(sleep_duration_));
+                    paused_ = controller_->is_full_memory();
+                }
+                 
+            }
     }
     virtual void start() override
     {
@@ -102,11 +121,9 @@ public:
         {
             //std::cout << "reading_next" << sstd::endl;
             this->writer_.write(std::move(data));
-            while(paused_)
-            {
-                std::this_thread::sleep_for(std::chrono::milliseconds(sleep_duration_));
-            }
             *input_stream_ >> data;
+            ++total_hits_read_;
+            perform_memory_check();
         }
         /*reading_buffer_ = buffer_a_.get();
         bool should_continue = read_data();

@@ -102,6 +102,33 @@ class io_utils
         delete bom;
     }
 
+    static std::string strip(const std::string & value)
+    {
+        uint32_t start_index = value.size();
+        uint32_t end_index = 0;
+        
+        for(auto it = value.begin(); it != value.end(); ++it)
+        {
+            if(!is_separator(*it))
+            {
+                start_index = it - value.begin();
+                break;
+            }
+        }
+        for(auto it = value.rend(); it != value.rbegin(); ++it)
+        {
+            if(!is_separator(*it))
+            {
+                end_index = it - value.rbegin();
+                break;
+            }
+        }
+        if(start_index >= end_index)
+            return "";
+        return value.substr(start_index, end_index + 1);
+
+    }
+
 };
 struct coord
     {

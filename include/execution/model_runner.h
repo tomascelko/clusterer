@@ -172,7 +172,7 @@ class model_runner
         {
             auto trivial_merger_split_descr = new trivial_split_descriptor<cluster<mm_hit>>();
             auto default_merge_descr = new temporal_clustering_descriptor<mm_hit>(core_count);
-            for (uint i = 1; i <= core_count; ++i)
+            for (uint32_t i = 1; i <= core_count; ++i)
             {
                 arch += "," + clustering_node + std::to_string(i) + "m1";
             }

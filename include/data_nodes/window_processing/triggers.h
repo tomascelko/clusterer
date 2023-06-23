@@ -2,6 +2,9 @@
 #include "window_state.h"
 #include "onnxruntime_cxx_api.h"
 
+
+
+
 template <typename hit_type, typename feature_vector_type>
 class abstract_window_trigger
 {
@@ -125,6 +128,21 @@ public:
     }
 };
 
+template <typename T>
+const T* get_trigger_filename(const std::string & trigger_filename)
+{
+    return trigger_filename.c_str();
+}
+
+template<>
+const wchar_t * get_trigger_filename<wchar_t>(const std::string & trigger_filename)
+{
+    wchar_t * filename_wide = new wchar_t[trigger_filename.size()];
+    std::mbstowcs(filename_wide, trigger_filename.c_str(), trigger_filename.size());
+    return (const wchar_t*)filename_wide;
+}
+
+
 template <typename hit_type, typename output_type>
 class onnx_trigger : public abstract_window_trigger<hit_type, default_window_feature_vector<hit_type>>
 {
@@ -230,8 +248,11 @@ public:
     using state_type = default_window_feature_vector<hit_type>;
     //std_log_scaler scaler_;
     Ort::Env env;
+    Ort::SessionOptions session_options;
     std::function<bool(output_type)> trigger_func_;
     double inference_time;
+    
+    
     onnx_trigger(const std::map<std::string, std::string> &args, const std::function<bool(output_type)> & trigger_func) : 
         abstract_window_trigger<hit_type, default_window_feature_vector<hit_type>>(std::stod(args.at("trigger_time"))),
         trigger_func_(trigger_func)
@@ -239,19 +260,9 @@ public:
         // onnxruntime setup
         
         env = Ort::Env(OrtLoggingLevel::ORT_LOGGING_LEVEL_VERBOSE, "example-model-explorer");
-        Ort::SessionOptions session_options;
         
-        auto model_name = args.at("trigger_file").c_str();
-       
-        if  std::is_same<ORTCHAR_T, char>
-            session = std::move(std::make_unique<Ort::Session>(env, model_name, session_options));
-        else
-        {
-            
-            ORTCHAR_T * model_name_wide;
-            std::mbstowcs(model_name_wide, model_name, args.at("trigger_file").size());
-            session = std::move(std::make_unique<Ort::Session>(env, model_name_wide, session_options));
-        }
+        auto model_name = args.at("trigger_file");
+        session = std::move(std::make_unique<Ort::Session>(env, get_trigger_filename<ORTCHAR_T>(model_name), session_options));
         
 
         // print name/shape of inputs
@@ -370,3 +381,4 @@ public:
         }
     }
 };
+

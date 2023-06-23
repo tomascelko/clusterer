@@ -195,7 +195,7 @@ public:
     void write_vector(std::ofstream & stream, const std::vector<double> & vector_attribute) const
     {
         stream << "[";
-        for (uint i = 0; i < vector_attribute.size(); ++i)
+        for (uint64_t i = 0; i < vector_attribute.size(); ++i)
         {
             stream << std::fixed << std::setprecision(2) << " " << vector_attribute[i];
         }

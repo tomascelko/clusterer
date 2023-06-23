@@ -20,7 +20,7 @@ class current_system
         MEMORYSTATUSEX status;
         status.dwLength = sizeof(status);
         GlobalMemoryStatusEx(&status);
-        return status.ullTotalPhys - status.ullAvailPhys;
+        return  status.ullAvailPhys;
 
         #elif _APPLE_
 

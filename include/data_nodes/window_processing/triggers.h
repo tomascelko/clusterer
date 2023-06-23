@@ -238,11 +238,18 @@ public:
     {
         // onnxruntime setup
         
-        std::string model_name = args.at("trigger_file");
-        std::basic_string<ORTCHAR_T> model_file = model_name;
+        auto model_name = args.at("trigger_file").c_str();
+        //std::basic_string<wchar_t> model_file;
+        /*if  std::is_same<ORTCHAR_T, char>
+            model_file = model_name;
+        else
+        {
+
+        }*/
+        
         env = Ort::Env(OrtLoggingLevel::ORT_LOGGING_LEVEL_VERBOSE, "example-model-explorer");
         Ort::SessionOptions session_options;
-        session = std::move(std::make_unique<Ort::Session>(env, model_file.c_str(), session_options));
+        session = std::move(std::make_unique<Ort::Session>(env, model_name, session_options));
 
         // print name/shape of inputs
         Ort::AllocatorWithDefaultOptions allocator;

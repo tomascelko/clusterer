@@ -17,8 +17,12 @@ find_library(STDCPPFS_LIBRARY NAMES stdc++fs)
 if(Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS}) 
 endif()
-#find_package(Python3 COMPONENTS Development NumPy) 
-#include_directories(${Python2_INCLUDE_DIRS} ${Python2_NumPy_INCLUDE_DIRS})
+
+set(onnx_lib_dir ${CMAKE_CURRENT_SOURCE_DIR}/onnxruntime-linux-x64-1.14.1/lib/)
+set(onnx_include_path ${CMAKE_CURRENT_SOURCE_DIR}/onnxruntime-linux-x64-1.14.1/include/)
+find_library(onnx_lib_path onnxruntime
+    PATHS ${onnx_lib_dir})
+
 AUX_SOURCE_DIRECTORY(./src SOURCES)
 file(GLOB_RECURSE LIB_SRC_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/include/*.h
@@ -32,15 +36,17 @@ add_library(lcclusterer SHARED ${LIB_SRC_FILES})
 set_target_properties(lcclusterer PROPERTIES LINKER_LANGUAGE CXX)
 set_target_properties(lcclusterer PROPERTIES LIBRARY_OUTPUT_DIRECTORY "./lib")
 #set_target_properties(lcclusterer PROPERTIES RUNTIME_OUTPUT_DIRECTORY "./bin")
-#target_link_directories(cclusterer PUBLIC "./onnxruntime-linux-x64-1.14.1/lib/")
-target_include_directories(lcclusterer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/onnxruntime-linux-x64-1.14.1/include/)
-target_link_libraries(lcclusterer ${CMAKE_CURRENT_SOURCE_DIR}/onnxruntime-linux-x64-1.14.1/lib/libonnxruntime.so)
+target_include_directories(lcclusterer PUBLIC ${onnx_include_path})
+target_link_libraries(lcclusterer PUBLIC ${onnx_lib_path})
+
+
+#target_link_libraries(lcclusterer ${CMAKE_CURRENT_SOURCE_DIR}/onnxruntime-linux-x64-1.14.1/lib/libonnxruntime.so)
 
 add_executable(cclusterer ${SOURCES})
 
 set_target_properties(cclusterer PROPERTIES RUNTIME_OUTPUT_DIRECTORY "./bin")
-target_include_directories(cclusterer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/onnxruntime-linux-x64-1.14.1/include/)
-target_link_libraries(cclusterer ${CMAKE_CURRENT_SOURCE_DIR}/onnxruntime-linux-x64-1.14.1/lib/libonnxruntime.so)
+target_include_directories(cclusterer PUBLIC ${onnx_include_path})
+target_link_libraries(cclusterer ${onnx_lib_path})
 #target_link_libraries(cclusterer ${Boost_LIBRARIES} stdc++fs) #Python3::Python Python3::NumPy)
 
 

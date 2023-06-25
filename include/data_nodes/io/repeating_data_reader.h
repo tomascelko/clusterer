@@ -48,6 +48,7 @@ class repeating_data_reader : public data_reader<data_type, istream_type>
         repetition_count_(args.get_arg<int>(name(), "repetition_count"))
     {
         init_read_data();
+        
     }
     repeating_data_reader(const std::string & filename, const node_args & args) :
         data_reader<data_type, istream_type>(filename, args),

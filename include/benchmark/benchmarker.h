@@ -353,7 +353,7 @@ class benchmarker
         if(args["reader"].count("freq_multiplier") > 0)
         {
             freq_multiplier = std::stod(args["reader"]["freq_multiplier"]);
-            std::cout << "FREQ multipl" << freq_multiplier << std::endl;
+            //std::cout << "FREQ multipl" << freq_multiplier << std::endl;
             
         }
         controller_  =  std::make_unique<dataflow_controller>(arch.node_descriptors(), debug);

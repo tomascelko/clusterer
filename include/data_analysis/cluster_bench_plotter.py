@@ -134,12 +134,18 @@ def parse_benchmark_files(filename):
 
         
 #xy_plottable = parse_benchmark_files("output/benchmark_results/validation_result.txt")
-matplotlib.rcParams.update(**{"font.size" : 14})
-xy_plottable = parse_benchmark_files("output/benchmark_results_laptop/validation_result4.txt")
+#matplotlib.rcParams.update(**{"font.size" : 14})
+#xy_plottable = parse_benchmark_files("output/benchmark_results_laptop/validation_result4.txt")
 
 
-xy_plottable = parse_benchmark_files("output/benchmark_results_server/FINAL_PLOTS.txt")
-xy_plottable = parse_benchmark_files("output/benchmark_results_laptop/FINAL_PLOTS.txt")
-
+#xy_plottable = parse_benchmark_files("output/benchmark_results_server/FINAL_PLOTS.txt")
+#xy_plottable = parse_benchmark_files("output/benchmark_results_laptop/FINAL_PLOTS.txt")
+import sys
+if __name__ == "main":
+    if (len(sys.argv) != 2):
+        print("Incorrect number of arguments passed (expected 1)")
+    filename = sys.argv[1]
+    
+    parse_benchmark_files()
 print("done")
             

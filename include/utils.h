@@ -40,6 +40,10 @@ class basic_path
 
         return temp;
     }
+    std::string parent() const
+    {
+        return std::filesystem::absolute(path_.parent_path());
+    }
 };
 class file_path : public basic_path
 {

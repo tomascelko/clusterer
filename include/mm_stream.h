@@ -114,7 +114,6 @@ class mm_read_stream
     std::unique_ptr<std::ifstream> px_file_;
     static constexpr std::string_view CL_KEY = "ClFile";
     static constexpr std::string_view PX_KEY = "PxFile";
-    static constexpr uint32_t FLUSH_INTERVAL = 2 << 23;
     uint64_t current_line = 0;
     uint64_t current_byte = 0;
     uint64_t clusters_written_ = 0;
@@ -149,9 +148,10 @@ class mm_read_stream
             }
                 
         }
-        if(!cl_file_ || !px_file_ || !cl_file_->is_open() || !px_file_->is_open())
+        
+        if(!is_open())
         {
-            throw std::invalid_argument("Error, Could not open CL or PX file");
+            throw std::invalid_argument("Error, Could not open input file");
         }
 
     }
@@ -159,6 +159,10 @@ class mm_read_stream
     mm_read_stream(const std::string & ini_filename)
     {
         open_streams(ini_filename);
+    }
+    bool is_open()
+    {
+        return cl_file_ && px_file_ && cl_file_->is_open() && px_file_->is_open();
     }
     virtual ~mm_read_stream() = default;
     void close()

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 
 # set the project name
-project(cclusterer)
+project(clusterer)
 
 # add the executable
 set(CMAKE_CXX_STANDARD 17)
@@ -31,22 +31,22 @@ file(GLOB_RECURSE LIB_SRC_FILES
 #set(SOURCES ./src/main.cpp)
 
 
-add_library(lcclusterer SHARED ${LIB_SRC_FILES})
+add_library(lclusterer SHARED ${LIB_SRC_FILES})
 
-set_target_properties(lcclusterer PROPERTIES LINKER_LANGUAGE CXX)
-set_target_properties(lcclusterer PROPERTIES LIBRARY_OUTPUT_DIRECTORY "./lib")
-#set_target_properties(lcclusterer PROPERTIES RUNTIME_OUTPUT_DIRECTORY "./bin")
-target_include_directories(lcclusterer PUBLIC ${onnx_include_path})
-target_link_libraries(lcclusterer PUBLIC ${onnx_lib_path})
+set_target_properties(lclusterer PROPERTIES LINKER_LANGUAGE CXX)
+set_target_properties(lclusterer PROPERTIES LIBRARY_OUTPUT_DIRECTORY "./lib")
+#set_target_properties(lclusterer PROPERTIES RUNTIME_OUTPUT_DIRECTORY "./bin")
+target_include_directories(lclusterer PUBLIC ${onnx_include_path})
+target_link_libraries(lclusterer PUBLIC ${onnx_lib_path})
 
 
-#target_link_libraries(lcclusterer ${CMAKE_CURRENT_SOURCE_DIR}/onnxruntime-linux-x64-1.14.1/lib/libonnxruntime.so)
+#target_link_libraries(lclusterer ${CMAKE_CURRENT_SOURCE_DIR}/onnxruntime-linux-x64-1.14.1/lib/libonnxruntime.so)
 
-add_executable(cclusterer ${SOURCES})
+add_executable(clusterer ${SOURCES})
 
-set_target_properties(cclusterer PROPERTIES RUNTIME_OUTPUT_DIRECTORY "./bin")
-target_include_directories(cclusterer PUBLIC ${onnx_include_path})
-target_link_libraries(cclusterer ${onnx_lib_path})
-#target_link_libraries(cclusterer ${Boost_LIBRARIES} stdc++fs) #Python3::Python Python3::NumPy)
+set_target_properties(clusterer PROPERTIES RUNTIME_OUTPUT_DIRECTORY "./bin")
+target_include_directories(clusterer PUBLIC ${onnx_include_path})
+target_link_libraries(clusterer ${onnx_lib_path})
+#target_link_libraries(clusterer ${Boost_LIBRARIES} stdc++fs) #Python3::Python Python3::NumPy)
 
 

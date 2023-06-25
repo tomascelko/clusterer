@@ -44,13 +44,19 @@ class benchmarking_dataset
         {"lead", std::vector<uint32_t>{2,3}},
         {"neutron", std::vector<uint32_t>{4,5}}
     };
-    void prepend_path(const std::string & prefix)
+    void prepend_path(const std::string & prefix_full)
     {
-        for (auto data_file : files)
+        auto prefix_path = file_path(prefix_full);
+        auto prefix = prefix_path.parent() + "/";
+        for (auto & data_file : files)
         {
             data_file =  prefix + data_file;
         }    
-        for (auto data_file : calib_files)
+        for (auto & data_file : calib_files)
+        {
+            data_file =  prefix + data_file;
+        }   
+        for (auto & data_file : trigger_files)
         {
             data_file =  prefix + data_file;
         }     
@@ -199,26 +205,35 @@ class performance_test
         model_runner::print = false;
         model_runner::recurring = true;
         
-        *result_stream_ << "#Model Simple clusterer" << std::endl; 
+        *result_stream_ << "#Simple clusterer" << std::endl;
+        std::cout << "...Testing simple clusterer" << std::endl;
+        
         benchmark_dataset(model_runner::model_name::SIMPLE_CLUSTERER, core_count, n_args, 
             debug_mode_, model_runner::clustering_type::STANDARD);
-        *result_stream_ << "#Model Simple clusterer, temporal" << std::endl;
+        
+        *result_stream_ << "#Simple clusterer, temporal" << std::endl;
+        std::cout << "...Testing Simple clusterer, temporal" << std::endl;
         benchmark_dataset(model_runner::model_name::SIMPLE_CLUSTERER, core_count, n_args, 
             debug_mode_, model_runner::clustering_type::TEMPORAL);
 
-        *result_stream_ << "#Model Simple clusterer, halo bound. box" << std::endl;
+        *result_stream_ << "#Simple clusterer, halo bound. box" << std::endl;
+        std::cout << "...Testing Simple clusterer, halo bound. box" << std::endl;
         benchmark_dataset(model_runner::model_name::SIMPLE_CLUSTERER, core_count, n_args, 
             debug_mode_, model_runner::clustering_type::HALO_BB);
 
-        *result_stream_ << "#Model Parallel clusterer, linear merger" << std::endl;
+        *result_stream_ << "#Parallel clusterer, linear merger" << std::endl;
+        std::cout << "...Testing Parallel clusterer, linear merger" << std::endl;
         benchmark_dataset(model_runner::model_name::PAR_LINEAR_MERGER,  core_count, n_args, 
             debug_mode_, model_runner::clustering_type::STANDARD);
              
         *result_stream_ << "#Parallel clusterer, simple merger" << std::endl;
+        std::cout << "...Testing Parallel clusterer, simple merger" << std::endl;
+        
         benchmark_dataset(model_runner::model_name::PAR_SIMPLE_MERGER,  core_count, n_args, 
             debug_mode_, model_runner::clustering_type::STANDARD);
 
         *result_stream_ << "#Parallel clusterer, linear merger, multioutput" << std::endl;
+        std::cout << "...Testing Parallel clusterer, linear merger, multioutput" << std::endl;
         benchmark_dataset(model_runner::model_name::PAR_MULTIFILE_CLUSTERER,  core_count, n_args, 
             debug_mode_, model_runner::clustering_type::STANDARD);  
         
@@ -360,11 +375,11 @@ class performance_test
             
         }
     }
-    void run_all_benchmarks(const std::string & binary_path = "")
+    void run_all_benchmarks(const std::string & binary_path = "", uint64_t core_count = 4)
     {
+        std::cout << "Starting the benchmark" << std::endl;
         dataset_.prepend_path(binary_path);
-        output_folder_ = binary_path + "../../output/";
-        const uint64_t core_count = 4;
+        output_folder_ = binary_path + "/../../output/";
         node_args n_args;
         n_args["reader"]["repetition_size"] = "1000000";
         n_args["reader"]["repetition_count"] = "200";
@@ -374,9 +389,12 @@ class performance_test
         this->n_args = n_args;
         
         *result_stream_ << "%Testing BASE MODELS|mean throughput [Mhit/s]|model|" << std::endl;
+    
         test_base_models(n_args, core_count);
         result_stream_->flush();
+
         return;
+
         *result_stream_ << "%Testing SPLIT NODE|mean throughput [Mhit/s]|model|" << std::endl;
         test_split_node(n_args, core_count);
         result_stream_->flush();

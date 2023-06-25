@@ -68,7 +68,7 @@ public:
         nodes_.clear();
         pipes_.clear();
         data_sources_.clear();
-        std::cout << "dataflow finished" << std::endl;
+        //std::cout << "dataflow finished" << std::endl;
     }
 
     template <typename data_type>

@@ -270,7 +270,7 @@ class argument_parser
             auto output_file = output_folder +  "benchmark_result.txt";
             auto perf_output = std::ofstream(output_file);
             auto perf_test = performance_test(&perf_output, debug_);
-            perf_test.run_all_benchmarks(path_to_binary_);
+            perf_test.run_all_benchmarks(path_to_binary_, core_count);
         }
         else
         {

@@ -26,6 +26,7 @@ int main(int argc, char **argv)
     std::vector<std::string> args(argv, argc + argv);
     //uint32_t core_count = args.size() > 0 ? std::stoi(args[0]) : 4;
     //args = {"", "--mode", "benchmark", "--args", "../../../clusterer_data/parameters/node_params.txt"};// "--calib", "../../../clusterer_data/calib/F4-W00076/", "../../../clusterer_data/lead/deg0_0.txt"};
+    std::cout << args[0] << std::endl;
     argument_parser parser = argument_parser(args[0]);
     parser.try_parse_and_run(std::vector<std::string>(args.begin() + 1, args.end()));
     /*

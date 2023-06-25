@@ -63,8 +63,7 @@ public:
     //buffer_b_(std::make_unique<buffer_type>(buffer_size)),
     i_multi_producer<data_type>(node_descriptor->split_descr)
     {
-        //buffer_a_->reserve(buffer_size);
-        //buffer_b_->reserve(buffer_size);
+        check_input_stream(file_name);
     }
     data_reader(const std::string& file_name, const node_args & args) :
     input_stream_(std::move(std::make_unique<istream_type>(file_name))),
@@ -74,6 +73,7 @@ public:
     //buffer_b_(std::make_unique<buffer_type>(buffer_size)),
     i_multi_producer<data_type>(new trivial_split_descriptor<data_type>())
     {
+        check_input_stream(file_name);
         //buffer_a_->reserve(buffer_size);
         //buffer_b_->reserve(buffer_size);
     }
@@ -107,8 +107,16 @@ public:
                  
             }
     }
+    void check_input_stream(const std::string & filename)
+    {
+        if(!input_stream_->is_open())
+        {
+            throw std::invalid_argument("Could not open selected input stream: '" + filename + "'");
+        }
+    }
     virtual void start() override
     {
+        
         auto istream_optional = dynamic_cast<std::istream*>(input_stream_.get()); 
         if (istream_optional != nullptr)
         {

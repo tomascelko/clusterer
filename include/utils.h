@@ -42,7 +42,7 @@ class basic_path
     }
     std::string parent() const
     {
-        return std::filesystem::absolute(path_.parent_path());
+        return std::filesystem::absolute(path_.parent_path()).string();
     }
 };
 class file_path : public basic_path

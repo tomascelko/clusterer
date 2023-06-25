@@ -18,10 +18,10 @@ if(Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS}) 
 endif()
 
-set(onnx_lib_dir ${CMAKE_CURRENT_SOURCE_DIR}/onnxruntime-linux-x64-1.14.1/lib/)
+set(onnx_lib_dirs ${CMAKE_CURRENT_SOURCE_DIR}/onnxruntime-linux-x64-1.14.1/lib/;${CMAKE_CURRENT_SOURCE_DIR}/build/packages/Microsoft.ML.OnnxRuntime.1.15.1/runtimes/win-x64/native/;${ONNX_LIBRARY_PATH})
 set(onnx_include_path ${CMAKE_CURRENT_SOURCE_DIR}/onnxruntime-linux-x64-1.14.1/include/)
 find_library(onnx_lib_path onnxruntime
-    PATHS ${onnx_lib_dir})
+    PATHS ${onnx_lib_dirs})
 
 AUX_SOURCE_DIRECTORY(./src SOURCES)
 file(GLOB_RECURSE LIB_SRC_FILES

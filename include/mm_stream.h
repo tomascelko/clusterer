@@ -44,6 +44,10 @@ class mm_write_stream
         
 
         std::ofstream ini_filestream(path_prefix + ini_file_name);
+        if(!ini_filestream.is_open())
+        {
+            throw std::invalid_argument("The output location'" + path_prefix + ini_file_name + "'does not exist");
+        }
         ini_filestream << "[Measurement]" << std::endl;
         ini_filestream << "PxFile=" << px_file_name << std::endl;
         ini_filestream << "ClFile=" << cl_file_name << std::endl;

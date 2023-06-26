@@ -108,7 +108,7 @@ class pixel_list_clusterer : public i_simple_consumer<mm_hit>,
     {
         std::vector<cluster_it> uniq_neighbor_cluster_its;
         //uint32_t max_cluster_size = 0; 
-        double min_toa = ULONG_MAX;
+        double min_toa = std::numeric_limits<double>::max();
         for (auto neighbor_offset : EIGHT_NEIGHBORS)   //check all neighbor indexes
         {       
             if(!base_coord.is_valid_neighbor(neighbor_offset, tile_size_))

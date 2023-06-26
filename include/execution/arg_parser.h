@@ -119,7 +119,7 @@ class argument_parser
     std::string get_output_folder(const std::vector<std::string> &args ) const
     {
 
-        std::string output_folder = path_to_binary_ + "../../output/";
+        std::string output_folder = file_path(path_to_binary_).parent() + "/../../output/";
         if(std::find(args.begin(), args.end(), OUTPUT_OPTION_STR) != args.end())
         {
             std::string output_folder = parse_by_key(OUTPUT_OPTION_STR, args);

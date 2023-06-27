@@ -56,6 +56,13 @@
         "map": "cpp",
         "set": "cpp",
         "unordered_set": "cpp",
-        "list": "cpp"
-    }
+        "list": "cpp",
+        "codecvt": "cpp",
+        "cstring": "cpp",
+        "charconv": "cpp",
+        "cassert": "cpp",
+        "filesystem": "cpp",
+        "variant": "cpp"
+    },
+    "C_Cpp.default.configurationProvider": "ms-vscode.makefile-tools"
 }

@@ -4,19 +4,25 @@
 template <typename data_type>
 class pipe_writer
 {
-    pipe<data_type>* pipe_;
-    uint32_t BLOCK_SIZE = 2<<8;
+    default_pipe<data_type>* pipe_;
     data_block<data_type> block_;
-    uint64_t processed_counter = 0;
     public:
-    pipe_writer(): pipe_(nullptr), block_(BLOCK_SIZE){}
-    pipe_writer(pipe<data_type>* pipe):
+
+    pipe_writer(): pipe_(nullptr), block_(){}
+    pipe_writer(default_pipe<data_type>* pipe):
     pipe_(pipe),
-    block_(BLOCK_SIZE)
+    block_(pipe_->mean_data_size())
     {}
+    default_pipe<data_type>* pipe()
+    {
+        return pipe_;
+    }
+    void set_block_params(uint32_t expected_size, double start_time)
+    {
+        block_ = data_block<data_type>(expected_size, start_time);
+    }
     bool write_bulk(data_buffer<data_type> * data_buffer)
     {
-        //while(pipe_->approx_size() > pipe<data_type>::MAX_Q_LEN);
         for (uint32_t i = 0; i < data_buffer->size(); i++)
         {
             write(std::move(data_buffer->data()[i]));
@@ -29,7 +35,7 @@ class pipe_writer
         if(pipe_ == nullptr)
             return false;
         if(!block_.try_add_hit(std::move(hit)))
-        {
+        {            
             flush();
         }
         return true;
@@ -38,8 +44,18 @@ class pipe_writer
     {
         if (pipe_ != nullptr)
         {
+            double new_start_time;
             pipe_->blocking_enqueue(std::move(block_));
-            block_.clear(); 
+            block_.clear(pipe_->mean_data_size());
         }
+    }
+    void close()
+    {
+        write(data_type::end_token());
+        flush();
+    }
+    virtual uint32_t open_pipe_count()
+    {
+        return 1u;
     }
 };

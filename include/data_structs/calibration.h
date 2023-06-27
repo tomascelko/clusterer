@@ -20,6 +20,10 @@ class calibration
     void load_calib_vector(std::string&& name, const coord& chip_size, std::vector<std::vector<double>> & vector)
     {
         std::ifstream calib_stream (name);
+        if(!calib_stream.is_open())
+        {
+            throw std::invalid_argument("The file '" + name + "' can not be used for calibration");
+        }
         vector.reserve(chip_size.x());
         for (uint32_t i = 0; i < chip_size.x(); i++)
         {

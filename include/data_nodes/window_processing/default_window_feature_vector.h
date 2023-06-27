@@ -8,6 +8,8 @@
 #include <deque>
 #include <fstream>
 #include <algorithm>
+#include <iostream>
+#include <string>
 template <typename hit_type>
 class default_window_feature_vector
 {

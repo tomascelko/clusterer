@@ -183,7 +183,7 @@ struct coord
     {
         std::string result;
         const uint16_t MAX_LENGTH = 20;
-        long number_rounded;
+        int64_t number_rounded;
         std::string str;
         str.reserve(MAX_LENGTH);
         const double EPSILON = 0.0000000000000001; 
@@ -191,7 +191,7 @@ struct coord
         {
             number *= 10;
         }
-        number_rounded = (long)std::round(number);
+        number_rounded = (int64_t)std::round(number);
         for (uint16_t i = 0; i < MAX_LENGTH; ++i)
         {
             str.push_back((char)(48 + (number_rounded % 10)));

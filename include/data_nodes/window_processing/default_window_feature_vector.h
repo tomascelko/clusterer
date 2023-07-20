@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <iostream>
 #include <string>
+#include <sstream>
 template <typename hit_type>
 class default_window_feature_vector
 {
@@ -79,13 +80,12 @@ public:
         std::vector<double> energy_distr_norm;
         vector_features[attribute_names()[10]] = normalized(energy_distribution_);
         closed = true;
-        
     }
     default_window_feature_vector(double start_time = 0) : start_time_(start_time)
     {
     }
 
-    std::vector<double> normalized(const std::vector<double> &  vect)
+    std::vector<double> normalized(const std::vector<double> &vect)
     {
         std::vector<double> result;
         const double EPSILON = 0.00001;
@@ -94,7 +94,7 @@ public:
         {
             sum += std::abs(value);
         }
-        if(sum < EPSILON)
+        if (sum < EPSILON)
             return vect;
         for (const auto value : vect)
         {
@@ -106,42 +106,42 @@ public:
     std::vector<double> to_vector(bool replace_nan = false) const
     {
         std::vector<double> result;
-        for(auto && attribute_name : attribute_names())
+        for (auto &&attribute_name : attribute_names())
         {
-            if(scalar_features.find(attribute_name) != scalar_features.end())
+            if (scalar_features.find(attribute_name) != scalar_features.end())
             {
-                //TODO remove start toa feature
+                // TODO remove start toa feature
                 result.push_back(scalar_features.at(attribute_name));
             }
             else if (vector_features.find(attribute_name) != vector_features.end())
             {
-                const std::vector<double> & vector_attribute = vector_features.at(attribute_name);
+                const std::vector<double> &vector_attribute = vector_features.at(attribute_name);
 
-                result.insert(result.end(), vector_attribute.cbegin(), vector_attribute.cend());  
-            }     
+                result.insert(result.end(), vector_attribute.cbegin(), vector_attribute.cend());
+            }
         }
-        if(replace_nan)
-            for(auto & item : result)
+        if (replace_nan)
+            for (auto &item : result)
             {
                 if (std::isnan(item))
                     item = 0.;
             }
         return result;
     }
-    default_window_feature_vector<hit_type> diff_with_median(const std::deque<default_window_feature_vector<hit_type>> & previous_vectors)
+    default_window_feature_vector<hit_type> diff_with_median(const std::deque<default_window_feature_vector<hit_type>> &previous_vectors)
     {
         using vector_type = std::vector<double>;
         using scalar_type = double;
         const std::string VECT_STR = "[[";
         size_t median_index = previous_vectors.size() / 2;
         default_window_feature_vector<hit_type> diff_vector;
-        for (auto & attribute_name : attribute_names())
+        for (auto &attribute_name : attribute_names())
         {
             std::vector<vector_type> attribute_vectors;
             std::vector<scalar_type> attribute_scalars;
-            for (auto & previous_vector : previous_vectors)
+            for (auto &previous_vector : previous_vectors)
             {
-                //auto attribute_value = previous_vector.get_value(attribute_name);
+                // auto attribute_value = previous_vector.get_value(attribute_name);
                 if (is_vector(attribute_name))
                 {
                     attribute_vectors.push_back(previous_vector.get_vector(attribute_name));
@@ -151,17 +151,17 @@ public:
                     attribute_scalars.push_back(previous_vector.get_scalar(attribute_name));
                 }
             }
-            
+
             if (is_vector(attribute_name))
             {
                 vector_type current_value = std::get<vector_type>(get_value(attribute_name));
                 diff_vector.set_vector(attribute_name, current_value);
-                //TODO
+                // TODO
             }
             else
             {
                 double current_value = std::get<scalar_type>(get_value(attribute_name));
-                if(attribute_name == attribute_names()[0])
+                if (attribute_name == attribute_names()[0])
                 {
                     diff_vector.set_scalar(attribute_name, current_value);
                 }
@@ -194,7 +194,7 @@ public:
         end_fw.hit_count = -1;
         return end_fw;
     }
-    void write_vector(std::ofstream & stream, const std::vector<double> & vector_attribute) const
+    void write_vector(std::ofstream &stream, const std::vector<double> &vector_attribute) const
     {
         stream << "[";
         for (uint64_t i = 0; i < vector_attribute.size(); ++i)
@@ -202,11 +202,11 @@ public:
             stream << std::fixed << std::setprecision(2) << " " << vector_attribute[i];
         }
         stream << " ]";
-        
+
         // return "[ " + std::accumulate(energy_distrib_str.begin(), energy_distrib_str.end(), std::string(","))  + " ]";
     }
-    template<typename stream_type>
-    void read_vector(stream_type & stream, std::vector<double> & result)
+    template <typename stream_type>
+    void read_vector(stream_type &stream, std::vector<double> &result)
     {
         char symbol;
         stream.get(symbol);
@@ -224,7 +224,7 @@ public:
         while (!vector_ss.eof())
         {
             double value;
-            if(vector_ss >> value)
+            if (vector_ss >> value)
                 result.push_back(value);
         }
     }
@@ -255,11 +255,11 @@ public:
     {
         vector_features[key] = value;
     }
-    const double & get_scalar(const std::string & key) const
+    const double &get_scalar(const std::string &key) const
     {
         return scalar_features.at(key);
     }
-    const std::vector<double> & get_vector(const std::string & key) const
+    const std::vector<double> &get_vector(const std::string &key) const
     {
         return vector_features.at(key);
     }
@@ -267,14 +267,13 @@ public:
     {
         return feature.find("[[") != std::string::npos;
     }
-    
 
-    std::variant<double, std::vector<double>> get_value(const std::string & feature_name) const
+    std::variant<double, std::vector<double>> get_value(const std::string &feature_name) const
     {
         std::variant<double, std::vector<double>> result;
         if (is_vector(feature_name))
             result = vector_features.at(feature_name);
-        else 
+        else
             result = scalar_features.at(feature_name);
         return result;
     }
@@ -351,13 +350,12 @@ stream_type &operator<<(stream_type &fstream, const default_window_feature_vecto
         {
             std::vector<double> vector_feature;
             window_feature_vect.write_vector(fstream, window_feature_vect.vector_features.at(feature_name));
-
         }
         else
         {
-            fstream << std::fixed << std::setprecision(6) << window_feature_vect.scalar_features.at(feature_name);     
+            fstream << std::fixed << std::setprecision(6) << window_feature_vect.scalar_features.at(feature_name);
         }
-        fstream << delim;    
+        fstream << delim;
     }
     fstream << std::endl;
     return fstream;
@@ -381,14 +379,14 @@ stream_type &operator>>(stream_type &fstream, default_window_feature_vector<data
             double scalar_feature;
             fstream >> scalar_feature_str;
             std::cout << scalar_feature_str << std::endl;
-            if(scalar_feature_str == "nan")
+            if (scalar_feature_str == "nan")
                 scalar_feature = std::numeric_limits<double>::quiet_NaN();
             else
             {
-                std::replace(scalar_feature_str.begin(), scalar_feature_str.end() ,'.', ',');
+                std::replace(scalar_feature_str.begin(), scalar_feature_str.end(), '.', ',');
                 scalar_feature = std::stod(scalar_feature_str);
             }
-            window_feature_vect.scalar_features[feature_name] = scalar_feature;     
+            window_feature_vect.scalar_features[feature_name] = scalar_feature;
         }
     }
     window_feature_vect.closed = true;
@@ -397,9 +395,9 @@ stream_type &operator>>(stream_type &fstream, default_window_feature_vector<data
     window_feature_vect.y_sum_ = hit_count > 0 ? mean_y * hit_count : 0;
     window_feature_vect.x2_sum_ = hit_count >= 2 ? (std_x * std_x + (mean_x * mean_x)) * hit_count : 0;
     window_feature_vect.y2_sum_ = hit_count >= 2 ? (std_y * std_y + (mean_y * mean_y)) * hit_count : 0;
-    
+
     std::string e_str_distr = fstream.readLine().toStdString();
-    std::cout << e_str_distr << " is the distribution str" << std::endl; 
+    std::cout << e_str_distr << " is the distribution str" << std::endl;
     window_feature_vect.set_distr_from_str(e_str_distr);
     */
     return fstream;

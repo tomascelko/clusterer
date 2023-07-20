@@ -4,56 +4,56 @@
 #include "../../data_structs/burda_hit.h"
 
 template <typename data_type>
-class hit_sorter : public i_simple_consumer<data_type>, 
+class hit_sorter : public i_simple_consumer<data_type>,
                    public i_multi_producer<data_type>
 {
     struct toa_comparer
     {
-        auto operator() (const data_type& left, const data_type& right) const 
+        auto operator()(const data_type &left, const data_type &right) const
         {
-         if(left.toa() < right.toa())
+            if (left.toa() < right.toa())
                 return false;
-            if(right.toa() < left.toa())
+            if (right.toa() < left.toa())
                 return true;
-            return false;   
+            return false;
         }
     };
-    //for sorting burda hits
+    // for sorting burda hits
     struct burda_toa_comparer
     {
-        auto operator() (const burda_hit& left, const burda_hit& right) const 
+        auto operator()(const burda_hit &left, const burda_hit &right) const
         {
-         if(left.toa() < right.toa())
+            if (left.toa() < right.toa())
                 return false;
-            if(right.toa() < left.toa())
+            if (right.toa() < left.toa())
                 return true;
-            if(left.fast_toa() < right.fast_toa())
+            if (left.fast_toa() < right.fast_toa())
                 return false;
-            if(right.fast_toa() < left.fast_toa())
+            if (right.fast_toa() < left.fast_toa())
                 return true;
-            return false;   
+            return false;
         }
     };
-    using buffer_type = data_buffer<data_type>; 
+    using buffer_type = data_buffer<data_type>;
     std::priority_queue<data_type, std::vector<data_type>, toa_comparer> priority_queue_;
-    
-    const double DEQUEUE_TIME = 500000.; // in 
+
+    const double DEQUEUE_TIME = 500000.; // in
     const uint32_t DEQUEUE_CHECK_INTEVAL = 128;
     using split_descriptor_type = split_descriptor<data_type>;
+
 public:
-    hit_sorter()   
+    hit_sorter()
     {
         toa_comparer less_comparer;
-        priority_queue_ = std::priority_queue<data_type, std::vector<data_type>, toa_comparer> (less_comparer);
+        priority_queue_ = std::priority_queue<data_type, std::vector<data_type>, toa_comparer>(less_comparer);
     }
     std::string name() override
     {
         return "hit_sorter";
     }
-    hit_sorter(node_descriptor<data_type, data_type> * node_descriptor) :
-    i_multi_producer<data_type>(node_descriptor->split_descr)
+    hit_sorter(node_descriptor<data_type, data_type> *node_descriptor) : i_multi_producer<data_type>(node_descriptor->split_descr)
     {
-        //assert((std::is_same<data_type, mm_hit_tot>::value));
+        // assert((std::is_same<data_type, mm_hit_tot>::value));
     }
     virtual void start() override
     {
@@ -61,36 +61,32 @@ public:
         int processed = 0;
         this->reader_.read(hit);
         int x = 0;
-        while(hit.is_valid())
-        { //data not end
-            processed ++;
+        while (hit.is_valid())
+        { // data not end
+            processed++;
             priority_queue_.push(hit);
-            
-            if(processed % DEQUEUE_CHECK_INTEVAL == 0)
+
+            if (processed % DEQUEUE_CHECK_INTEVAL == 0)
                 while (priority_queue_.top().toa() < hit.toa() - DEQUEUE_TIME)
-                {                    
+                {
                     data_type old_hit = priority_queue_.top();
                     this->writer_.write(std::move(old_hit));
                     priority_queue_.pop();
                 }
 
             this->reader_.read(hit);
-
-        
         }
-        
-        while (!priority_queue_.empty())
-            {
-                data_type old_hit = priority_queue_.top();
-                priority_queue_.pop();
-                this->writer_.write(std::move(old_hit));
-            }
-        //write last (invalid) hit
-        this->writer_.close();
-        //std::cout << "HIT SORTER ENDED ---------------------" << std::endl;
-        
 
+        while (!priority_queue_.empty())
+        {
+            data_type old_hit = priority_queue_.top();
+            priority_queue_.pop();
+            this->writer_.write(std::move(old_hit));
+        }
+        // write last (invalid) hit
+        this->writer_.close();
+        // std::cout << "HIT SORTER ENDED ---------------------" << std::endl;
     }
-    
+
     virtual ~hit_sorter() = default;
 };

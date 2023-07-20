@@ -2,7 +2,6 @@
 #pragma once
 class current_chip
 {
-    public:
-    using chip_type = timepix3; 
-
+public:
+    using chip_type = timepix3;
 };

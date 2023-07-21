@@ -1,6 +1,7 @@
 #pragma once
 #include <functional>
 #pragma once
+//based on the split descriptor, write data to the pipe with the correct index
 template <typename data_type>
 class multi_pipe_writer
 {
@@ -53,7 +54,7 @@ public:
     {
         if (dynamic_cast<trivial_split_descriptor<data_type> *>(split_descriptor_) != nullptr)
         {
-            // delete split_descriptor_; //TODO in this case, we are the owners of the trivial descriptor
+            // delete split_descriptor_; 
         }
         writers_.clear();
     }

@@ -1,18 +1,12 @@
 #pragma once
 #include "default_window_feature_vector.h"
 #include <deque>
+
+//wraps the window feature vector and updates its state
+//allows for differentiation and window management (closing, moving, initializing...)
 template <typename hit_type>
 class default_window_state
 {
-    /*computes :
-        hit frequency
-        energy distribution
-        max energy
-
-
-        variance in x and in y coordinate
-
-    */
     double last_hit_toa_ = 0;
     double first_hit_toa_ = 0;
     double window_time_; // 50ms
@@ -42,7 +36,6 @@ public:
             for (size_t i = 0; double(i) < differential_window_ / window_time_; ++i)
             {
                 previous_vectors_.push_back(feature_vect_copy);
-                // TODO copy feature vector and close it
             }
         }
     }
@@ -54,10 +47,12 @@ public:
     {
         return start_time_;
     }
+    //check if window is already finished
     bool can_add(const hit_type &hit) const
     {
         return hit.toa() <= start_time_ + window_time_;
     }
+    //compute the number of windows that were empty (skipped) from previous hit to current hit
     uint64_t get_empty_count(const hit_type &hit)
     {
         double overtime = hit.toa() - (start_time_ + window_time_);
@@ -73,6 +68,7 @@ public:
     {
         return last_hit_toa_;
     }
+    //moves the window forward and updates the windows for median differentiation
     void move_window()
     {
         if (previous_vectors_.size() > 0)
@@ -88,6 +84,7 @@ public:
     {
         return feature_vector_.is_valid();
     }
+    //close and retrieve nested features vector (optionally, do the differentiation)
     default_window_feature_vector<hit_type> to_feature_vector()
     {
         feature_vector_.close();
@@ -97,6 +94,7 @@ public:
     }
 };
 
+//an example of a simple state which only monitors the window frequency
 template <typename hit_type>
 class window_frequency_state
 {
@@ -133,7 +131,7 @@ public:
         return last_hit_toa_;
     }
 };
-
+//example of another simple state which only monitors energy distribution
 template <typename hit_type>
 class energy_dist_state
 {

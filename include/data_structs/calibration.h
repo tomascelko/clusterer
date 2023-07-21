@@ -6,8 +6,10 @@
 #include <iostream>
 #include <cmath>
 #pragma once
+//object which is capable of converting ToT in ticks to deposited enegy in keV
 class calibration
 {
+    //the files with constants required for energy computation
     std::vector<std::vector<double>> a_;
     std::vector<std::vector<double>> b_;
     std::vector<std::vector<double>> c_;
@@ -57,7 +59,6 @@ class calibration
 public:
     calibration(const std::string &calib_folder, const coord &chip_size)
     {
-        // TODO make class path to encapsulate string and abstract between unix and windows paths
         std::string formatted_folder;
         formatted_folder = has_last_folder_separator(calib_folder) ? calib_folder : add_last_folder_separator(calib_folder);
         load_calib_vector(formatted_folder + std::string(a_suffix), chip_size, a_);
@@ -65,7 +66,7 @@ public:
         load_calib_vector(formatted_folder + std::string(c_suffix), chip_size, c_);
         load_calib_vector(formatted_folder + std::string(t_suffix), chip_size, t_);
     }
-
+    //does the conversion from ToT to E[keV]
     double compute_energy(short x, short y, double tot)
     {
         double a = a_[y][x];

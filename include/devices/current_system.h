@@ -5,11 +5,12 @@
 #elif __linux__ || __unix__
 #include "unistd.h"
 #endif
-
+//platform specific code which checks how much RAM is available
 class current_system
 {
     static long system_memory()
     {
+        //TODO
     }
 
     static long free_memory()

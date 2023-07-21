@@ -16,6 +16,7 @@
 #include "../../benchmark/measuring_clock.h"
 #include <deque>
 #include <list>
+//a simple temporal clusterer, which only groups hits based on a temporal neighborhood
 template <template <class> typename cluster>
 class temporal_clusterer : public i_simple_consumer<mm_hit>,
                            public i_multi_producer<cluster<mm_hit>>
@@ -47,12 +48,15 @@ public:
         reader_.read(hit);
         while (hit.is_valid())
         {
+            //compute the time difference with previous hit
             double dt = hit.toa() - last_hit_toa_;
+            //add hit to currently open cluster
             if (dt < max_clustering_dt_)
             {
                 last_hit_toa_ = hit.toa();
                 open_cluster.add_hit(std::move(hit));
             }
+            //start a new cluster
             else
             {
                 if (last_hit_toa_ > epsilon)

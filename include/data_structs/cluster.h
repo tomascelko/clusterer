@@ -5,24 +5,19 @@
 #include <iomanip>
 #include <utility>
 #pragma once
-// TODO implement << operator ??? and then also is valid (define invalid cluster)
+//cluster created during clustering, typically data_type = mm_hit
 template <typename data_type>
 class cluster
 {
 protected:
+    //store first and last toa for quick access
     double first_toa_ = std::numeric_limits<double>::max();
     double last_toa_ = -std::numeric_limits<double>::max();
-    // uint64_t line_start_;
     uint64_t hit_count_;
-    // uint64_t byte_start_;
     std::vector<data_type> hits_;
 
 public:
-    static constexpr uint64_t avg_size()
-    {
-        return 20 * data_type::avg_size();
-    }
-
+    //structure for sorting the hits temporally
     struct first_toa_comparer
     {
         auto operator()(const cluster &left, const cluster &right) const
@@ -106,14 +101,7 @@ public:
         }
         return tot_energy;
     }
-    /*void set_byte_start(uint64_t new_byte_start)
-    {
-        byte_start_ = new_byte_start;
-    }
-    void set_line_start(uint64_t new_line_start)
-    {
-        line_start_ = new_line_start;
-    }*/
+    
     void set_first_toa(double toa)
     {
         first_toa_ = toa;
@@ -158,6 +146,10 @@ public:
         }
         return std::make_pair<double, double>(mean_x / hits_.size(), mean_y / hits_.size());
     }
+    static constexpr uint64_t avg_size()
+    {
+        return 20 * data_type::avg_size();
+    }
     void merge_with(cluster<data_type> &&other)
     {
         hits().reserve(hits().size() + other.hits().size());
@@ -166,14 +158,15 @@ public:
         set_first_toa(std::min(first_toa(), other.first_toa()));
         set_last_toa(std::max(last_toa(), other.last_toa()));
     }
-
+    //checks if clusters are equal got a given epsiolon
     bool approx_equals(cluster<data_type> &other)
     {
+        const double epsilon = 0.001;
         if (other.hits().size() != hits().size())
         {
             return false;
         }
-        if (std::abs(other.first_toa() - first_toa()) > 0.1)
+        if (std::abs(other.first_toa() - first_toa()) > epsilon)
             return false;
         auto hit_comparer = [](const data_type &left, const data_type &right)
         {

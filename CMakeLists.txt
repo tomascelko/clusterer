@@ -74,9 +74,3 @@ foreach(FILE ${FILES_TO_COPY})
         "${FILE}"
         "./bin")
 endforeach()
-
-
-
-
-
-

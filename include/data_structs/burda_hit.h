@@ -3,14 +3,19 @@
 #include <iostream>
 #include "../utils.h"
 #pragma once
+//a memory efficient hit information format, resulting from Katherine readout
+//however, it is difficult to analyze it directly
 class burda_hit
 {
+    //linearized spatial coordinate of a pixel
     uint16_t linear_coord_;
+    //number of ticks of the slow clock
     int64_t toa_;
+    //number of ticks of te fast clock
     short fast_toa_;
+    //time over threshold in ticks
     int16_t tot_; // can be zero because of chip error, so we set invalid value to -1
 public:
-    // TODO create producer of burda hits (burda reader) instead of burda hit  class reading from stream
     burda_hit(uint16_t linear_coord, int64_t toa, short fast_toa, int16_t tot) : linear_coord_(linear_coord),
                                                                                  toa_(toa),
                                                                                  fast_toa_(fast_toa),
@@ -18,7 +23,6 @@ public:
     burda_hit(std::istream *in_stream)
     {
         toa_ = -1;
-        // TODO call skip comment before each read (now causes error)
         io_utils::skip_comment_lines(*in_stream);
         if (in_stream->peek() == EOF)
             return;
@@ -99,11 +103,13 @@ public:
         return !(*this < other || other < *this);
     }
 };
+//serialization of the hit
 std::ostream &operator<<(std::ostream &os, const burda_hit &hit)
 {
     os << hit.linear_coord() << " " << hit.toa() << " " << hit.fast_toa() << " " << hit.tot();
     return os;
 }
+//deserialization of the hit
 std::istream &operator>>(std::istream &is, burda_hit &hit)
 {
 

@@ -9,8 +9,10 @@
 #include "../execution/model_runner.h"
 #include "../experiments/performance/performance_test.h"
 #include "../utils.h"
+//class which handles parsing of command line arguments
 class argument_parser
 {
+    //cmd line options with modes
     const std::string HELP_OPTION_STR = "--help";
     const std::string NODE_ARGS_OPTION_STR = "--args";
     const std::string CALIB_OPTION_STR = "--calib";
@@ -28,6 +30,7 @@ class argument_parser
     std::string path_to_binary_;
 
 private:
+    //parse the node_args file
     node_args load_node_args(const std::string &node_arg_filename)
     {
         node_args args;
@@ -43,8 +46,10 @@ private:
         while (std::getline(node_args_stream, line))
         {
             auto stripped_line = io_utils::strip(line);
+            //skip empty lines
             if (stripped_line == "")
                 continue;
+            //the line contains node property
             if (stripped_line[0] == property_mark)
             {
                 if (current_node == "")
@@ -55,6 +60,7 @@ private:
                 auto value = io_utils::strip(key_value_pair.substr(delim_pos + 1));
                 args[current_node][key] = value;
             }
+            //the line contains name of the node
             else
             {
                 current_node = stripped_line;
@@ -82,6 +88,7 @@ private:
         std::cout << "--merge_type <one of 'none', 'simple', 'single_layer', 'tree' or multioutput>" << std::endl;
         std::cout << "  ->defaults to 'single_layer'" << std::endl;
     }
+    //retrieves command line argument by option(key)
     std::string parse_by_key(const std::string &key, const std::vector<std::string> args) const
     {
         bool found_key = false;
@@ -106,7 +113,7 @@ private:
             throw std::invalid_argument("The value for required argument '" + key + "'was not found");
         }
     }
-
+    //verify that file exists
     void check_existence(const std::string &file) const
     {
         if (!std::filesystem::exists(file))
@@ -114,6 +121,7 @@ private:
             throw std::invalid_argument("The file '" + file + "' does not exist");
         }
     }
+    //parse output folder from cmd line
     std::string get_output_folder(const std::vector<std::string> &args) const
     {
 
@@ -128,6 +136,7 @@ private:
         }
         return output_folder;
     }
+    //parse core count from cmd line
     uint32_t get_core_count(const std::vector<std::string> &args) const
     {
         uint32_t core_count = 4;
@@ -150,7 +159,7 @@ private:
         }
         return core_count;
     }
-
+    //parse clustering type (the type of clustering node)
     model_runner::clustering_type get_clustering_type(const std::vector<std::string> &args) const
     {
         if (std::find(args.begin(), args.end(), CLUSTERING_TYPE_OPTION_STR) == args.end())
@@ -177,6 +186,7 @@ private:
             throw std::invalid_argument("Given clustering type '" + clustering_type + "' was not found");
         }
     }
+    //parse merging architecture
     model_runner::model_name get_model_arch(const std::vector<std::string> &args) const
     {
         if (std::find(args.begin(), args.end(), MERGE_TYPE_OPTION_STR) == args.end())
@@ -207,6 +217,7 @@ private:
             throw std::invalid_argument("Given model type '" + merge_type + "' was not found");
         }
     }
+    //parse all cmd line arguments
     void parse(const std::vector<std::string> &args)
     {
         if (args.size() == 0)
@@ -286,6 +297,7 @@ private:
 
 public:
     argument_parser(const std::string &path_to_binary) : path_to_binary_(path_to_binary) {}
+    //wrapper around the parse method
     void try_parse_and_run(const std::vector<std::string> &args)
     {
         try

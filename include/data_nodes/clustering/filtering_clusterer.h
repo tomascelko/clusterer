@@ -1,7 +1,7 @@
 #include "clusterer.h"
 #pragma once
-// #include "../data_structs/mm_hit.h"
-template <typename mm_hit> // care, about unfinished energz cluster scope
+//simple energy hit based clusterer, not used in pracitce
+template <typename mm_hit> 
 class energy_filtering_clusterer : public i_simple_consumer<mm_hit>, public i_simple_producer<cluster<mm_hit>>
 {
 protected:
@@ -230,8 +230,6 @@ protected:
             hit_buffer_.pop_front(); // we can remove the hit from buffer,
         }                            // as it is now located inside of a unfinished clusters data structure
 
-        // TODO when to start ignoring again ? set toa_crit_interval_end_
-        // TODO try buffered printer
     }
     void write_remaining_clusters()
     {
@@ -258,7 +256,7 @@ public:
         write_remaining_clusters();
         this->writer_.write(cluster<mm_hit>::end_token()); // write empty cluster as end token
         this->writer_.flush();
-        // std::cout << "CLUSTERER ENDED -------------------" << std::endl;
+        
     }
     energy_filtering_clusterer() : pixel_lists_(MAX_PIXEL_COUNT),
                                    unfinished_clusters_count_(0),

@@ -1,9 +1,14 @@
 #include "data_reader.h"
 #include "../../utils.h"
 #pragma once
+//reader capable of offsetting hits and modifying frequency of data stream
+
 template <typename data_type, typename istream_type>
 class repeating_data_reader : public data_reader<data_type, istream_type>
 {
+    //a reference to the datatype
+    //instead of sorting data types, we sort only references (for quick searching)
+    //this way we preserve the unsortedness in the real data
     struct data_type_wrapper_reference
     {
         data_type data;
@@ -26,6 +31,7 @@ class repeating_data_reader : public data_reader<data_type, istream_type>
     std::unique_ptr<buffer_type> buffer_;
 
     std::vector<data_type> rep_buffer_;
+    //auxiliary fileds used for frequency scaling of the hits
     std::vector<data_type_wrapper_reference> rep_buffer_sorted_;
     std::unique_ptr<burda_to_mm_hit_adapter<mm_hit>> calibrator_;
     std::unique_ptr<pixel_list_clusterer<cluster>> clusterer_;
@@ -34,6 +40,7 @@ class repeating_data_reader : public data_reader<data_type, istream_type>
     {
         buffer_ = std::move(buffer);
     }
+    
     void offset_matching_hit(const mm_hit &hit, double new_time)
     {
         auto reverse_converted_hit = calibrator_->reverse_incomplete_convert_hit(hit);
@@ -44,8 +51,10 @@ class repeating_data_reader : public data_reader<data_type, istream_type>
         short fast_ticks = std::round((slow_ticks * calibrator_->slow_clock_dt - new_time) / calibrator_->fast_clock_dt);
         rep_buffer_[it->index].update_time(slow_ticks, fast_ticks);
     }
+
     void squeeze_hits_in_buffer(std::vector<cluster<mm_hit>> &clusters)
     {
+        //loop over clusters
         for (auto &cluster : clusters)
         {
             cluster.temporal_sort();
@@ -53,10 +62,15 @@ class repeating_data_reader : public data_reader<data_type, istream_type>
             double new_timestamp = (1 / freq_multiplier_) * first_hit.toa();
             for (auto &hit : cluster.hits())
             {
+                //finds matching burda hit in the buffer
+                //and scales it such that the cluster timespan is preserved
                 offset_matching_hit(hit, new_timestamp + hit.time() - first_hit.time());
             }
         }
     }
+    //runs the clustering on hits, 
+    //in order to find first hit in cluster and do the frequency scaling
+    //while preserving cluster timespan
     void run_clustering()
     {
         node_args args;
@@ -87,30 +101,33 @@ class repeating_data_reader : public data_reader<data_type, istream_type>
     }
     void init_read_data()
     {
+        //read the header
         io_utils::skip_bom(*this->input_stream_.get());
         io_utils::skip_comment_lines(*this->input_stream_.get());
-        /*this->reading_buffer_ = this->buffer_a_.get();
-        bool should_continue = this->read_data();
-        store_buffer(std::move(this->buffer_a_));
-        */
+
         data_type data;
         *this->input_stream_ >> data;
         uint64_t processed_count = 0;
         if (buffer_size_ > 0)
             rep_buffer_.reserve(buffer_size_);
+        //fill the repetition buffer
         while (data.is_valid() && (processed_count < buffer_size_ || buffer_size_ <= 0))
         {
             rep_buffer_.emplace_back(data);
             *this->input_stream_ >> data;
             ++processed_count;
         }
+        //if frequency scaling is desired, clustering needs to be done first
+        //to preserve cluster timespan
         if (freq_multiplier_ != 1)
             run_clustering();
     }
+    //move hit by given offset
     data_type offset_hit(const data_type &hit, uint64_t offset)
     {
         return data_type{hit.linear_coord(), static_cast<int64_t>(std::round(hit.tick_toa() + offset)), hit.fast_toa(), hit.tot()};
     }
+    //initialize clustering for frequency scaling
     void initialize_internal_clustering(const std::string &calib_folder, const node_args &args)
     {
         const double EPSILON = 0.000001;
@@ -153,9 +170,10 @@ public:
         // buffer_type & rep_buffer = (*buffer_);
 
         uint64_t toa_offset = (rep_buffer_[rep_buffer_.size() - 1].tick_toa() - rep_buffer_[0].tick_toa());
-
+        //repetition of the buffer
         for (uint32_t rep_index = 0; rep_index < repetition_count_; ++rep_index)
         {
+            //loop over the buffer
             for (uint32_t hit_index = 0; hit_index < rep_buffer_.size(); ++hit_index)
             {
                 this->writer_.write(offset_hit(rep_buffer_[hit_index], toa_offset * rep_index));
@@ -165,6 +183,5 @@ public:
         }
         this->writer_.close();
 
-        // std::cout << "REPEATING READER ENDED ----------" << std::endl;
     }
 };

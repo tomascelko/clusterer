@@ -1,5 +1,7 @@
 class dataflow_controller;
 #pragma once
+//interface which defines a node which produces data and can be controlled from outside
+//additionally, it can use the controller to control itself
 class i_controlable_source
 {
 public:

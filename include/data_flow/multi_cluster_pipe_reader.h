@@ -1,5 +1,6 @@
 #include "pipe.h"
 #pragma once
+//reads input from multiple pipelines, megrging according to the .time() method of each object
 template <typename data_type>
 class multi_pipe_reader
 {
@@ -62,4 +63,3 @@ public:
         return true;
     }
 };
-// TODO multi cluster pipe writer

@@ -1,5 +1,7 @@
 #include <list>
 #include <vector>
+//an interface defining a clusterer which can be used within another clusterer
+//by allowing peek into the unfinished clusters
 template <typename unfinished_cl_type>
 class i_public_state_clusterer
 {

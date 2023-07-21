@@ -11,10 +11,13 @@
 #include <iostream>
 #include <string>
 #include <sstream>
+//a feature vector which contains a set of features aggregted for a timewindow
+//it is also used to initiate clustering in trigger  architecture
 template <typename hit_type>
 class default_window_feature_vector
 {
     static constexpr uint16_t ENERGY_DISTR_BIN_COUNT_ = 17;
+    //thresholds for distributions of pixel energy in keV
     static constexpr std::array<double, ENERGY_DISTR_BIN_COUNT_ - 1> ENERGY_DISTR_UPP_THL_ = {
         5.,
         10.,
@@ -33,11 +36,13 @@ class default_window_feature_vector
         600.,
         1000.,
     };
+    //dt for temporal clustering feature
     static constexpr double CLUSTERING_DT_ = 200.;
     double total_energy_ = 0.;
     double max_e_ = 0.;
     int64_t x_sum_ = 0;
     int64_t y_sum_ = 0;
+    //squared sums for computation of coordinate variance
     int64_t x2_sum_ = 0;
     int64_t y2_sum_ = 0;
     int64_t cluster_count_lower_bound_ = 0;
@@ -64,9 +69,9 @@ public:
         return start_time_;
     }
     bool closed = false;
+    //close the window = no additional hits will be added to this instance
     void close()
     {
-
         scalar_features[attribute_names()[0]] = start_time_;
         scalar_features[attribute_names()[1]] = mean_x();
         scalar_features[attribute_names()[2]] = mean_y();
@@ -84,7 +89,7 @@ public:
     default_window_feature_vector(double start_time = 0) : start_time_(start_time)
     {
     }
-
+    //normalize the vector so the sum of all elements is equal to 1
     std::vector<double> normalized(const std::vector<double> &vect)
     {
         std::vector<double> result;
@@ -102,7 +107,7 @@ public:
         }
         return result;
     }
-
+    //convert this object to feature vector of real numbers
     std::vector<double> to_vector(bool replace_nan = false) const
     {
         std::vector<double> result;
@@ -110,7 +115,7 @@ public:
         {
             if (scalar_features.find(attribute_name) != scalar_features.end())
             {
-                // TODO remove start toa feature
+                
                 result.push_back(scalar_features.at(attribute_name));
             }
             else if (vector_features.find(attribute_name) != vector_features.end())
@@ -128,6 +133,7 @@ public:
             }
         return result;
     }
+    //differentiate current instance (after closing) with median of previous windows
     default_window_feature_vector<hit_type> diff_with_median(const std::deque<default_window_feature_vector<hit_type>> &previous_vectors)
     {
         using vector_type = std::vector<double>;
@@ -156,7 +162,6 @@ public:
             {
                 vector_type current_value = std::get<vector_type>(get_value(attribute_name));
                 diff_vector.set_vector(attribute_name, current_value);
-                // TODO
             }
             else
             {
@@ -176,6 +181,7 @@ public:
         diff_vector.hit_count = hit_count;
         return diff_vector;
     }
+    //check if data is not end token
     bool is_valid() const
     {
         return hit_count >= 0;
@@ -194,6 +200,7 @@ public:
         end_fw.hit_count = -1;
         return end_fw;
     }
+    //serialize the closed window vector feature
     void write_vector(std::ofstream &stream, const std::vector<double> &vector_attribute) const
     {
         stream << "[";
@@ -205,6 +212,7 @@ public:
 
         // return "[ " + std::accumulate(energy_distrib_str.begin(), energy_distrib_str.end(), std::string(","))  + " ]";
     }
+    //deserialize the window vector feature from file
     template <typename stream_type>
     void read_vector(stream_type &stream, std::vector<double> &result)
     {
@@ -228,25 +236,13 @@ public:
                 result.push_back(value);
         }
     }
-    /*std::vector<std::string> str() const
-    {
-        return std::vector<std::string>{
-            std::to_string(start_time_ / 1000000),
-            std::to_string(mean_x()),
-            std::to_string(mean_y()),
-            std::to_string(std_x()),
-            std::to_string(std_y()),
-            std::to_string(hit_count),
-            std::to_string(total_energy_),
-            std::to_string(max_e_),
-            std::to_string(cluster_count_lower_bound_),
-            distr_to_string()};
-    }*/
+    //names of all attributes in a vector
     static std::vector<std::string> attribute_names()
     {
         return std::vector<std::string>{"start_toa[ms]", "mean_x[px]", "mean_y[px]", "std_x[px]", "std_y[px]",
                                         "hit_count[]", "total_energy[keV]", "max_energy_hit[keV]", "mean_temp_cluster_size[]", "mean_temp_cluster_energy[keV]", "e_distrib[[]]"};
     }
+    //setters and getters for the features
     void set_scalar(const std::string &key, double value)
     {
         scalar_features[key] = value;
@@ -267,7 +263,7 @@ public:
     {
         return feature.find("[[") != std::string::npos;
     }
-
+    //uniform getter to all features
     std::variant<double, std::vector<double>> get_value(const std::string &feature_name) const
     {
         std::variant<double, std::vector<double>> result;
@@ -277,6 +273,7 @@ public:
             result = scalar_features.at(feature_name);
         return result;
     }
+    //add hit to all statistics of the window
     void update(const hit_type &hit)
     {
 
@@ -339,6 +336,7 @@ public:
         return start_time_;
     }
 };
+//serialize the whole feature vector to a file
 template <typename data_type, typename stream_type>
 stream_type &operator<<(stream_type &fstream, const default_window_feature_vector<data_type> &window_feature_vect)
 {
@@ -360,7 +358,7 @@ stream_type &operator<<(stream_type &fstream, const default_window_feature_vecto
     fstream << std::endl;
     return fstream;
 }
-
+//deserialize the whole vector from a file
 template <typename data_type, typename stream_type>
 stream_type &operator>>(stream_type &fstream, default_window_feature_vector<data_type> &window_feature_vect)
 {
@@ -390,15 +388,5 @@ stream_type &operator>>(stream_type &fstream, default_window_feature_vector<data
         }
     }
     window_feature_vect.closed = true;
-
-    /*window_feature_vect.x_sum_ = hit_count > 0 ? mean_x * hit_count : 0;
-    window_feature_vect.y_sum_ = hit_count > 0 ? mean_y * hit_count : 0;
-    window_feature_vect.x2_sum_ = hit_count >= 2 ? (std_x * std_x + (mean_x * mean_x)) * hit_count : 0;
-    window_feature_vect.y2_sum_ = hit_count >= 2 ? (std_y * std_y + (mean_y * mean_y)) * hit_count : 0;
-
-    std::string e_str_distr = fstream.readLine().toStdString();
-    std::cout << e_str_distr << " is the distribution str" << std::endl;
-    window_feature_vect.set_distr_from_str(e_str_distr);
-    */
     return fstream;
 };

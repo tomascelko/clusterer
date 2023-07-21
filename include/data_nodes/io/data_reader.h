@@ -5,11 +5,14 @@
 #include "../../data_flow/dataflow_package.h"
 #include "../../utils.h"
 #pragma once
+//a node which reads the data from a stream using >> operator
 template <typename data_type, typename istream_type>
 class data_reader : public i_multi_producer<data_type>, public i_controlable_source
 {
 protected:
     using buffer_type = data_buffer<data_type>;
+    //sleep duration after the whole computational graph cannot load more data to RAM
+    //after this time, the memory check is repeated
     uint32_t sleep_duration_;
     std::unique_ptr<buffer_type> buffer_a_;
     std::unique_ptr<buffer_type> buffer_b_;
@@ -21,12 +24,14 @@ protected:
     bool paused_ = false;
     dataflow_controller *controller_;
     const uint32_t PIPE_CHECK_INTERVAL = 1000000;
+    //change open buffer and a full buffer
     void swap_buffers()
     {
         buffer_type *temp_buffer = reading_buffer_;
         reading_buffer_ = ready_buffer_;
         ready_buffer_ = temp_buffer;
     }
+    //load the data into a buffer
     bool read_data()
     {
         reading_buffer_->set_state(buffer_type::state::processing);
@@ -55,23 +60,16 @@ public:
     data_reader(node_descriptor<data_type, data_type> *node_descriptor,
                 const std::string &file_name, const node_args &args) : input_stream_(std::move(std::make_unique<istream_type>(file_name))),
                                                                        sleep_duration_(args.get_arg<double>(name(), "sleep_duration_full_memory")),
-                                                                       // max_buffer_size_(buffer_size),
-                                                                       // buffer_a_(std::make_unique<buffer_type>(buffer_size)),
-                                                                       // buffer_b_(std::make_unique<buffer_type>(buffer_size)),
                                                                        i_multi_producer<data_type>(node_descriptor->split_descr)
     {
         check_input_stream(file_name);
     }
     data_reader(const std::string &file_name, const node_args &args) : input_stream_(std::move(std::make_unique<istream_type>(file_name))),
                                                                        sleep_duration_(args.get_arg<double>(name(), "sleep_duration_full_memory")),
-                                                                       // max_buffer_size_(buffer_size),
-                                                                       // buffer_a_(std::make_unique<buffer_type>(buffer_size)),
-                                                                       // buffer_b_(std::make_unique<buffer_type>(buffer_size)),
                                                                        i_multi_producer<data_type>(new trivial_split_descriptor<data_type>())
     {
         check_input_stream(file_name);
-        // buffer_a_->reserve(buffer_size);
-        // buffer_b_->reserve(buffer_size);
+        
     }
 
     virtual void pause_production() override
@@ -90,6 +88,7 @@ public:
     {
         return "reader";
     }
+    //check if reading produces too much data to fit to memory
     void perform_memory_check()
     {
         if (total_hits_read_ % PIPE_CHECK_INTERVAL == 0)
@@ -102,6 +101,7 @@ public:
             }
         }
     }
+    //verify stream is opened
     void check_input_stream(const std::string &filename)
     {
         if (!input_stream_->is_open())
@@ -115,6 +115,7 @@ public:
         auto istream_optional = dynamic_cast<std::istream *>(input_stream_.get());
         if (istream_optional != nullptr)
         {
+            //skip file header
             io_utils::skip_bom(*istream_optional);
             io_utils::skip_comment_lines(*istream_optional);
         }
@@ -128,6 +129,7 @@ public:
             ++total_hits_read_;
             perform_memory_check();
         }
+        this->writer_.close();
         /*reading_buffer_ = buffer_a_.get();
         bool should_continue = read_data();
         //ready_buffer_ = buffer_a_.get();
@@ -153,7 +155,6 @@ public:
             this->writer_.write(ready_buffer_[i]);
         }
         this->writer_.flush(); */
-        this->writer_.close();
         // std::cout << "READER ENDED ----------" << std::endl;
     }
     bool read_next()

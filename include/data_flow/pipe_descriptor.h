@@ -1,13 +1,15 @@
 #include "../data_structs/cluster.h"
 #include <cmath>
 #pragma once
+
+//a base class of all descriptors, provides only the number of pipes (used for merging/splitting)
 class abstract_pipe_descriptor
 {
 public:
     virtual uint32_t pipe_count() = 0;
     virtual ~abstract_pipe_descriptor() = default;
 };
-
+//describes how to split the data (maps data to pipe index)
 template <typename data_type>
 class split_descriptor : public virtual abstract_pipe_descriptor
 {
@@ -15,7 +17,7 @@ public:
     virtual uint32_t get_pipe_index(const data_type &data) = 0;
     virtual ~split_descriptor() = default;
 };
-
+//describes if the data was close to border and if it can be processed 
 template <typename data_type>
 class merge_descriptor : public virtual abstract_pipe_descriptor
 {
@@ -25,6 +27,7 @@ public:
     virtual ~merge_descriptor() = default;
 };
 
+//base class for the node decriptor, contains only descriptor id
 class abstract_node_descriptor
 {
     std::string descr_id;
@@ -33,7 +36,8 @@ public:
     abstract_node_descriptor(const std::string &descr_id = "default_descr_id") : descr_id(descr_id){};
     virtual ~abstract_node_descriptor() = default;
 };
-
+//this class is passed to each node of the graph, it contains both split and merge descriptor
+//split/merge can be trivial 
 template <typename merge_type, typename split_type>
 struct node_descriptor : public abstract_node_descriptor
 {
@@ -51,6 +55,7 @@ struct node_descriptor : public abstract_node_descriptor
     }
 };
 
+//a base class for the descriptor which implements both splitting and merging (check if item is on border)
 template <typename merge_type, typename split_type>
 class merge_split_descriptor : public split_descriptor<split_type>,
                                public merge_descriptor<merge_type>
@@ -71,6 +76,7 @@ public:
     virtual ~merge_split_descriptor() = default;
 };
 
+//descriptor which contains splitting of clusters based on fixed time window
 template <typename hit_type>
 class temporal_clustering_descriptor : public merge_split_descriptor<cluster<hit_type>, hit_type>
 {
@@ -104,6 +110,7 @@ public:
     virtual ~temporal_clustering_descriptor() = default;
 };
 
+//split decriptor for a single pipeline
 template <typename data_type>
 class trivial_split_descriptor : public split_descriptor<data_type>
 {
@@ -120,6 +127,7 @@ public:
     virtual ~trivial_split_descriptor() = default;
 };
 
+//splits hits temporally
 template <typename data_type>
 class temporal_hit_split_descriptor : public split_descriptor<data_type>
 {
@@ -144,6 +152,7 @@ public:
     virtual ~temporal_hit_split_descriptor() = default;
 };
 
+//merges hits from a single pipeline
 template <typename data_type>
 class trivial_merge_descriptor : public merge_descriptor<data_type>
 {
@@ -166,6 +175,7 @@ public:
     virtual ~trivial_merge_descriptor() = default;
 };
 
+//descriptor for multilevel merging of clusters
 template <typename cluster_type>
 class temporal_merge_descriptor : public merge_split_descriptor<cluster_type, cluster_type>
 {
@@ -206,6 +216,7 @@ public:
     virtual ~temporal_merge_descriptor() = default;
 };
 
+//splits the clusters between two merging workers
 template <typename cl_type>
 class clustering_two_split_descriptor : public split_descriptor<cl_type>
 {

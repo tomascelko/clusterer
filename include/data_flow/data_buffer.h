@@ -2,7 +2,8 @@
 #include <memory>
 #include <iostream>
 #pragma once
-// TODO handle termination condition
+//represents a buffer of given data type,
+//can be used to increase effectivity of the data transfer
 template <typename data_type>
 class data_buffer
 {

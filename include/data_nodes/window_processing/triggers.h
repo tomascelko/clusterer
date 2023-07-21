@@ -1,7 +1,8 @@
 #include "../../data_flow/dataflow_package.h"
 #include "window_state.h"
 #include "onnxruntime_cxx_api.h"
-
+//base class of trigger, handles automatic untriggering
+//and stores time of the last trigger
 template <typename hit_type, typename feature_vector_type>
 class abstract_window_trigger
 {
@@ -9,7 +10,7 @@ protected:
     double last_triggered_ = 0;
     double untrigger_time_; // in ns, set to 400 miliseconds (2 windows)
 public:
-    abstract_window_trigger(double untrigger_time = 200000000) : untrigger_time_(untrigger_time)
+    abstract_window_trigger(double untrigger_time = 400000000) : untrigger_time_(untrigger_time)
     {
     }
     virtual bool trigger(const feature_vector_type &new_state)
@@ -28,7 +29,7 @@ public:
         return new_state.last_hit_toa() - last_triggered_ > untrigger_time_;
     }
 };
-
+//a simple interval trigger, checks if each feature is inside of given intervals
 template <typename hit_type>
 class interval_trigger : public abstract_window_trigger<hit_type, default_window_feature_vector<hit_type>>
 {
@@ -41,6 +42,7 @@ class interval_trigger : public abstract_window_trigger<hit_type, default_window
     uint32_t vector_count_ = 1;
     std::vector<std::map<std::string, interval>> intervals_;
     std::vector<std::string> attribute_names_;
+    //methods for parsing the interval trigger file:
     interval parse_interval_bounds(const std::string &interval_str)
     {
         const char INTERVAL_DELIM = ':';
@@ -94,12 +96,14 @@ class interval_trigger : public abstract_window_trigger<hit_type, default_window
     }
 
 public:
+    //retrieve node args argument and do interval parsing 
     using state_type = default_window_feature_vector<hit_type>;
     interval_trigger(const std::map<std::string, std::string> &args) : abstract_window_trigger<hit_type, default_window_feature_vector<hit_type>>(std::stod(args.at("trigger_time")))
     {
         std::string interval_file = args.at("trigger_file");
         load_intervals(interval_file);
     }
+    //the trigger decision function
     virtual bool should_trigger(const default_window_feature_vector<hit_type> &feat_vector) override
     {
         for (auto &&interval_feature_map : intervals_)
@@ -124,7 +128,8 @@ public:
         return false;
     }
 };
-
+//two templates to handle compatibility with both linux and windows (using SFINAE)
+//because of differend datatypes for onnx library
 template <typename T>
 const T *get_trigger_filename(const std::string &trigger_filename)
 {
@@ -139,6 +144,7 @@ const wchar_t *get_trigger_filename<wchar_t>(const std::string &trigger_filename
     return (const wchar_t *)filename_wide;
 }
 
+//the trigger which wraps serialized onnx model
 template <typename hit_type, typename output_type>
 class onnx_trigger : public abstract_window_trigger<hit_type, default_window_feature_vector<hit_type>>
 {
@@ -228,7 +234,7 @@ public:
             total *= i;
         return total;
     }
-
+    //converts values from std to onnx
     template <typename T>
     Ort::Value vec_to_tensor(std::vector<T> &data, const std::vector<int64_t> &shape)
     {
@@ -239,7 +245,7 @@ public:
     }
 
     using state_type = default_window_feature_vector<hit_type>;
-    // std_log_scaler scaler_;
+    //std_log_scaler scaler_;
     Ort::Env env;
     Ort::SessionOptions session_options;
     std::function<bool(output_type)> trigger_func_;
@@ -248,7 +254,7 @@ public:
     onnx_trigger(const std::map<std::string, std::string> &args, const std::function<bool(output_type)> &trigger_func) : abstract_window_trigger<hit_type, default_window_feature_vector<hit_type>>(std::stod(args.at("trigger_time"))),
                                                                                                                          trigger_func_(trigger_func)
     {
-        // onnxruntime setup
+        //onnxruntime setup
 
         env = Ort::Env(OrtLoggingLevel::ORT_LOGGING_LEVEL_VERBOSE, "example-model-explorer");
 
@@ -284,14 +290,10 @@ public:
             // std::cout << "\t" << output_names.at(i) << " : " << print_shape(output_shapes) << std::endl;
         }
 
-        // Assume model has 1 input node and 1 output node.
         // assert(input_names.size() == 1 && output_names.size() == 1);
-        // Create a single Ort tensor of random numbers
         input_shape = input_shapes;
 
         total_number_elements = calculate_product(input_shape);
-
-        // pass data through model
         input_names_char = std::vector<const char *>(input_names.size(), nullptr);
         output_names_char = std::vector<const char *>(output_names.size(), nullptr);
         std::transform(std::begin(input_names), std::end(input_names), std::begin(input_names_char),
@@ -312,7 +314,7 @@ public:
 
     std::unique_ptr<Ort::Session> session;
     const double TRIGGER_PROB_THRESHOLD = 0.5;
-
+    //trigger decision function, cruns the model inference
     virtual bool should_trigger(const default_window_feature_vector<hit_type> &feat_vector) override
     {
 
@@ -325,41 +327,20 @@ public:
             // input_tensor_values.push_back(-1.);
         }
 
-        // input_tensor_values[]
 
-        /*std::vector<double> input_tensor_values(total_number_elements);
-std::generate(input_tensor_values.begin(), input_tensor_values.end(), [&]
-            { return rand() % 255; });*/
         std::vector<Ort::Value> input_tensors;
         input_tensors.emplace_back(vec_to_tensor<float>(input_tensor_values, input_shape));
 
         // double-check the dimensions of the input tensor
         assert(input_tensors[0].IsTensor() && input_tensors[0].GetTensorTypeAndShapeInfo().GetShape() == input_shape);
-        // std::cout << "\ninput_tensor shape: " << print_shape(input_tensors[0].GetTensorTypeAndShapeInfo().GetShape()) << std::endl;
-        // std::cout << "Running model..." << std::endl;
         try
         {
-            // Ort::Value output(nullptr);
-            // OrtValue * output[2] = {nullptr};
-            // auto start_time = std::chrono::high_resolution_clock::now();
             auto output = session->Run(Ort::RunOptions{nullptr}, input_names_char.data(), input_tensors.data(),
                                        input_names_char.size(), output_names_char.data(), output_names_char.size());
-            // auto end_time = std::chrono::high_resolution_clock::now();
-            // inference_time =  std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
-
-            // std::cout << "Done!" << std::endl;
-            // std::cout << "\n output_tensor shape: " << print_shape(output.GetTensorTypeAndShapeInfo().GetShape()) << std::endl;
-
-            // double-check the dimensions of the output tensors
-            // NOTE: the number of output tensors is equal to the number of output nodes specifed in the Run() call
             assert(output[0].IsTensor());
             auto trigger_type = output[0].GetTypeInfo();
 
             output_type trigger_result = (output[0].GetTensorMutableData<output_type>())[0];
-
-            // std::cout << trigger_prob << std::endl;
-            // if (trigger_result < 0.0)
-            //     std::cout << "triggered" << std::endl;
             return trigger_func_(trigger_result);
         }
         catch (const Ort::Exception &exception)

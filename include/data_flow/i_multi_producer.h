@@ -1,5 +1,7 @@
 #include "i_simple_producer.h"
 #pragma once
+//and example implementation of a data producer capable of splitting the data based on
+//the split descriptor
 template <typename data_type>
 class i_multi_producer : public i_data_producer<data_type>
 {

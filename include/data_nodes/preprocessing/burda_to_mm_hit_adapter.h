@@ -9,7 +9,8 @@
 #include "../../devices/current_device.h"
 #include <type_traits>
 #include <cassert>
-
+//converts the burda hit to mm_hit
+//computes energy, and time in nanoseconds
 template <typename mm_hit_type>
 class burda_to_mm_hit_adapter : public i_simple_consumer<burda_hit>, public i_multi_producer<mm_hit_type>
 {
@@ -20,12 +21,14 @@ class burda_to_mm_hit_adapter : public i_simple_consumer<burda_hit>, public i_mu
     uint16_t last_y;
     std::unique_ptr<calibration> calibrator_;
     uint64_t repetition_counter = 0;
+    //an option to ignore repetetive hits (indication of chip failure)
     bool ignore_repeating_pixel = false;
     uint16_t max_faulty_repetition_count = 10;
 
 public:
     const double fast_clock_dt = 1.5625; // nanoseconds
     const double slow_clock_dt = 25.;
+    //compute energy in keV and toa in nanoseconds
     mm_hit_type convert_hit(const burda_hit &in_hit)
     {
         double toa = in_hit.toa();
@@ -37,6 +40,8 @@ public:
         else
             return mm_hit_type(x, y, toa, in_hit.tot());
     }
+    //inverse conversion of hits (mm hit to burda hit),
+    //required for frequency scaling, to locate clustered hits
     burda_hit reverse_incomplete_convert_hit(const mm_hit_type &in_hit)
     {
         int64_t slow_ticks = std::ceil(in_hit.toa() / slow_clock_dt);
@@ -100,6 +105,7 @@ public:
             }
             if (repetition_counter > max_faulty_repetition_count && ignore_repeating_pixel)
             {
+                //optionally ignore suspicious pixels
             }
             else
             {
@@ -116,7 +122,6 @@ public:
             reader_.read(hit);
         }
         this->writer_.close();
-        // std::cout << "ADAPTER ENDED ---------------------" << std::endl;
     }
     virtual ~burda_to_mm_hit_adapter() = default;
 };

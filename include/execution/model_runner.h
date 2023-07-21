@@ -2,6 +2,7 @@
 #include <string>
 #include "executor.h"
 
+//based on the options specified by user, form a model recipe (string)
 class model_runner
 {
 public:
@@ -12,7 +13,6 @@ public:
     {
         SIMPLE_CLUSTERER,
         TRIGGER_SIMPLE_CLUSTERER,
-        TILE_CLUSTERER,
         TRIG_CLUSTERER,
         PAR_WITH_SPLITTER,
         PAR_SIMPLE_MERGER,
@@ -24,7 +24,8 @@ public:
 
         // to be deprecated:
         ENERGY_TRIG_CLUSTERER,
-        TRIG_BB_CLUSTERER
+        TRIG_BB_CLUSTERER,
+        TILE_CLUSTERER
     };
     enum class clustering_type
     {
@@ -36,6 +37,7 @@ public:
 
 private:
     static constexpr const char *base_arch = "r1bm1,bm1s1";
+    //convert clustering type to string
     static std::string get_clustering_str(clustering_type clustering)
     {
         switch (clustering)
@@ -52,6 +54,7 @@ private:
             throw std::invalid_argument("Invalid clustering type");
         }
     }
+    //based on node args, return the node of split
     static std::string create_split_node(const node_args &args, const std::string &first_node)
     {
 
@@ -70,6 +73,8 @@ private:
         else
             return "tr";
     }
+    //create the first part of computational graph recipe
+    //from reader up to clusterer
     static std::string create_split_arch(const node_args &args, const std::string &first_node,
                                          const std::string &cluster_node, uint32_t core_count)
     {
@@ -103,6 +108,7 @@ private:
 
         return arch;
     }
+    //create desccriptors for data splitting for each node where non-trivial splitting ocurring 
     static std::map<std::string, abstract_node_descriptor *> create_split_descriptors(const node_args &args,
                                                                                       uint32_t core_count)
     {
@@ -147,6 +153,8 @@ private:
         }
         throw std::invalid_argument("");
     }
+    //creates the second part of the model graph
+    //includes merging, and outputting
     static void add_merge_arch(model_name model_type, std::string &arch,
                                std::map<std::string, abstract_node_descriptor *> &descriptors,
                                const std::string &clustering_node, const std::string &output_node, uint32_t core_count)
@@ -202,6 +210,7 @@ private:
         else
             throw std::invalid_argument("Specified model does not support explicit paralelism");
     }
+    //facilitates the construction of the whole architecture recipe for data-based split architectures
     static architecture_type build_parallel_arch(model_name model_type,
                                                  const std::string &first_node, uint16_t core_count,
                                                  const std::string &output_node, const node_args &args, const std::string &clusterer_node = "sc")
@@ -214,11 +223,13 @@ private:
     }
 
 public:
+    //the main method of the runner, based on the model type, run the approperiate 
+    //model building method
     template <typename executor_type, typename... clustering_args>
     static std::vector<std::string> run_model(model_name model_type, executor_type *executor,
                                               uint16_t core_count, node_args &args, bool debug_mode = false, clustering_type clustering_alg_type = clustering_type::STANDARD)
     {
-        std::cout << "Building the architecture..." << std::endl;
+        //std::cout << "Building the architecture..." << std::endl;
         std::string validation_arch = "rc1cv1,rc2cv1";
 
         auto multi_merge_descr_11 = new temporal_merge_descriptor<cluster<mm_hit>>(2, 1);

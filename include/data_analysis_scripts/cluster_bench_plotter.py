@@ -4,36 +4,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 from enum import Enum
-TABLE_SIZE = 11
-SAMPLE_COUNT = 5
+
+# After passing a data file with means and standard deviations of execution time,
+# create a plot which visualizes the performance
 
 
-def plot_runtime(filename, labels, divide=False, axis_y="total runtime [ms]"):
-
-    np_data = np.genfromtxt(filename, delimiter=",")
-    print(np_data)
-    xs = np_data[0:TABLE_SIZE, 0]
-    ys_cores = np.mean(np_data[:, 1:], axis=1)
-    print(ys_cores)
-    for index, label in enumerate(labels):
-        ys = ys_cores[index * TABLE_SIZE: (index+1) * TABLE_SIZE]
-        plt.plot(xs, np.divide(xs, ys) *
-                 1000 if divide else ys, label=str(label))
-    plt.xlabel("dataset size [milions of hits]")
-    plt.ylabel(axis_y)
-    plt.gca().set_ylim(left=0)
-    plt.legend()
-    plt.show()
-
-
-# plot_runtime("output/benchmark_results/BENCHMARK_CORE_COUNT", ["20 split", "16 split", "14 split", "12 split", "10 split", "8 split", "6 split", "4 split", "3 split", "2split"])
-
-# plot_runtime("output/benchmark_results/BENCHMARK_CORE_COUNT",
-#             ["20 split", "16 split", "14 split", "12 split", "10 split", "8 split", "6 split", "4 split", "3 split", "2 split"],
-#             True, axis_y= "clustering speed [MHit/s]")
-# plot_runtime("output/benchmark_results/BENCHMARK_WRITER", [ "8 split parallel write", "4 split parallel write", "4 split serial write"], True, axis_y= "clustering speed [MHit/s]")
-# plot_runtime("output/benchmark_results/BENCHMARK FREQUENCY", ["16Mhit/s", "8MHit/s", "4MHit/s", "2MHit/s"], True, axis_y= "clustering speed [MHit/s]")
-# plot_runtime("output/benchmark_results/BENCHMARK_SPLIT_NODE", ["reader split", "calibrator split", "sorter split", "no split"], True, axis_y= "clustering speed [MHit/s]")
 class PlotType(Enum):
     XY_PLOT = 1,
     BAR_PLOT = 2
@@ -47,7 +22,6 @@ def plot_bar_transposed(test, test_name):
     plt.figure(figsize=(14, 5))
     plt.title(test_name)
     ys = np.array(test["x_values"])
-    # plt.xlabel(test["xlabel"])
     plt.xlabel(test["ylabel"])
     particle_index = 0
     for (particle_name) in test["data"]:
@@ -104,7 +78,6 @@ def parse_benchmark_files(filename):
     parsed_data = {}
     test_labels = []
     model_labels = []
-    # for each comparison (freq,split node...), create np array and an array of labels collected from #comments
     with open(filename, "r") as filestream:
         lines = filestream.readlines()
         current_test = None
@@ -144,14 +117,6 @@ def parse_benchmark_files(filename):
                 values = [float(value) for value in data.split(DATA_SEPARATOR)]
                 parsed_data[current_test]["data"][particle].append(values)
     plot_parsed_data(parsed_data)
-
-
-# xy_plottable = parse_benchmark_files("output/benchmark_results/validation_result.txt")
-# xy_plottable = parse_benchmark_files("output/benchmark_results_laptop/validation_result4.txt")
-
-
-# xy_plottable = parse_benchmark_files("output/benchmark_results_server/FINAL_PLOTS.txt")
-# xy_plottable = parse_benchmark_files("output/benchmark_results_laptop/FINAL_PLOTS.txt")
 
 
 property_header = ["diameter", "timespan"]

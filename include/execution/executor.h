@@ -8,6 +8,7 @@
 #include "../mm_stream.h"
 #include "../benchmark/model_factory.h"
 #include "../data_structs/node_args.h"
+//class which loads inut data, creates the dataflow graph and runs the execution
 class model_executor
 {
     std::vector<file_path> data_files_;
@@ -23,6 +24,7 @@ class model_executor
     };
     calib_type calibration_mode_;
     std::string output_dir_;
+    //scan folder for all possible datasets
     void load_all_datasets(const std::string &data_folder)
     {
         std::stringstream ss;
@@ -34,6 +36,7 @@ class model_executor
                 data_files_.emplace_back(file_path(file.path().string()));
             }
     }
+    //scan folder for all ppossible calibration files
     void load_all_calib_files(const std::string &calib_folder)
     {
         std::stringstream ss;
@@ -45,6 +48,7 @@ class model_executor
                 calib_folders_.emplace_back(file_path(file.path().string()));
             }
     }
+    //find calib folder based on a substring match
     std::string auto_find_calib_file(const file_path &data_path)
     {
         std::vector<std::string> matching_files;
@@ -65,6 +69,7 @@ class model_executor
             throw std::invalid_argument("too many calibration files were found (ambigiouous) for file: " + data_path.as_absolute());
         }
     }
+    //convert paths from relative to absolute
     std::vector<std::string> data_paths_as_absolute()
     {
         std::vector<std::string> result;
@@ -100,7 +105,7 @@ class model_executor
     }
 
 public:
-    // burda file reading with calibration
+    //constructiors corresponding to possible calibration modes
     model_executor(const std::string &folder, const std::string &calib_folder,
                    const std::string &output_dir) : // automatic names based search of calib file
                                                     calibration_mode_(calib_type::automatic),
@@ -143,6 +148,9 @@ public:
     {
         return results_;
     }
+    //the main executor method
+    //similar to benchmarker, but no time measurement 
+    //and no statistical repetitions are taking place
     std::vector<std::string> run(architecture_type &&arch, const node_args &args, bool debug = false)
     {
         model_factory factory;

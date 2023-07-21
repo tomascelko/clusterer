@@ -1,6 +1,8 @@
 #include <map>
 #include <string>
 #pragma once
+//the class stores arguments for each node in the computational architecture
+//by default it support four data types of arguments (int, double, bool and string) 
 class node_args
 {
 
@@ -27,21 +29,18 @@ public:
         check_existence_file(node_name, arg_name);
         return args_data_.at(node_name).at(arg_name);
     }
-
+    //safe accessor, throws exception on not_found
     const std::map<std::string, std::string> &at(const std::string &node_name) const
     {
 
         return args_data_.at(node_name);
     }
+    //can be used for modification from outside
     std::map<std::string, std::string> &operator[](const std::string &node_name)
     {
         return args_data_[node_name];
     }
-    void load_from_file(const std::string &filename)
-    {
-        // TODO - not implemented
-    }
-
+    //default values for parameters
     node_args()
     {
         args_data_ = {
@@ -80,23 +79,27 @@ public:
     }
 };
 
+//parse integral argument from string
 template <>
 int node_args::get_arg<int>(const std::string &node_name, const std::string &arg_name) const
 {
 
     return std::stoi(args_data_.at(node_name).at(arg_name));
 };
+//parse integral argument from double
 template <>
 double node_args::get_arg<double>(const std::string &node_name, const std::string &arg_name) const
 {
     return std::stod(args_data_.at(node_name).at(arg_name));
 };
+//parse string argument
 template <>
 std::string node_args::get_arg<std::string>(const std::string &node_name, const std::string &arg_name) const
 {
     check_existence_file(node_name, arg_name);
     return args_data_.at(node_name).at(arg_name);
 };
+//parse boolean argument
 template <>
 bool node_args::get_arg<bool>(const std::string &node_name, const std::string &arg_name) const
 {

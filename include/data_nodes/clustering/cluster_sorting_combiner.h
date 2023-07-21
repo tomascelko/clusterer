@@ -4,6 +4,8 @@
 #include "../../devices/current_device.h"
 #include "../../benchmark/i_time_measurable.h"
 #pragma once
+//a simple node which consumes all data without any other purpose
+//the data must have a .time() method
 template <typename data_type>
 class cluster_sorting_combiner : public i_data_consumer<data_type>,
                                  public i_simple_producer<data_type>

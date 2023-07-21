@@ -3,7 +3,8 @@
 #include <optional>
 #include "../../data_nodes/window_processing/window_state.h"
 #pragma once
-
+//a node which implements both triggering and clustering, 
+//cannot be parallelized without excessive synchronization
 template <typename hit_type, typename clustering_alg_type, typename trigger_type>
 class trigger_clusterer : public i_simple_consumer<hit_type>,
                           public i_data_producer<cluster<hit_type>>,
@@ -181,5 +182,3 @@ public:
         return triggered;
     }
 };
-
-// TODO implement energy distr trigger but before that try to compile passing trigger type as an argument

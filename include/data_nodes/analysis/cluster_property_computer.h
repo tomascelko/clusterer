@@ -1,3 +1,5 @@
+//computes the cluster properties and serializes them to a file
+//as an example, it computes cluster diameter and a timespan
 template <template <typename> typename cluster_type, typename hit_type>
 class cluster_property_computer : public i_simple_consumer<cluster_type<hit_type>>
 {
@@ -39,10 +41,9 @@ class cluster_property_computer : public i_simple_consumer<cluster_type<hit_type
         }
         return radius - 1;
     }
-
+    //compute both timespan and cluster diameter
     void process_cluster(const cluster_type<hit_type> &cl)
     {
-        // load_cluster(cl);
 
         auto x_comparer = [](const hit_type &left_coord, const hit_type &right_coord)
         {
@@ -59,7 +60,7 @@ class cluster_property_computer : public i_simple_consumer<cluster_type<hit_type
         *output_csv_stream_ << diameter << "," << cl.last_toa() - cl.first_toa() << ","
                             << "\n";
 
-        // unload_cluster(cl);
+        
     }
 
 public:
@@ -84,7 +85,6 @@ public:
             ++iter_counter;
         }
 
-        // std::cout << "HALO WIDTH CALCULATOR ENDED ---------------------" << std::endl;
         output_csv_stream_->close();
     }
 };

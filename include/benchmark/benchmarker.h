@@ -12,6 +12,8 @@
 #include "model_factory.h"
 
 #pragma once
+
+// class handles the run of the model, including the time measurement
 class benchmarker
 {
     static constexpr double FREQUENCY_MULTIPLIER_ = 1.;
@@ -29,21 +31,25 @@ class benchmarker
     benchmark_results_type results_;
     std::string output_dir_;
     std::vector<double> freq_scales_;
+    //the algorithm ehich should be used for calibration
     enum class calib_type
     {
-        manual,
-        automatic,
-        same
+        manual, //each data file has a corresponding calib type
+        automatic, //the calib file for each is found on pattern matching
+        same //a single calib file is used for all datasets
     };
     calib_type calibration_mode_;
 
 private:
+
+    //check if selected path has a .txt suffix
     bool is_text_file(const std::string &path)
     {
         if (path.size() < 4)
             return false;
         return (path.substr(path.size() - 4) != ".txt");
     }
+    //load all .txt file datasets in a folder
     void load_all_datasets(const std::string &data_folder)
     {
         std::stringstream ss;
@@ -57,6 +63,7 @@ private:
         if (print_debug_info)
             std::cout << ss.str();
     }
+    //load calibration files from a folder
     void load_all_calib_files(const std::string &calib_folder)
     {
         std::stringstream ss;
@@ -120,14 +127,13 @@ public:
         }
         }
     }
+    //a callback used to return result from a run
     void register_result(exec_time_result result)
     {
-        // TODO WHEN MEASURING, SKIP THE READ  OPERATION
-        // IDEALLY SKIP WRITE AS WELL
         results_[result.node_name()][current_dataset_.filename()].push_back(result.exec_time());
         std::cout << result.node_name() << " " << result.exec_time() << std::endl;
     }
-
+    //writes the benchmark result to a file
     void print_results(std::ostream &stream)
     {
         for (auto &node_pair : results_)
@@ -152,6 +158,7 @@ public:
             stream << std::endl;
         }
     }
+    //runs all nodes using the controller node
     void run_benchmark_for_dataset()
     {
         // std::cout << "Testing dataset "  << current_dataset_.filename() << std::endl;
@@ -173,7 +180,8 @@ public:
         controller_->remove_all();
         clocks_.clear();
     }
-
+    //used for pattern match finding of a calibration - the calib folder name
+    //must be a suffix of the dataset name
     std::string auto_find_calib_file(const file_path &data_path)
     {
         std::vector<std::string> matching_files;
@@ -197,6 +205,8 @@ public:
 
     std::vector<std::vector<double>> total_exec_times_;
     uint32_t statistic_repeats_ = 5;
+
+    //removes the files creates during the benchmark run
     void clean_clustering_files(const std::vector<std::string> &files)
     {
         const std::string ini_suffix = ".ini";
@@ -210,10 +220,13 @@ public:
         }
     }
     // std::vector<uint32_t> buffer_repetitions_ = {300};//{1, 3, 5, 7, 10, 15, 20, 30, 50, 100, 200};
+    // stores the base hitrates of the data files so we can correctly scale them
     void set_freq_scales(const std::vector<double> &freq_scales)
     {
         freq_scales_ = freq_scales;
     }
+    // the main method of benchmarker, runs the model multiple times with statisical repeats
+    // and computes the true frequency multipler, if any
     std::vector<std::string> run(architecture_type &&arch, node_args &args, bool debug = false)
     {
 
@@ -262,12 +275,10 @@ public:
                 run_benchmark_for_dataset();
                 auto end_time = std::chrono::high_resolution_clock::now();
                 clean_clustering_files(temporary_output);
-                // delete controller_;
-                // std::cout << "FINISHED" << std::endl;
                 total_exec_times_.back().push_back(
                     std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count());
             }
-            //}
+            
         }
         controller_.reset();
 

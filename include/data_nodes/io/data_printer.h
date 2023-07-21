@@ -1,5 +1,5 @@
 #include "../../data_flow/dataflow_package.h"
-
+//print the data type to a file using << operator
 template <typename data_type, typename stream_type>
 class data_printer : public i_data_consumer<data_type>, public i_simple_producer<data_type>
 {
@@ -33,7 +33,6 @@ public:
         }
         out_stream_->close();
         this->writer_.close();
-        // std::cout << "PRINTER ENDED ----------------" << std::endl;
     }
 
     virtual ~data_printer() = default;

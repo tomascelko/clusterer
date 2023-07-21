@@ -1,8 +1,8 @@
-// obtains sorted mm hits
-// returns vector of window features
-
 #include "../../data_flow/dataflow_package.h"
 #include "window_state.h"
+
+// obtains sorted mm hits
+// returns vector of window features
 template <typename feature_vect_type, typename data_type, typename window_state = default_window_state<data_type>>
 class window_feature_computer : public i_simple_consumer<data_type>, public i_simple_producer<feature_vect_type>
 {
@@ -33,19 +33,22 @@ public:
             {
                 window_state_.update(hit);
             }
+            //the window is closed
             else
             {
+                //we write it to output
                 uint32_t empty_count = window_state_.get_empty_count(hit);
                 if (window_state_.mean_frequency() > max_frequency_)
                     max_frequency_ = window_state_.mean_frequency();
                 this->writer_.write(window_state_.to_feature_vector());
                 window_state_.move_window();
+                //and generate empty windows
                 for (uint32_t i = 0; i < empty_count; i++)
                 {
                     this->writer_.write(window_state_.to_feature_vector());
                     window_state_.move_window();
-                    window_state_.update(hit);
                 }
+                window_state_.update(hit);
             }
             ++processed;
 
@@ -53,7 +56,6 @@ public:
         }
         this->writer_.write(feature_vect_type::end_token());
         this->writer_.flush();
-        std::cout << "FEATURE COMPUTER ENDED ----------------" << std::endl;
     }
 
     virtual ~window_feature_computer() = default;

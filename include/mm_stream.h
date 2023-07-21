@@ -11,20 +11,25 @@
 #include "utils.h"
 
 #pragma once
+//represents a clustered mm stream open for writing
 class mm_write_stream
 {
+    //file pointers
     std::unique_ptr<std::ofstream> cl_file_;
     std::unique_ptr<std::ofstream> px_file_;
+    //useful suffixes
     static constexpr std::string_view INI_SUFFIX = ".ini";
     static constexpr std::string_view CL_SUFFIX = "_cl.txt";
     static constexpr std::string_view PX_SUFFIX = "_px.txt";
-    static constexpr uint32_t FLUSH_INTERVAL = 2 << 21;
     uint64_t current_line = 0;
     uint64_t current_byte = 0;
     uint64_t clusters_written_ = 0;
     uint64_t new_pixels_written_ = 0;
+    //we perform the writing in a buffered manner for efficiency of I/O operations
     std::unique_ptr<std::stringstream> px_buffer_;
     std::unique_ptr<std::stringstream> cl_buffer_;
+    //number of hits after which the buffers are flushed
+    static constexpr uint32_t FLUSH_INTERVAL = 2 << 21;
 
     void open_streams(const std::string &ini_file)
     {
@@ -74,18 +79,13 @@ public:
     template <typename cluster_type>
     mm_write_stream &operator<<(const cluster_type &cluster)
     {
-        // TODO write PX FILE FIRST AS A WHOLE
         *cl_buffer_ << double_to_str(cluster.first_toa()) << " ";
         *cl_buffer_ << cluster.hit_count() << " " << current_line << " " << current_byte << "\n";
         ++clusters_written_;
         // px_buffer_.precision(6);
         for (const auto &hit : cluster.hits())
         {
-            // std::array<char, 10> str;
-            // std::to_chars_result res = std::to_chars((char*)(str.data()), (char*)(str.data() + str.size()), (double)90.1234);
-            // px_buffer_ << hit;
             *px_buffer_ << hit;
-            // px_buffer_ <<  std::to_chars(str.data(), str.data() + str.size(), 90.1234) << std::to_chars(90.1234) ;
         }
         *px_buffer_ << "#"
                     << "\n";
@@ -108,7 +108,7 @@ public:
         return *this;
     }
 };
-
+//represents a clustered dataset in mm file format ready for reading
 class mm_read_stream
 {
     std::unique_ptr<std::ifstream> cl_file_;

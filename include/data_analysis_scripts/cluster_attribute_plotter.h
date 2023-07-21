@@ -1,4 +1,4 @@
-#include "../../matplotlib-cpp/matplotlibcpp.h"
+
 #pragma once
 namespace plt = matplotlibcpp;
 template <typename x_data_type, typename y_data_type>

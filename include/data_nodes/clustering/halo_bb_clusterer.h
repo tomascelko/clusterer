@@ -4,22 +4,28 @@
 #include "cluster_merger.h"
 
 // note : bb_cluster_type should always be some reference type (eg. std::reference_wrapper<T>)
-// as we need to store reference to an existing clusters inside the actual clusterer
+// as we need to store reference to an existing clusters inside the actual nested clusterer
 template <typename hit_type, typename clusterer_type, typename bb_cluster_type = bb_cluster<hit_type, std::reference_wrapper<cluster<hit_type>>>>
 class halo_buffer_clusterer : public i_simple_consumer<hit_type>, public i_data_producer<cluster<hit_type>>, public i_time_measurable
 {
 protected:
-    // pixel_list_clusterer<cluster> clustering_node_;
+    
     measuring_clock *clock_;
     double time_window_size_;
     double window_start_time_;
+    //nested clusterer
     std::unique_ptr<clusterer_type> clusterer_;
+    //history hit buffer
     std::vector<hit_type> hit_buffer_;
+    //flag if hit was already clustered or not
     std::vector<bool> hit_buffer_valid_;
+    //thresholds for halo checking repetitions
     const std::vector<double> THRESHOLDS_ = {120}; // ordered in descending order
     const double MIN_CLUSTERING_DT = 200.;
+    //write data to output every WRITE_INTERVAL clusters
     const uint32_t WRITE_INTERVAL = 10;
     uint64_t processed_hit_count_;
+
     void clusterize_remaining()
     {
         uint32_t processed = 0;
@@ -35,6 +41,7 @@ protected:
             }
         }
     }
+    //process only hits above selected threshold which were not yet clustered
     void clusterize_by_threshold(double threshold)
     {
         // clusterer_->set_tile(2);
@@ -50,10 +57,8 @@ protected:
         auto open_clusters_its = clusterer_->get_all_unfinished_clusters();
         for (auto it = open_clusters_its.begin(); it != open_clusters_its.end(); ++it)
         {
-            bounding_boxes.push_back(bbox((*it)->cl)); // TODO bbox will take const ref cluster in constructor
-            // and compute the bounding box in it
-            // thenm use open clusters its when add new hit is called
-            // bb_clusters.back().compute_bb();
+            bounding_boxes.push_back(bbox((*it)->cl)); 
+            
         }
         int32_t bb_start_index = open_clusters_its.size() - 1;
         for (uint32_t i = 0; i < hit_buffer_.size(); i++)
@@ -99,7 +104,7 @@ public:
     }
     void write_remaining_clusters()
     {
-        // TODO only call when there are some open clusters (clustering has been called)
+        
         clusterer_->write_remaining_clusters();
     }
     void process_hit(hit_type &hit) // can be called from outside

@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-
+#an auxiliary scipt to analyze the file with computed halo 
 class histo2d_plotter:
     def plot(file_name):
         data = np.genfromtxt(file_name, dtype=float, delimiter=',')

@@ -2,10 +2,12 @@
 #include "../../utils.h"
 #include "../../devices/current_device.h"
 
+//computes the width of the halo in a cluster for each pixel
 template <template <typename> typename cluster_type, typename hit_type, typename stream_type>
 class pixel_halo_width_calculator : public i_simple_consumer<cluster_type<hit_type>>
 {
     const double ENERGY_THRESHOLD = 50;
+    //minimum ratio of hit/non-hit pixels in a rectangle to be considered as a halo
     const double SQUARE_FULLNES_THRESHOLD = 0.74;
     std::unique_ptr<stream_type> out_stream_;
     using pixel_matrix_type = std::vector<std::vector<bool>>;
@@ -31,6 +33,7 @@ class pixel_halo_width_calculator : public i_simple_consumer<cluster_type<hit_ty
             return 0;
         return pixel_matrix_[x][y] ? 1 : 0;
     }
+    //checks if a given square around a hit is sufficiently occupied by other hits
     bool check_square(const hit_type &hit, int32_t radius)
     {
         uint32_t neighbors_count = 0;
@@ -53,6 +56,8 @@ class pixel_halo_width_calculator : public i_simple_consumer<cluster_type<hit_ty
         }
         return radius - 1;
     }
+    //for each hit (above a cutoff threshold) in cluster \
+    //find its halo as a maximal square around the hit which is sufficiently occupied by other hits  
     void process_cluster(const cluster_type<hit_type> &cl)
     {
         load_cluster(cl);
@@ -93,7 +98,5 @@ public:
             this->reader_.read(cl);
             ++iter_counter;
         }
-
-        // std::cout << "HALO WIDTH CALCULATOR ENDED ---------------------" << std::endl;
     }
 };

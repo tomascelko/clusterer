@@ -1,5 +1,6 @@
 #include "pipe.h"
 #pragma once
+//default implementation of reader from a single pipe
 template <typename data_type>
 class pipe_reader
 {

@@ -1,4 +1,5 @@
 #include <iomanip>
+//basic properties of timepix3 sensor
 class timepix3
 {
 public:

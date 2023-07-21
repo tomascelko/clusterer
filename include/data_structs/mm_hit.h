@@ -5,10 +5,16 @@
 #include <fstream>
 #include <iomanip>
 #include "../utils.h"
+//suring conversion, the burda_hit is often converted to mm_hit
+//which is easier to use for analysis
 class mm_hit
 {
+    //spatial pixel coordinates (x,y)
     coord coord_;
-    double toa_, e_;
+    //time of arrival in ns
+    double toa_;
+    //deposited energy in keV
+    double e_;
 
 public:
     mm_hit(short x, short y, double toa, double e) : coord_(x, y),
@@ -18,7 +24,7 @@ public:
     }
     constexpr static uint64_t avg_size()
     {
-        return 20;
+        return 2*sizeof(double) + sizeof(coord);
     }
     static mm_hit end_token()
     {
@@ -70,16 +76,16 @@ public:
         return (x() == other.x() && y() == other.y() && std::abs(toa() - other.toa()) < epsilon && std::abs(e() - other.e() < epsilon));
     }
 };
+//hit serialization
 template <typename stream_type>
 stream_type &operator<<(stream_type &os, const mm_hit &hit)
 {
     os << hit.x() << " " << hit.y() << " " << double_to_str(hit.toa()) << " ";
     os << double_to_str(hit.e(), 2) << "\n";
 
-    // os << hit.x() << " " << hit.y() << " " << std::fixed << std::setprecision(6) << (hit.toa()) << " ";
-    // os << std::fixed << std::setprecision(1) << hit.e() << "\n";
     return os;
 }
+//hit deserialization
 template <typename stream_type>
 stream_type &operator>>(stream_type &istream, mm_hit &hit)
 {

@@ -6,6 +6,8 @@
 #include <cmath>
 #include <algorithm>
 #pragma once
+//utlility classes used across the whole project
+// for I/O and other are listed below
 class not_implemented : public std::logic_error
 {
 public:

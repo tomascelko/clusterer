@@ -24,12 +24,14 @@ struct unfinished_cluster;
 using cluster_list = std::list<unfinished_cluster<mm_hit>>;
 using cluster_it = typename cluster_list::iterator;
 using cluster_it_list = typename std::list<cluster_it>;
-
+//an auxiliary structure for cluster that is open at a time
 template <typename mm_hit>
 struct unfinished_cluster
 {
     cluster<mm_hit> cl;
+    //iterators pointing to pixels matrix entries (which are iterators of the hits)
     std::vector<typename cluster_it_list::iterator> pixel_iterators;
+    //self reference
     cluster_it self;
     bool selected = false;
     unfinished_cluster()
@@ -44,6 +46,7 @@ struct unfinished_cluster
         selected = false;
     }
 };
+//a node which implements the pixels list clustering as proposed by P.Manek
 template <template <class> typename cluster>
 class pixel_list_clusterer : public i_simple_consumer<mm_hit>,
                              public i_multi_producer<cluster<mm_hit>>,
@@ -77,7 +80,7 @@ protected:
     void merge_clusters(unfinished_cluster<mm_hit> &bigger_cluster, unfinished_cluster<mm_hit> &smaller_cluster)
     // merging clusters to biggest cluster will however disrupt time orderedness - after merging bigger cluster can lower its first toa
     // which causes time unorderedness, can hovewer improve performance
-    // TODO try always merging to left (smaller toa)
+    //try always merging to left (smaller toa)
     {
 
         for (auto &pix_it : smaller_cluster.pixel_iterators) // update iterator
@@ -104,20 +107,14 @@ protected:
     std::vector<cluster_it> find_neighboring_clusters(const coord &base_coord, double toa, cluster_it &biggest_cluster)
     {
         std::vector<cluster_it> uniq_neighbor_cluster_its;
-        // uint32_t max_cluster_size = 0;
         double min_toa = std::numeric_limits<double>::max();
         for (auto neighbor_offset : EIGHT_NEIGHBORS) // check all neighbor indexes
         {
             if (!base_coord.is_valid_neighbor(neighbor_offset, tile_size_))
                 continue;
-            // error in computing neighbor offset linearize() - does not account for tile size TODOOOOOOOOOo
+            // error in computing neighbor offset linearize() - does not account for tile size 
             uint32_t neighbor_index = neighbor_offset.linearize_tiled(tile_size_) + base_coord.linearize(tile_size_);
-            /*std::cout << "--------" << std::endl;
-            std::cout << base_coord.x_ << " " << base_coord.y_ << std::endl;
-            std::cout << neighbor_offset.x_ << " " << neighbor_offset.y_ << std::endl;
-            std::cout << neighbor_index << std::endl;
-            std::cout << neighbor_offset.linearize(tile_size_) << std::endl;
-            std::cout << base_coord.linearize(tile_size_) << std::endl;*/
+            
             for (auto &neighbor_cl_it : pixel_lists_[neighbor_index]) // iterate over each cluster neighbor pixel can be in
             // TODO do reverse iteration and break when finding a match - as there cannot two "already mergable" clusters on a single neighbor pixel
             {
@@ -169,7 +166,7 @@ public:
         }
         return unfinished_its;
     }
-    // standard API
+    // part of standard API
     void add_new_hit(mm_hit &hit, cluster_it &cluster_iterator)
     {
         // update cluster itself, assumes the cluster exists
@@ -180,7 +177,7 @@ public:
         cluster_iterator->cl.add_hit(std::move(hit));
         // update the pixel list
     }
-
+    //return clusters ready for outputting
     std::vector<cluster<mm_hit>> retrieve_old_clusters(double hit_toa = 0)
     {
         std::vector<cluster<mm_hit>> old_clusters;
@@ -225,7 +222,7 @@ public:
         switch (neighboring_clusters.size())
         {
         case 0:
-
+            //pixel does not belong to any cluster, create a new one
             unfinished_clusters_.emplace_front(unfinished_cluster<mm_hit>{});
             unfinished_clusters_.begin()->self = unfinished_clusters_.begin();
             ++unfinished_clusters_count_;
@@ -295,21 +292,16 @@ public:
     virtual void start() override
     {
         mm_hit hit;
-        while (!reader_.read(hit))
-            ;
-        // clock_->start();
+        reader_.read(hit);
         while (hit.is_valid())
         {
+            //periodically write out the old and ready clusters
             if (processed_hit_count_ % WRITE_INTERVAL == 0 && !manual_write_check_)
                 write_old_clusters(hit.toa());
             process_hit(hit);
-            while (!reader_.read(hit))
-                ;
+            reader_.read(hit);
         }
         write_remaining_clusters();
-        // clock_->stop_and_report("clusterer");
-
-        // std::cout << "CLUSTERER ENDED ---------- " << processed_hit_count_ <<" hits processed" <<std::endl;
     }
     virtual ~pixel_list_clusterer() = default;
     // i_time_measurable

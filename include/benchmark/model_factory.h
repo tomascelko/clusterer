@@ -12,6 +12,7 @@
 #include "../data_nodes/analysis/cluster_property_computer.h"
 #include <tuple>
 #pragma once
+//corresponds to a single node in a computational graph
 struct node
 {
     std::string type;
@@ -23,6 +24,8 @@ struct node
         return type == other.type && id == other.id;
     }
 };
+
+//corresponds to a single edge in a computational graph
 struct edge
 {
     node from;
@@ -30,6 +33,8 @@ struct edge
     edge(node from, node to) : from(from),
                                to(to) {}
 };
+//an auxiliary structure which helps in creation of the dataflow grap
+//it is initialized from a string (list of edges) and a list of node descriptors
 class architecture_type
 {
 
@@ -125,7 +130,8 @@ public:
         return window_size_;
     }
 };
-
+//given controller and architecture_type 
+//creates the real execution nodes of the computational graph 
 class model_factory
 {
     std::string data_file;
@@ -141,6 +147,8 @@ class model_factory
     std::ofstream *window_print_stream;
     std::ostream *appending_output_stream;
 
+    //converts auxiliary node type to real i_data_node
+    //the controller holds ownership of this node 
     template <typename arch_type>
     i_data_node *create_node(node node, arch_type arch, const node_args &args)
     {
@@ -194,7 +202,7 @@ class model_factory
             return new data_printer<default_window_feature_vector<mm_hit>, std::ofstream>(window_print_stream);
         else if (node.type == "m")
             return new cluster_merging<mm_hit>(
-                dynamic_cast<node_descriptor<cluster<mm_hit>, cluster<mm_hit>> *>(arch.node_descriptors()["m" + std::to_string(node.id)]));
+                dynamic_cast<node_descriptor<cluster<mm_hit>, cluster<mm_hit>> *>(arch.node_descriptors()["m" + std::to_string(node.id)]), args);
         else if (node.type == "sc")
         {
             if (arch.node_descriptors().find(node.type + std::to_string(node.id)) != arch.node_descriptors().end())
@@ -213,9 +221,6 @@ class model_factory
             return new standard_clustering_type(args);
         else if (node.type == "bbc")
             return new halo_buffer_clusterer<mm_hit, standard_clustering_type>(args);
-        // else if(node.type == "trbbc")
-        //     return new trigger_clusterer<mm_hit, halo_buffer_clusterer<mm_hit, standard_clustering_type>, frequency_diff_trigger<mm_hit>>(
-        //         args);
         else if (node.type == "tr")
         {
             if (arch.node_descriptors().find(node.type + std::to_string(node.id)) != arch.node_descriptors().end())
@@ -292,8 +297,6 @@ public:
         return create_model(controller, arch, std::vector<std::string>{data_file},
                             std::vector<std::string>{calib_file}, output_dir, args);
     }
-    // TODO FINISH METHOD THAT GETS INPUT AS VECTORS
-
     std::vector<std::string> create_model(dataflow_controller *controller, architecture_type &arch,
                                           const std::vector<std::string> &data_files, const std::vector<std::string> &calib_files,
                                           const std::string &output_dir, const node_args &args)
@@ -334,10 +337,8 @@ public:
         {
             auto from_index = std::find(arch.nodes().begin(), arch.nodes().end(), edge.from) - arch.nodes().begin();
             auto to_index = std::find(arch.nodes().begin(), arch.nodes().end(), edge.to) - arch.nodes().begin();
-            // std::cout << "edges " << from_index << " " << to_index << std::endl;
             controller->connect_nodes(data_nodes[from_index], data_nodes[to_index]);
         }
         return output_names;
-        // std::cout << "edges connected" << std::endl;
     }
 };

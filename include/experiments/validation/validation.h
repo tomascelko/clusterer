@@ -16,6 +16,7 @@
 class clustering_dataset
 {
 public:
+    //validation dataset
     std::vector<std::string> validation{
         "../../../clusterer_data/pion/pions_180GeV_deg_0.txt",
         "../../../clusterer_data/pion/pions_180GeV_deg_30.txt",
@@ -59,6 +60,7 @@ public:
         }
     }
 };
+//performs the computation of validity against clustered data
 class validation
 {
     struct statistics
@@ -85,7 +87,7 @@ public:
                                                                                                             output_name_(output_file)
     {
     }
-
+    //summarize the statistics of the validation run
     statistics compute_mean_and_std(const std::vector<double> &data)
     {
         double sum = std::accumulate(data.begin(), data.end(), 0.);
@@ -95,7 +97,7 @@ public:
         double std = std::sqrt(sqaured_sum / data.size() - mean * mean);
         return statistics(mean, std);
     }
-
+    //aggregate the results by particle type
     std::map<std::string, std::vector<double>> aggregate_results(const std::vector<double> &results)
     {
         std::map<std::string, std::vector<double>> aggregated_results;
@@ -117,6 +119,7 @@ public:
             new_file_names.push_back(file_name + suffix);
         return new_file_names;
     }
+    //remove the clustered files created in the process
     void clean_clustering_files(const std::vector<std::string> &files)
     {
         for (const auto &file : files)
@@ -126,9 +129,9 @@ public:
             std::remove((file + px_suffix).c_str());
         }
     }
+    //vaidate the result files against the ground truth
     void validate_pairs(const std::vector<std::string> &results, const std::vector<std::string> &ground_truth, node_args &node_args, bool remove = true)
     {
-        // return;
         std::vector<double> ious;
         for (uint32_t i = 0; i < ground_truth.size(); i++)
         {
@@ -148,6 +151,7 @@ public:
         if (remove)
             clean_clustering_files(results);
     }
+    //perform the clustering and frequency scaling if necessary
     template <typename... other_clustering_args>
     std::vector<std::string> cluster_dataset(model_runner::model_name model_name, uint32_t core_count, node_args &n_args, other_clustering_args... args)
     {
@@ -168,7 +172,7 @@ public:
         }
         return output_files;
     }
-
+    //compute the base frequency of the data file so it can be multiplied accordingly
     void set_base_frequencies(node_args &args)
     {
         for (uint32_t i = 0; i < dataset_.validation.size(); ++i)
@@ -182,7 +186,7 @@ public:
             base_frequencies_.push_back(std::stod(executor.results()[0]));
         }
     }
-
+    //compute the validation of base models - simple, parallel and aproximative
     void validate_base_models(node_args &n_args, uint32_t core_count)
     {
         n_args["reader"]["repetition_size"] = "-1";
@@ -196,11 +200,11 @@ public:
                                        debug_mode_, model_runner::clustering_type::STANDARD),
                        dataset_.validation_ground_truth, n_args);
         //}
-        // return;
-        /*result_stream_ << "#Parallel clusterer, simple merger" << std::endl;
+        return;
+        *result_stream_ << "#Parallel clusterer, simple merger" << std::endl;
         validate_pairs(cluster_dataset(model_runner::model_name::PAR_SIMPLE_MERGER, core_count, n_args,
         debug_mode_, model_runner::clustering_type::STANDARD), dataset_.validation_ground_truth, n_args);
-        */
+        
 
         *result_stream_ << "#Parallel clusterer, tree merger" << std::endl;
         validate_pairs(cluster_dataset(model_runner::model_name::PAR_TREE_MERGER, core_count, n_args,
@@ -217,7 +221,7 @@ public:
                                        debug_mode_, model_runner::clustering_type::HALO_BB),
                        dataset_.validation_ground_truth, n_args);
     }
-
+    //check the validity of the temporal clustering with respect to increasing hit frequency
     void validate_temporal_clustering(node_args &n_args, uint32_t core_count)
     {
         const std::vector<double> frequencies = {0.05, 0.1, 0.5, 1., 2., 4., 8., 16., 32.};
@@ -267,7 +271,7 @@ public:
         }
         scale_frequency_ = false;
     }
-
+    //runs the validation experiments for each architecture
     std::string binary_path_;
     void run_validation(const std::string &binary_path = "")
     {

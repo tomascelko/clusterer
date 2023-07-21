@@ -15,6 +15,7 @@
 #include "../data_nodes/window_processing/default_window_feature_vector.h"
 
 #pragma once
+//organizes the dataflow of all nodes in a dataflow graph
 class dataflow_controller
 {
     using node_pointer = std::unique_ptr<i_data_node>;
@@ -23,7 +24,6 @@ class dataflow_controller
 
 private:
     std::vector<node_pointer> nodes_;
-    // TODO add map<string, node_pointer> ktora bude mapovat meno na uzol
     std::vector<pipe_pointer> pipes_;
     std::vector<std::thread> threads_;
     uint32_t memory_control_counter_ = 0;
@@ -31,6 +31,7 @@ private:
     std::ostream &state_info_out_stream_ = std::cout;
     descriptor_map_type node_descriptor_map_;
     bool debug_mode_;
+    //taking ownership of the created node
     void register_node(i_data_node *item)
     {
         i_controlable_source *controlable_source_opt = dynamic_cast<i_controlable_source *>(item);
@@ -38,13 +39,14 @@ private:
             data_sources_.push_back(controlable_source_opt);
         nodes_.emplace_back(std::move(std::unique_ptr<i_data_node>(item)));
     }
-    // template <typename data_type>
+    //taking ownership of the created pipe
     void register_pipe(abstract_pipe *pipe)
     {
         pipes_.emplace_back(std::move(std::unique_ptr<abstract_pipe>(pipe)));
     }
 
 public:
+    //intialize the class with node descriptors
     dataflow_controller(std::map<std::string, abstract_node_descriptor *> &descriptors, bool debug = false) : debug_mode_(debug)
     {
         for (const auto &id_and_descriptor : descriptors)
@@ -53,7 +55,7 @@ public:
                                                         std::unique_ptr<abstract_node_descriptor>(id_and_descriptor.second)));
         }
     };
-
+    //access all available nodes
     std::vector<i_data_node *> nodes()
     {
         std::vector<i_data_node *> nodes;
@@ -64,6 +66,8 @@ public:
         }
         return nodes;
     }
+    //resets the state of the dataflow controller
+    //removes the nodes, pipes and datasources 
     void remove_all()
     {
         nodes_.clear();
@@ -71,7 +75,7 @@ public:
         data_sources_.clear();
         // std::cout << "dataflow finished" << std::endl;
     }
-
+    //templated wrapper for the connect_nodes method
     template <typename data_type>
     default_pipe<data_type> *connect_nodes(i_data_producer<data_type> *producer, i_data_consumer<data_type> *consumer)
     {
@@ -100,6 +104,7 @@ public:
         else
             throw std::invalid_argument("provided data node produces unsupported data type");
     }
+    //take ownership of the node which contains also internal nodes and pipes
     void add_node(i_data_node *data_node)
     {
         // todo save map with name of node
@@ -115,6 +120,7 @@ public:
             register_pipe(int_pipe);
         }
     }
+    //links two nodes together
     template <typename data_type>
     default_pipe<data_type> *connect_nodes(i_data_producer<data_type> *producer, i_data_consumer<data_type> *consumer, default_pipe<data_type> *pipe)
     {
@@ -123,7 +129,7 @@ public:
         consumer->connect_input(pipe);
         return pipe;
     }
-
+    //retrieve occupied memory in all pipes
     uint64_t get_used_memory()
     {
 
@@ -134,6 +140,7 @@ public:
         }
         return used_memory;
     }
+    //display the usage of each registered pipe
     void print_pipe_state()
     {
 
@@ -143,16 +150,13 @@ public:
         }
         state_info_out_stream_ << "----------------" << std::endl;
     }
+    //
     void control_memory_usage(uint64_t min_memory = 2ull << 31, double max_pipe_memory = 2ull << 28) // 29
     {
         uint64_t used_memory = get_used_memory();
         // uint64_t free_memory = get_free_memory();
         const uint64_t EPSILON_MEMORY = 2ull << 27; // CHANGED FROM 27
         memory_control_counter_++;
-        // std::cout<< "USED MEMORY" << used_memory / 1000000. << std::endl;
-        // std::cout << "FREE MEMORY" << free_memory / 1000000. << std::endl;
-        // if(memory_control_counter_ % 2 == 0)
-        //    state_info_out_stream_ << used_memory / 1000000. << " MB" << std::endl;
         for (auto &node : nodes_)
         {
             auto controlable = dynamic_cast<i_controlable_source *>(node.get());
@@ -174,6 +178,7 @@ public:
         uint64_t used_memory = get_used_memory();
         return used_memory > max_pipe_memory;
     }
+    //compute the total memory for each data late
     std::vector<uint64_t> get_memory_per_lane()
     {
         std::vector<uint64_t> occupied_memory;
@@ -191,10 +196,11 @@ public:
         }
         return occupied_memory;
     }
+    //ensures the memory difference between the lanes is not too high 
     void control_lane_diff_memory(uint64_t max_diff_memory = 2ull << 27) // 29
     {
 
-        const uint64_t EPSILON_MEMORY = 2ull << 27; // CHANGED FROM 27
+        const uint64_t EPSILON_MEMORY = 2ull << 27; 
         auto memory_per_lane = get_memory_per_lane();
         auto min_memory = std::min_element(memory_per_lane.begin(), memory_per_lane.end());
         auto max_memory = std::max_element(memory_per_lane.begin(), memory_per_lane.end());
@@ -216,6 +222,8 @@ public:
         }
     }
     bool is_done_ = false;
+    //run all nodes, each in a separate thread
+    //additionally check the memory state
     void start_all()
     {
         is_done_ = false;
@@ -240,6 +248,7 @@ public:
                         control_lane_diff_memory(); 
                 } })));
     }
+    //retrieve the results from each node
     std::vector<std::string> results()
     {
         std::vector<std::string> results;
@@ -251,6 +260,7 @@ public:
         }
         return results;
     }
+    //blocking wait for all started nodes
     void wait_all()
     {
 

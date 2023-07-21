@@ -7,6 +7,9 @@
 #include "../../devices/current_device.h"
 #include "../../benchmark/i_time_measurable.h"
 #include "cluster_merger.h"
+//implementation of the parallel clustering where the paralelism is hidden within
+//the clustering node, uses dedicated worker for splitting (which proved to be inefficient)
+//does not support parallel merging
 template <typename hit_type, typename clustering_node>
 class parallel_clusterer : public i_data_consumer<hit_type>,
                            public i_data_producer<cluster<hit_type>>,
@@ -25,14 +28,15 @@ class parallel_clusterer : public i_data_consumer<hit_type>,
     std::vector<default_pipe<cluster<hit_type>> *> merging_pipes_;
     std::vector<double> first_toas_by_producers_; // used
 public:
+    //initialize all internal nodes, including the merger node
     parallel_clusterer(node_descriptor<cluster<hit_type>, hit_type> *node_descr, const node_args &args) : split_descr_(node_descr->split_descr),
                                                                                                           merging_node_(new cluster_merging<hit_type>(
                                                                                                               new node_descriptor<cluster<hit_type>, cluster<hit_type>>(node_descr->merge_descr,
-                                                                                                                                                                        new trivial_split_descriptor<cluster<hit_type>>(), "merging_node_descriptor")))
+                                                                                                                                                                        new trivial_split_descriptor<cluster<hit_type>>(), "merging_node_descriptor"), args))
     {
         for (uint32_t i = 0; i < split_descr_->pipe_count(); i++)
         {
-
+            //create clustering as an internal node
             clustering_node *cl_node = new clustering_node(args);
             default_pipe<hit_type> *split_pipe = new default_pipe<hit_type>(name() + "_" +
                                                                             cl_node->name() + "_" + std::to_string(split_pipes_.size()));
@@ -66,6 +70,7 @@ public:
         int_nodes.push_back(merging_node_);
         return int_nodes;
     }
+    
     virtual std::vector<abstract_pipe *> internal_pipes() override
     {
         std::vector<abstract_pipe *> int_pipes;
@@ -82,6 +87,7 @@ public:
     {
         return "parallel_clusterer";
     }
+    //do the work of a splitter
     virtual void start() override
     {
         hit_type hit;
@@ -97,7 +103,6 @@ public:
             split_writers_[i].write(hit_type::end_token());
             split_writers_[i].flush();
         }
-        // std::cout << "SPLITTER ENDED ---------------------" << std::endl;
     }
     virtual ~parallel_clusterer() = default;
 };

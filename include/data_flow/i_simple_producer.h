@@ -1,6 +1,7 @@
 #include "i_data_producer.h"
 #include "pipe_writer.h"
 #pragma once
+//a simple producer which produces all data to a single pipe
 template <typename data_type>
 class i_simple_producer : public i_data_producer<data_type>
 {

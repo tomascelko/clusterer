@@ -1,6 +1,7 @@
 #include "pipe.h"
 #pragma once
 #include "pipe.h"
+//writes the data to a single pipe
 template <typename data_type>
 class pipe_writer
 {

@@ -1,3 +1,5 @@
+//a package which includes basic headers reuqired for managing the dataflow
+//and implementing a node
 #include "data_buffer.h"
 #include "pipe_writer.h"
 #include "pipe_reader.h"

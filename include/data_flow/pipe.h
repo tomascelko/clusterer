@@ -4,6 +4,7 @@
 #include "../../moodycamel/concurrentqueue.h"
 #pragma once
 
+//wraps individual pieces of data into a block for better transfer speed
 template <typename data_type>
 class data_block
 {
@@ -56,13 +57,8 @@ public:
         }
         hit = std::move(data_block_[to_delete_index_]);
         byte_size_ -= hit.size();
-        // TODO try with erase instead
+        
         ++to_delete_index_;
-        /*if(to_delete_index_ == data_block_.size())
-        {
-            data_block_.clear();
-            to_delete_index_ = 0;
-        }*/
         return true;
     }
     bool can_peek()
@@ -81,10 +77,10 @@ public:
     }
 };
 
+//a wrapper around the queue implemented by moodycamel
 template <typename data_type, template <typename> typename queue_type = moodycamel::ConcurrentQueue>
 class default_pipe : public abstract_pipe
 {
-    // todo use simple one producer one consumer queue and create multi default_pipe : public default_pipe with this multi concurrent queue
 private:
     const uint32_t CHECK_FULL_PIPE_INTERVAL = 500;
     const uint32_t HISTORY_LENGTH = 300;
@@ -96,6 +92,8 @@ private:
     uint64_t total_bytes_processed_ = 0;
     i_data_node *producer_;
     i_data_node *consumer_;
+    //two variants of emplace method allow for simple switching between implementations of the queue
+    //as of our testing no significant performance difference was observed between these implementations
     void emplace_impl(data_block<data_type> &&block, moodycamel::ReaderWriterQueue<data_block<data_type>> &queue)
     {
         queue_.emplace(block);
@@ -121,8 +119,6 @@ public:
     {
         return consumer_;
     }
-    // not thread safe TODO move in block and out block to writer and reader so we can use the buffering with multiple writers
-    // WILL be called from multiple threads on a same pipe
     virtual uint64_t bytes_used() override
     {
         return bytes_used_;
@@ -131,25 +127,23 @@ public:
     {
         return name_;
     }
+    //estimate of the data size, so the pre-allocation can be done efficiently 
     uint64_t mean_data_size()
     {
         if (processed_counter <= 1)
             return data_type::avg_size();
         return total_bytes_processed_ / processed_counter;
     }
+    //important (blocking) method for adding a new data block to queue
     void blocking_enqueue(data_block<data_type> &&new_block)
     {
-        /*while(bytes_used_ > MAX_QUEUE_SIZE)
-        {
-            std::this_thread::sleep_for(std::chrono::milliseconds(FULL_QUEUE_SLEEP_TIME));
-        }*/
+
         processed_counter += new_block.size(); // potentially rally condition
         bytes_used_ += new_block.byte_size();
         total_bytes_processed_ += new_block.byte_size();
         emplace_impl(std::move(new_block), queue_); // TODO or call enqueue when using multi queue
     }
-    // not thread safe TODO move in block and out block to writer and reader so we can use the buffering with multiple writers
-    // WILL NOT be called from multiple threads on a same pipe
+    //important (blocking) method for removing a block from queue
     bool blocking_dequeue(data_block<data_type> &out_block)
     {
         while (!queue_.try_dequeue(out_block))
@@ -159,6 +153,7 @@ public:
         bytes_used_ -= out_block.byte_size();
         return true;
     }
+    //estimate of the queue size (relatively slow, use with care!)
     uint32_t approx_size()
     {
         return queue_.size_approx();

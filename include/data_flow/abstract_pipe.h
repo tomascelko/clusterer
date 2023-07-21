@@ -1,4 +1,5 @@
 #pragma once
+//an basic interface for a pipe which connect producer with the consumer
 class i_data_node;
 class abstract_pipe
 {

@@ -13,6 +13,7 @@
 #include <fstream>
 #include <cstdio>
 #pragma once
+//consists of few datafiles used for generation of testing hitss
 class benchmarking_dataset
 {
 public:
@@ -22,14 +23,15 @@ public:
         "lead/deg0_0.txt",
         "lead/deg90_2.txt",
         "neutron/beam_T0trigger_0deg_150V_10s_0.txt",
-        //"neutron/neutrons_60deg_200V_F4-W00076_1.txt",
+        "neutron/neutrons_60deg_200V_F4-W00076_1.txt",
     };
     std::vector<std::string> calib_files{
         "calib/F4-W00076",
         "calib/F4-W00076",
         "calib/F4-W00076",
         "calib/F4-W00076",
-        //"calib/F4-W00076"
+        "calib/F4-W00076",
+        "calib/F4-W00076",
 
     };
     std::vector<std::string> trigger_files{
@@ -40,7 +42,7 @@ public:
     std::map<std::string, std::vector<uint32_t>> aggregation = {
         {"pion", std::vector<uint32_t>{0, 1}},
         {"lead", std::vector<uint32_t>{2, 3}},
-        {"neutron", std::vector<uint32_t>{4}}};
+        {"neutron", std::vector<uint32_t>{4, 5}}};
     void prepend_path(const std::string &prefix_dir)
     {
         std::string prefix = prefix_dir;
@@ -60,6 +62,7 @@ public:
         }
     }
 };
+//runs the tests of parameters and their effect on the performance of the clustering
 class performance_test
 {
     struct statistics
@@ -79,7 +82,6 @@ class performance_test
     node_args n_args;
     std::vector<double> base_frequencies_;
     bool adapt_frequencies_ = false;
-
 public:
     performance_test(std::ostream *result_stream, bool debug_mode = false) : result_stream_(result_stream),
                                                                              debug_mode_(debug_mode)
@@ -138,7 +140,7 @@ public:
         }
         return aggregated_results;
     }
-
+    //run the model multiple times to asses the performance
     template <typename... other_clustering_args>
     std::vector<std::string> benchmark_dataset(model_runner::model_name model_name, other_clustering_args... args)
     {
@@ -168,6 +170,7 @@ public:
         }
         return output_files;
     }
+    //run benchmark only for a single dataset
     template <typename... other_clustering_args>
     std::vector<std::string> benchmark_single_file(model_runner::model_name model_name, int data_index, other_clustering_args... args)
     {
@@ -197,6 +200,7 @@ public:
         }
         return output_files;
     }
+    //benchmark the base developed models-standard, aproximative and parallel
     void test_base_models(node_args &n_args, uint32_t core_count)
     {
         model_runner::print = false;
@@ -234,6 +238,7 @@ public:
         benchmark_dataset(model_runner::model_name::PAR_MULTIFILE_CLUSTERER, core_count, n_args,
                           debug_mode_, model_runner::clustering_type::STANDARD);
     }
+    //test models including the various forms of outputting including I/O
     void test_printing_models(node_args &n_args, uint32_t core_count)
     {
         model_runner::print = true;
@@ -254,7 +259,7 @@ public:
         output_files = benchmark_dataset(model_runner::model_name::PAR_MULTIFILE_CLUSTERER, core_count, n_args,
                                          debug_mode_, model_runner::clustering_type::STANDARD);
     }
-
+    //check if earlier data spliting can make a positive  impact on performance
     void test_split_node(node_args &n_args, uint32_t core_count)
     {
         model_runner::print = false;
@@ -282,6 +287,7 @@ public:
         n_args["sorter"]["split"] = "false";
         n_args["reader"]["split"] = "true";
     }
+    //benchmark various types of merging
     void test_merger_type(node_args &n_args, uint32_t core_count)
     {
         model_runner::print = false;
@@ -304,6 +310,7 @@ public:
         benchmark_dataset(model_runner::model_name::PAR_MULTIFILE_CLUSTERER, core_count, n_args,
                           debug_mode_, model_runner::clustering_type::STANDARD);
     }
+    //check the performance of the parallel clustering for different values of n_workers split
     void test_n_workers(node_args &n_args)
     {
         model_runner::print = false;
@@ -318,6 +325,7 @@ public:
                               debug_mode_, model_runner::clustering_type::STANDARD);
         }
     }
+    //check the performance of the model for variuos frequency scales
     void test_frequencies(node_args n_args, uint32_t core_count)
     {
         adapt_frequencies_ = true;
@@ -331,7 +339,7 @@ public:
         n_args["reader"]["repetition_count"] = "50";
         n_args["reader"]["freq_multiplier"] = "1";
 
-        const std::vector<double> frequencies = {8., 16., 32.}; //{ 0.1, 0.5, 1., 2., 4., 8., 16., 32.};
+        const std::vector<double> frequencies = { 0.1, 0.5, 1., 2., 4., 8., 16., 32.};
         for (double freq : frequencies)
         {
             n_args["reader"]["freq_multiplier"] = std::to_string(freq);
@@ -341,6 +349,8 @@ public:
         }
         adapt_frequencies_ = false;
     }
+
+    //verify the performance of the trigger
     void test_triggers(node_args n_args, uint32_t core_count)
     {
         n_args["reader"]["repetition_size"] = "1000000";
@@ -362,6 +372,9 @@ public:
                                   core_count, n_args, debug_mode_, model_runner::clustering_type::STANDARD);
         }
     }
+
+    //runs all implemented benchmarks
+    //currently, it is limited to the base benchmark because of time complexity
     void run_all_benchmarks(const std::string &binary_path, std::string &dataset_path, uint64_t core_count = 4)
     {
         std::cout << "Starting the benchmark" << std::endl;
@@ -377,11 +390,6 @@ public:
         model_runner::print = false;
         model_runner::recurring = true;
         this->n_args = n_args;
-
-        *result_stream_ << "%Testing FREQUENCY|mean throughput [Mhit/s]|model|XY_PLOTTABLE" << std::endl;
-        test_frequencies(n_args, core_count);
-        result_stream_->flush();
-        return;
 
         *result_stream_ << "%Testing BASE MODELS|mean throughput [Mhit/s]|model|" << std::endl;
 

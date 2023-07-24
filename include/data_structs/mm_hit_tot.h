@@ -5,25 +5,26 @@
 #include <iomanip>
 #include "../utils.h"
 #pragma once
-//uncalibrated
+// uncalibrated
 class mm_hit_tot
 {
     coord coord_;
-    double toa_, tot_; 
+    double toa_, tot_;
+
 public:
-    mm_hit_tot(short x, short y, double toa, double tot) :
-        coord_(x, y),
-        toa_(toa),
-        tot_(tot)
-        {}
-        //e_(e){}
-    //TODO try to get rid of default constructor -> and prevent copying
-    mm_hit_tot() : 
-        coord_(0, 0),
-        toa_(0.),
-        tot_(0.)
-        {}
-        //e_(0.){}
+    mm_hit_tot(short x, short y, double toa, double tot) : coord_(x, y),
+                                                           toa_(toa),
+                                                           tot_(tot)
+    {
+    }
+    // e_(e){}
+    // TODO try to get rid of default constructor -> and prevent copying
+    mm_hit_tot() : coord_(0, 0),
+                   toa_(0.),
+                   tot_(0.)
+    {
+    }
+    // e_(0.){}
     bool is_valid()
     {
         return tot_ >= 0.;
@@ -32,7 +33,7 @@ public:
     {
         return e_;
     }*/
-    const coord& coordinates() const
+    const coord &coordinates() const
     {
         return coord_;
     }
@@ -52,9 +53,8 @@ public:
     {
         return tot_;
     }
-
 };
-std::ostream& operator<<(std::ostream& os, const mm_hit_tot& hit)
+std::ostream &operator<<(std::ostream &os, const mm_hit_tot &hit)
 {
     os << hit.x() << " " << hit.y() << " " << std::fixed << std::setprecision(6) << hit.toa() << " ";
     os << hit.tot() << std::endl;

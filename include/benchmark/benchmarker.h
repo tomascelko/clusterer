@@ -7,14 +7,16 @@
 #include "i_time_measurable.h"
 #include "measuring_clock.h"
 #include "../data_nodes/nodes_package.h"
-//#include "../mapped_mm_stream.h"
+// #include "../mapped_mm_stream.h"
 #include "../mm_stream.h"
 #include "model_factory.h"
-//TODO try more repeats
+
 #pragma once
+
+// class handles the run of the model, including the time measurement
 class benchmarker
 {
-    static constexpr double FREQUENCY_MULTIPLIER_ = 80.; 
+    static constexpr double FREQUENCY_MULTIPLIER_ = 1.;
     using node_id_type = std::string;
     using dataset_name_type = std::string;
     using measured_runs_type = std::vector<double>;
@@ -27,178 +29,117 @@ class benchmarker
     std::vector<basic_path> calib_folders_;
     std::vector<std::unique_ptr<measuring_clock>> clocks_;
     benchmark_results_type results_;
-    std::string output_dir_; 
+    std::string output_dir_;
     std::vector<double> freq_scales_;
+    //the algorithm ehich should be used for calibration
     enum class calib_type
     {
-        manual,
-        automatic,
-        same
+        manual, //each data file has a corresponding calib type
+        automatic, //the calib file for each is found on pattern matching
+        same //a single calib file is used for all datasets
     };
     calib_type calibration_mode_;
-    private:
-    bool is_text_file(const std::string & path)
-    {
-        if (path.size() < 4) 
-            return false;
-         return (path.substr(path.size() - 4) != ".txt");
 
+private:
+
+    //check if selected path has a .txt suffix
+    bool is_text_file(const std::string &path)
+    {
+        if (path.size() < 4)
+            return false;
+        return (path.substr(path.size() - 4) != ".txt");
     }
-    void load_all_datasets(const std::string & data_folder)
+    //load all .txt file datasets in a folder
+    void load_all_datasets(const std::string &data_folder)
     {
         std::stringstream ss;
         ss << "Loading testing datasets:" << std::endl;
-        for (const auto & file: std::filesystem::directory_iterator(data_folder))
+        for (const auto &file : std::filesystem::directory_iterator(data_folder))
             if (!std::filesystem::is_directory(file))
             {
                 ss << file.path() << std::endl;
                 data_files_.emplace_back(file_path(file.path().string()));
             }
-        if(print_debug_info)
+        if (print_debug_info)
             std::cout << ss.str();
     }
-    void load_all_calib_files(const std::string & calib_folder)
+    //load calibration files from a folder
+    void load_all_calib_files(const std::string &calib_folder)
     {
         std::stringstream ss;
         ss << "Loading calib dirs:" << std::endl;
-        for (const auto & file: std::filesystem::directory_iterator(calib_folder))
+        for (const auto &file : std::filesystem::directory_iterator(calib_folder))
             if (std::filesystem::is_directory(file))
             {
                 ss << file.path() << std::endl;
                 calib_folders_.emplace_back(file_path(file.path().string()));
             }
-        if(print_debug_info)
+        if (print_debug_info)
             std::cout << ss.str();
     }
-    public:
-    benchmarker(const std::string& folder, const std::string & calib_folder, const std::string & output_dir): //automatic names based search of calib file
-    calibration_mode_(calib_type::automatic),
-    output_dir_(output_dir)
-    {
-       load_all_datasets(folder);
-       load_all_calib_files(calib_folder);
-    }
-    benchmarker(const std::vector<std::string>& data_files, const std::string & calib_folder, const std::string & output_dir): //automatic names based search of calib file
-    calibration_mode_(calib_type::automatic),
-    output_dir_(output_dir)
-    {
-       for (auto & data_file : data_files) 
-        {
-             data_files_.emplace_back(file_path(data_file));
-        }
-       load_all_calib_files(calib_folder);
-    }
-    benchmarker(const std::vector<std::string>& data_files, const std::vector<std::string>& calib_files,
-        const std::string & output_dir): //automatic names based search of calib file
-    output_dir_(output_dir)
-    {
-        for (auto & data_file : data_files) 
-        {
-             data_files_.emplace_back(file_path(data_file));
-        }
-        switch(calib_files.size())
-        {
-            case 0:
-            {
-                throw std::invalid_argument("no calibration files passed");
-            }
-            case 1:
-            {
-                calibration_mode_ = calib_type::same;
-                calib_folders_.emplace_back(file_path(calib_files[0]));
 
-            }
-            default:
+public:
+    benchmarker(const std::string &folder, const std::string &calib_folder, const std::string &output_dir) : // automatic names based search of calib file
+                                                                                                             calibration_mode_(calib_type::automatic),
+                                                                                                             output_dir_(output_dir)
+    {
+        load_all_datasets(folder);
+        load_all_calib_files(calib_folder);
+    }
+    benchmarker(const std::vector<std::string> &data_files, const std::string &calib_folder, const std::string &output_dir) : // automatic names based search of calib file
+                                                                                                                              calibration_mode_(calib_type::automatic),
+                                                                                                                              output_dir_(output_dir)
+    {
+        for (auto &data_file : data_files)
+        {
+            data_files_.emplace_back(file_path(data_file));
+        }
+        load_all_calib_files(calib_folder);
+    }
+    benchmarker(const std::vector<std::string> &data_files, const std::vector<std::string> &calib_files,
+                const std::string &output_dir) : // automatic names based search of calib file
+                                                 output_dir_(output_dir)
+    {
+        for (auto &data_file : data_files)
+        {
+            data_files_.emplace_back(file_path(data_file));
+        }
+        switch (calib_files.size())
+        {
+        case 0:
+        {
+            throw std::invalid_argument("no calibration files passed");
+        }
+        case 1:
+        {
+            calibration_mode_ = calib_type::same;
+            calib_folders_.emplace_back(file_path(calib_files[0]));
+        }
+        default:
+        {
+            calibration_mode_ = calib_type::manual;
+            if (calib_files.size() != data_files.size())
+                throw std::invalid_argument("calib option MANUAL was selected and number of data files is not equal to calibration files");
+            for (auto &calib_file : calib_files)
             {
-                calibration_mode_ = calib_type::manual;
-                if(calib_files.size() != data_files.size())
-                    throw std::invalid_argument("calib option MANUAL was selected and number of data files is not equal to calibration files");
-                for (auto & calib_file : calib_files) 
-                {
-                    calib_folders_.emplace_back(file_path(calib_file));
-                }
+                calib_folders_.emplace_back(file_path(calib_file));
             }
         }
-        
-        
+        }
     }
+    //a callback used to return result from a run
     void register_result(exec_time_result result)
     {
-        //TODO WHEN MEASURING, SKIP THE READ  OPERATION
-        //IDEALLY SKIP WRITE AS WELL
         results_[result.node_name()][current_dataset_.filename()].push_back(result.exec_time());
-        std::cout << result.node_name() << " " << result.exec_time() << std::endl; 
-
+        std::cout << result.node_name() << " " << result.exec_time() << std::endl;
     }
-    /*
-    template <typename clustering_type, typename ...cl_args_type>
-    void prepare_model(const std::string& data_file, const std::string& calib_file, cl_args_type ... cl_args) //todo possibly replace other nodes as well
+    //writes the benchmark result to a file
+    void print_results(std::ostream &stream)
     {
-        using mm_stream = mm_write_stream;
-        repeating_data_reader<burda_hit>* burda_reader = new repeating_data_reader<burda_hit>{data_file, 2 << 21, FREQUENCY_MULTIPLIER_};
-        //data_reader<burda_hit>* burda_reader = new data_reader<burda_hit>{data_file, 2 << 10};
-        burda_to_mm_hit_adapter<mm_hit>* converter = new burda_to_mm_hit_adapter<mm_hit>(calibration(calib_file, current_chip::chip_type::size()));
-        hit_sorter<mm_hit>* sorter = new hit_sorter<mm_hit>();
-        clustering_type* clusterer = new clustering_type(cl_args...);
-        //std::ofstream print_stream("printed_hits.txt");
-        //mm_stream * print_stream = new mm_stream("/home/tomas/MFF/DT/clusterer/output/new") ;
-        //data_printer<cluster<mm_hit>, mm_stream>* printer = new data_printer<cluster<mm_hit>, mm_stream>(print_stream);
-        //std::ofstream* out_halo_file = new std::ofstream("/home/tomas/MFF/DT/clusterer/output/halos.txt");
-        //pixel_halo_width_calculator<cluster, mm_hit, std::ofstream>  * halo_calc = new pixel_halo_width_calculator<cluster, mm_hit, std::ofstream>(out_halo_file);
-        
-        controller_ = new dataflow_controller();
-        controller_->add_node(burda_reader);
-        controller_->add_node(converter);
-        controller_->add_node(sorter);
-        controller_->add_node(clusterer);
-        //controller_->add_node(printer);
-
-        controller_->connect_nodes(burda_reader, converter);
-        controller_->connect_nodes(converter, sorter);
-        controller_->connect_nodes(sorter, clusterer);
-        //controller_->connect_nodes(clusterer, printer);
-
-    }
-    template <typename clustering_type, typename split_data_type, typename ...cl_args_type>
-    void prepare_model(pipe_descriptor<split_data_type>* split_descriptor, const std::string& data_file, const std::string& calib_file, cl_args_type ... cl_args) //todo possibly replace other nodes as well
-    {
-        using mm_stream = mm_write_stream;
-        repeating_data_reader<burda_hit>* burda_reader = new repeating_data_reader<burda_hit>{data_file, 2 << 21};
-        //data_reader<burda_hit>* burda_reader = new data_reader<burda_hit>{data_file, 2 << 10};
-        burda_to_mm_hit_adapter<mm_hit>* converter = new burda_to_mm_hit_adapter<mm_hit>(
-            calibration(calib_file, current_chip::chip_type::size()));
-        cluster_merging<mm_hit>* merger = new cluster_merging<mm_hit>(split_descriptor);
-        auto sorter = new hit_sorter<mm_hit>(split_descriptor);
-        controller_ = new dataflow_controller();
-        controller_->add_node(burda_reader);
-        controller_->add_node(converter);
-        controller_->add_node(sorter);
-        controller_->add_node(merger);
-        controller_->connect_nodes(burda_reader, converter);
-        controller_->connect_nodes(converter, sorter);
-        for(uint32_t i = 0; i < split_descriptor->pipe_count(); ++i)
-        {
-            auto clusterer = new clustering_type(cl_args...);
-            controller_->add_node(clusterer);
-            controller_->connect_nodes(sorter, clusterer);
-            controller_->connect_nodes(clusterer, merger);
-        }
-        //std::ofstream print_stream("printed_hits.txt");
-        //mm_stream * print_stream = new mm_stream("/home/tomas/MFF/DT/clusterer/output/new") ;
-        //data_printer<cluster<mm_hit>, mm_stream>* printer = new data_printer<cluster<mm_hit>, mm_stream>(print_stream);
-        //std::ofstream* out_halo_file = new std::ofstream("/home/tomas/MFF/DT/clusterer/output/halos.txt");
-        //pixel_halo_width_calculator<cluster, mm_hit, std::ofstream>  * halo_calc = new pixel_halo_width_calculator<cluster, mm_hit, std::ofstream>(out_halo_file);
-        
-
-        
-
-    }*/
-    void print_results(std::ostream & stream)
-    {
-        for (auto & node_pair : results_)
+        for (auto &node_pair : results_)
         {
             stream << "Node name:" << node_pair.first << std::endl;
-            for (auto & dataset_pair : node_pair.second)
+            for (auto &dataset_pair : node_pair.second)
             {
                 stream << "Dataset name: " << dataset_pair.first << std::endl;
                 for (uint32_t i = 0; i < dataset_pair.second.size(); ++i)
@@ -207,30 +148,30 @@ class benchmarker
                 }
             }
         }
-        for(uint32_t i = 0; i < data_files_.size(); ++i)
+        for (uint32_t i = 0; i < data_files_.size(); ++i)
         {
             stream << "Data File:" << data_files_[i].filename() << std::endl;
-            for(uint32_t j = 0; j < statistic_repeats_; ++j)
+            for (uint32_t j = 0; j < statistic_repeats_; ++j)
             {
-                stream  << "Time: " << total_exec_times_[i][j] << "ms" ;
+                stream << "Time: " << total_exec_times_[i][j] << "ms";
             }
             stream << std::endl;
         }
     }
+    //runs all nodes using the controller node
     void run_benchmark_for_dataset()
     {
-        //std::cout << "Testing dataset "  << current_dataset_.filename() << std::endl;
-        for (i_data_node * node : controller_->nodes())
+        // std::cout << "Testing dataset "  << current_dataset_.filename() << std::endl;
+        for (i_data_node *node : controller_->nodes())
         {
-            auto measurable = dynamic_cast<i_time_measurable*>(node);
-            if (measurable != nullptr) //node is measurable
+            auto measurable = dynamic_cast<i_time_measurable *>(node);
+            if (measurable != nullptr) // node is measurable
             {
                 auto new_clock = std::make_unique<measuring_clock>([this](exec_time_result result)
-                {
-                    register_result(result);
-                }, true);
+                                                                   { register_result(result); },
+                                                                   true);
                 clocks_.emplace_back(std::move(new_clock));
-                measurable->prepare_clock(clocks_[clocks_.size()-1].get());
+                measurable->prepare_clock(clocks_[clocks_.size() - 1].get());
             }
         }
         controller_->start_all();
@@ -239,170 +180,108 @@ class benchmarker
         controller_->remove_all();
         clocks_.clear();
     }
-
-    std::string auto_find_calib_file(const file_path& data_path)
+    //used for pattern match finding of a calibration - the calib folder name
+    //must be a suffix of the dataset name
+    std::string auto_find_calib_file(const file_path &data_path)
     {
         std::vector<std::string> matching_files;
-        for(auto & calib_file : calib_folders_)
+        for (auto &calib_file : calib_folders_)
         {
-            if(data_path.filename().find(calib_file.last_folder()) != std::string::npos)
+            if (data_path.filename().find(calib_file.last_folder()) != std::string::npos)
                 matching_files.push_back(calib_file.as_absolute());
         }
-        switch(matching_files.size())
+        switch (matching_files.size())
         {
-            case 0:
-                throw std::invalid_argument("no calibration file was found for file: " + data_path.as_absolute());
-                break;
-            case 1:
-                return matching_files[0];
-                break;
-            default:
-                throw std::invalid_argument("too many calibration files were found (ambigiouous) for file: " + data_path.as_absolute());
+        case 0:
+            throw std::invalid_argument("no calibration file was found for file: " + data_path.as_absolute());
+            break;
+        case 1:
+            return matching_files[0];
+            break;
+        default:
+            throw std::invalid_argument("too many calibration files were found (ambigiouous) for file: " + data_path.as_absolute());
         }
     }
-    /*template <typename clusterer_type, typename hit_type, typename... cl_arg_types>
-    void run_whole_benchmark(pipe_descriptor<hit_type>* split_descr, const std::string & clustering_name, cl_arg_types... cl_args)
-    {
-        const uint16_t REPEATS = 1;
-        for (uint32_t i = 0; i < data_files_.size(); ++i)
-        {   
-            for(uint32_t j = 0; j < REPEATS; j++)
-            { 
-            current_dataset_ = data_files_[i];
-            switch(calibration_mode_)
-            {
-                case calib_type::automatic:
-                    prepare_model<clusterer_type>(split_descr, data_files_[i].as_absolute(), auto_find_calib_file(data_files_[i]), cl_args...);
-                    break;
-                case calib_type::manual:
-                    prepare_model<clusterer_type>(split_descr, data_files_[i].as_absolute(), calib_folders_[i].as_absolute(), cl_args...);
-                    break;
-                case calib_type::same:
-                    prepare_model<clusterer_type>(split_descr, data_files_[i].as_absolute(), calib_folders_[0].as_absolute(), cl_args...);
-                    break;  
-                default:
-                    throw std::invalid_argument("invalid calibration type (choose one of auto/manual/same)");
-                    break;
-            }
-            
-            run_benchmark_for_dataset();
-            delete controller_;
-            std::cout << "FINISHED" << std::endl;
-            }
-        }
-        print_results(std::cout);
-    }
-    template <typename clusterer_type, typename... cl_arg_types>
-    void run_whole_benchmark(const std::string & clustering_name, cl_arg_types... cl_args)
-    {
-        const uint16_t REPEATS = 3;
-        for (uint32_t i = 0; i < data_files_.size(); ++i)
-        {   
-            for(uint32_t j = 0; j < REPEATS; j++)
-            { 
-            current_dataset_ = data_files_[i];
-            switch(calibration_mode_)
-            {
-                case calib_type::automatic:
-                    prepare_model<clusterer_type>(data_files_[i].as_absolute(), auto_find_calib_file(data_files_[i]), cl_args...);
-                    break;
-                case calib_type::manual:
-                    prepare_model<clusterer_type>(data_files_[i].as_absolute(), calib_folders_[i].as_absolute(), cl_args...);
-                    break;
-                case calib_type::same:
-                    prepare_model<clusterer_type>(data_files_[i].as_absolute(), calib_folders_[0].as_absolute(), cl_args...);
-                    break;  
-                default:
-                    throw std::invalid_argument("invalid calibration type (choose one of auto/manual/same)");
-                    break;
-            }
-            
-            run_benchmark_for_dataset();
-            delete controller_;
-            std::cout << "FINISHED" << std::endl;
-            }
-        }
-        print_results(std::cout);
-    }
-*/
+
     std::vector<std::vector<double>> total_exec_times_;
-    uint32_t statistic_repeats_ =  5;
-    void clean_clustering_files(const std::vector<std::string> & files)
+    uint32_t statistic_repeats_ = 5;
+
+    //removes the files creates during the benchmark run
+    void clean_clustering_files(const std::vector<std::string> &files)
     {
         const std::string ini_suffix = ".ini";
         const std::string cl_suffix = "_cl.txt";
         const std::string px_suffix = "_px.txt";
-        for (const auto & file : files)
+        for (const auto &file : files)
         {
             std::remove((file + ini_suffix).c_str());
             std::remove((file + cl_suffix).c_str());
             std::remove((file + px_suffix).c_str());
         }
     }
-    //std::vector<uint32_t> buffer_repetitions_ = {300};//{1, 3, 5, 7, 10, 15, 20, 30, 50, 100, 200};
-    void set_freq_scales(const std::vector<double> & freq_scales)
+    // std::vector<uint32_t> buffer_repetitions_ = {300};//{1, 3, 5, 7, 10, 15, 20, 30, 50, 100, 200};
+    // stores the base hitrates of the data files so we can correctly scale them
+    void set_freq_scales(const std::vector<double> &freq_scales)
     {
         freq_scales_ = freq_scales;
     }
-    std::vector<std::string> run(architecture_type && arch, node_args & args, bool debug = false)
+    // the main method of benchmarker, runs the model multiple times with statisical repeats
+    // and computes the true frequency multipler, if any
+    std::vector<std::string> run(architecture_type &&arch, node_args &args, bool debug = false)
     {
-    
+
         model_factory factory;
         std::vector<std::string> output_filenames;
         double freq_multiplier;
-        if(args["reader"].count("freq_multiplier") > 0)
+        if (args["reader"].count("freq_multiplier") > 0)
         {
             freq_multiplier = std::stod(args["reader"]["freq_multiplier"]);
-            //std::cout << "FREQ multipl" << freq_multiplier << std::endl;
-            
+            // std::cout << "FREQ multipl" << freq_multiplier << std::endl;
         }
-        controller_  =  std::make_unique<dataflow_controller>(arch.node_descriptors(), debug);
+        controller_ = std::make_unique<dataflow_controller>(arch.node_descriptors(), debug);
         for (uint32_t i = 0; i < data_files_.size(); ++i)
         {
 
             total_exec_times_.emplace_back(std::vector<double>());
-            
-            for(uint32_t j = 0; j < statistic_repeats_; j++)
-            { 
+
+            for (uint32_t j = 0; j < statistic_repeats_; j++)
+            {
                 current_dataset_ = data_files_[i];
                 std::vector<std::string> temporary_output;
                 if (freq_scales_.size() > 0)
                 {
-                    args["reader"]["freq_multiplier"] = std::to_string((freq_multiplier/(freq_scales_[i]/1000000)));
+                    args["reader"]["freq_multiplier"] = std::to_string((freq_multiplier / (freq_scales_[i] / 1000000)));
                     std::cout << "FINAL FREQ" << args["reader"]["freq_multiplier"] << std::endl;
                 }
-                switch(calibration_mode_)
+                switch (calibration_mode_)
                 {
-                    case calib_type::automatic:
-                        temporary_output = factory.create_model(controller_.get(), arch,  data_files_[i].as_absolute(), auto_find_calib_file(data_files_[i]), output_dir_, args);
-                        break;
-                    case calib_type::manual:
-                        temporary_output = factory.create_model(controller_.get(), arch, data_files_[i].as_absolute(), calib_folders_[i].as_absolute(), output_dir_, args);
-                        break;
-                    case calib_type::same:
-                        temporary_output = factory.create_model(controller_.get(), arch, data_files_[i].as_absolute(), calib_folders_[0].as_absolute(), output_dir_, args);
-                        break;  
-                    default:
-                        throw std::invalid_argument("invalid calibration type (choose one of auto/manual/same)");
-                        break;
+                case calib_type::automatic:
+                    temporary_output = factory.create_model(controller_.get(), arch, data_files_[i].as_absolute(), auto_find_calib_file(data_files_[i]), output_dir_, args);
+                    break;
+                case calib_type::manual:
+                    temporary_output = factory.create_model(controller_.get(), arch, data_files_[i].as_absolute(), calib_folders_[i].as_absolute(), output_dir_, args);
+                    break;
+                case calib_type::same:
+                    temporary_output = factory.create_model(controller_.get(), arch, data_files_[i].as_absolute(), calib_folders_[0].as_absolute(), output_dir_, args);
+                    break;
+                default:
+                    throw std::invalid_argument("invalid calibration type (choose one of auto/manual/same)");
+                    break;
                 }
-                if(temporary_output.size() > 0)
+                if (temporary_output.size() > 0)
                     output_filenames.insert(output_filenames.end(), temporary_output.begin(), temporary_output.end());
-                
+
                 auto start_time = std::chrono::high_resolution_clock::now();
                 run_benchmark_for_dataset();
                 auto end_time = std::chrono::high_resolution_clock::now();
                 clean_clustering_files(temporary_output);
-                //delete controller_;
-                //std::cout << "FINISHED" << std::endl;
                 total_exec_times_.back().push_back(
                     std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count());
-            } 
-            //}
+            }
             
         }
         controller_.reset();
-        //print_results(std::cout);
+
         return output_filenames;
     }
 };

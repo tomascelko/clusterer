@@ -1,3 +1,4 @@
+//a file to simplify including of headers in code which builds architectures from multiple nodes
 #pragma once
 #include "preprocessing/burda_to_mm_hit_adapter.h"
 #include "clustering/clusterer.h"

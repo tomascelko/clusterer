@@ -35,7 +35,7 @@ public:
         }
         this->writer_.close();
 
-        // std::cout << name() << " ENDED ----------------" << std::endl;
+         std::cout << name() << " ENDED ----------------" << std::endl;
     }
 
     virtual ~cluster_sorting_combiner() = default;

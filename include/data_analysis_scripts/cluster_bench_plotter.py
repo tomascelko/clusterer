@@ -8,7 +8,8 @@ from enum import Enum
 # After passing a data file with means and standard deviations of execution time,
 # create a plot which visualizes the performance
 
-
+PLOT_FONT_SIZE = 20
+TITLE_FONT_SIZE = 25
 class PlotType(Enum):
     XY_PLOT = 1,
     BAR_PLOT = 2
@@ -19,10 +20,10 @@ def jitter(array, jitter_size, factor=0.06):
 
 
 def plot_bar_transposed(test, test_name):
-    plt.figure(figsize=(14, 5))
-    plt.title(test_name)
+    plt.figure(figsize=(14, 4))
+    plt.title(test_name, fontsize = TITLE_FONT_SIZE)
     ys = np.array(test["x_values"])
-    plt.xlabel(test["ylabel"])
+    plt.xlabel(test["ylabel"], fontsize = PLOT_FONT_SIZE)
     particle_index = 0
     for (particle_name) in test["data"]:
         particle_index += 1
@@ -31,18 +32,19 @@ def plot_bar_transposed(test, test_name):
         stds = np.array([std for [mean, std] in particle_data])
         plt.errorbar(np.array(means), jitter(np.arange(
             len(ys)), particle_index), xerr=stds, marker="o", capsize=3, linestyle="None")
-    plt.yticks(range(len(ys)), ys, wrap=True)
+    plt.yticks(range(len(ys)), ys, wrap=True, fontsize = PLOT_FONT_SIZE)
+    plt.xticks(fontsize = PLOT_FONT_SIZE)
     plt.legend([key for key in test["data"]])
     plt.gca().set_xlim(left=0)
     plt.show()
 
 
 def plot_xy(test, test_name):
-    plt.figure(figsize=(14, 5))
-    plt.title(test_name)
+    plt.figure(figsize=(14, 4))
+    plt.title(test_name, fontsize = TITLE_FONT_SIZE)
     xs = np.array(test["x_values"])
-    plt.xlabel(test["xlabel"])
-    plt.ylabel(test["ylabel"])
+    plt.xlabel(test["xlabel"], fontsize = PLOT_FONT_SIZE)
+    plt.ylabel(test["ylabel"], fontsize = PLOT_FONT_SIZE)
     for (particle_name) in test["data"]:
         particle_data = test["data"][particle_name]
         means = np.array([mean for [mean, std] in particle_data])
@@ -53,7 +55,8 @@ def plot_xy(test, test_name):
         means = np.array([mean for [mean, std] in particle_data])
         stds = np.array([std for [mean, std] in particle_data])
         plt.fill_between(xs, y1=means - stds, y2=means + stds, alpha=0.3)
-
+    plt.xticks(fontsize = PLOT_FONT_SIZE)
+    plt.yticks(fontsize = PLOT_FONT_SIZE)
     plt.legend([key for key in test["data"]])
     plt.gca().set_ylim(bottom=0)
     plt.show()
@@ -133,8 +136,7 @@ filenames = [
 def plot_hist(data):
     plt.hist(data[:, 0], bins=256, alpha=0.65)
     plt.axvline(data[:, 0].mean(), color='k', linestyle='dashed')
-    plt.text(data[:, 0].mean() + 5, plt.ylim()[1] *
-             0.2, f"Mean: {round(data[:,0].mean(), 2)}")
+    plt.text(data[:, 0].mean() + 5, plt.ylim()[1] * 0.2, f"Mean: {round(data[:,0].mean(), 2)}")
     plt.title("Histogram of the cluster " + property_header[0])
     plt.xlabel("diameter[pixels]")
     plt.ylabel("number of clusters")
@@ -169,11 +171,11 @@ if __name__ == "__main__":
     if (len(sys.argv) != 2):
         # print("Incorrect number of arguments passed (expected 1)")
 
-        filename = "output/benchmark_results_laptop/validation_result.txt"
-        parse_benchmark_files(filename)
+        #filename = "output/benchmark_results_laptop/validation_result.txt"
+        #parse_benchmark_files(filename)
 
-        filename = "output/benchmark_results_laptop/FINAL_PLOTS.txt"
-        parse_benchmark_files(filename)
+        #filename = "output/benchmark_results_laptop/FINAL_PLOTS.txt"
+        #parse_benchmark_files(filename)
         filename = "output/benchmark_results_server/FINAL_PLOTS.txt"
         parse_benchmark_files(filename)
 

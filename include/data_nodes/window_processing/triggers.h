@@ -145,7 +145,7 @@ const wchar_t *get_trigger_filename<wchar_t>(const std::string &trigger_filename
 }
 
 //the trigger which wraps serialized onnx model
-template <typename hit_type, typename output_type>
+template <typename hit_type, typename output_type> 
 class onnx_trigger : public abstract_window_trigger<hit_type, default_window_feature_vector<hit_type>>
 {
 

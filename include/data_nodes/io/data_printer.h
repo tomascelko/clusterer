@@ -21,18 +21,20 @@ public:
     }
     virtual void start() override
     {
-        data_type hit;
+        data_type data;
         uint64_t processed = 0;
-        this->reader_.read(hit);
-        while (hit.is_valid())
+        this->reader_.read(data);
+        while (data.is_valid())
         {
-            this->writer_.write(std::move(hit));
+            this->writer_.write(std::move(data));
             ++processed;
-            (*out_stream_) << hit;
-            this->reader_.read(hit);
+            (*out_stream_) << data;
+            this->reader_.read(data);
         }
+         std::cout << name() << " ENDED ----------------" << std::endl;
         out_stream_->close();
         this->writer_.close();
+    
     }
 
     virtual ~data_printer() = default;

@@ -121,6 +121,7 @@ public:
             }
             reader_.read(hit);
         }
+        std::cout << "============ BURDA END ======" << std::endl;
         this->writer_.close();
     }
     virtual ~burda_to_mm_hit_adapter() = default;

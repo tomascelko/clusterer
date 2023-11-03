@@ -42,12 +42,24 @@ public:
     {
         data_block_.reserve(2 * data_block<data_type>::max_block_byte_size() / avg_data_size);
     }
-
+    bool is_temporally_wide()
+    {
+        return false;
+        const uint64_t MAX_TEMPORAL_DIFF = 1000000000;
+        if(data_block_.size() > 0)
+            return false;
+        bool is_wide = (data_block_[data_block_.size() - 1].time() - data_block_[0].time()) > MAX_TEMPORAL_DIFF;
+        /*if (is_wide)
+        {
+           std::cout << "";
+        }*/
+        return is_wide;
+    }
     bool try_add_hit(data_type &&data)
     {
         data_block_.emplace_back(data);
         byte_size_ += data.size();
-        return byte_size_ < max_block_byte_size();
+        return byte_size_ < max_block_byte_size() || is_temporally_wide();
     }
     bool try_remove_hit(data_type &hit)
     {

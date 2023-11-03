@@ -60,6 +60,11 @@ public:
     {
         return slow_clock_dt * toa_ - fast_clock_dt * fast_toa_;
     }
+    double time() const
+    {
+        return slow_clock_dt * toa_ - fast_clock_dt * fast_toa_;;
+    }
+
     void update_time(uint64_t new_toa, short fast_toa)
     {
         toa_ = new_toa;

@@ -30,9 +30,8 @@ file(GLOB_RECURSE LIB_SRC_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/include/*.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/*.cpp
 )
-#set(SOURCES ./src/main.cpp)
 
-
+#clusterer library
 add_library(lclusterer SHARED ${LIB_SRC_FILES})
 
 set_target_properties(lclusterer PROPERTIES LINKER_LANGUAGE CXX)
@@ -40,16 +39,11 @@ set_target_properties(lclusterer PROPERTIES LIBRARY_OUTPUT_DIRECTORY "./lib")
 set_target_properties(lclusterer PROPERTIES LIBRARY_OUTPUT_DIRECTORY_RELEASE "./lib")
 set_target_properties(lclusterer PROPERTIES LIBRARY_OUTPUT_DIRECTORY_DEBUG "./lib")
 
-#set_target_properties(lclusterer PROPERTIES RUNTIME_OUTPUT_DIRECTORY "./bin")
 target_include_directories(lclusterer PUBLIC ${onnx_include_path})
 target_link_libraries(lclusterer PUBLIC ${onnx_lib_path})
 
 
-#target_link_libraries(lclusterer ${CMAKE_CURRENT_SOURCE_DIR}/onnxruntime-linux-x64-1.14.1/lib/libonnxruntime.so)
-
-
-
- 
+#clusterer executable 
 add_executable(clusterer ${SOURCES})
 
 set_target_properties(clusterer PROPERTIES RUNTIME_OUTPUT_DIRECTORY "./bin")

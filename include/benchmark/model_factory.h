@@ -152,17 +152,23 @@ class model_factory
     template <typename arch_type>
     i_data_node *create_node(node node, arch_type arch, const node_args &args)
     {
-
+        
         if (node.type == "r")
         {
             if (arch.node_descriptors().find(node.type + std::to_string(node.id)) != arch.node_descriptors().end())
-                return new data_reader<burda_hit, std::ifstream>{
+                {
+                    //return new data_reader<burda_hit, std::ifstream>{
+                    return new online_data_reader{   
                     dynamic_cast<node_descriptor<burda_hit, burda_hit> *>(
                         arch.node_descriptors()["r" + std::to_string(node.id)]),
                     *data_file_it, args};
+                }
             else
-                return new data_reader<burda_hit, std::ifstream>{
+            {
+                //return new data_reader<burda_hit, std::ifstream>{
+                  return new online_data_reader{
                     *data_file_it, args};
+            }
         }
         else if (node.type == "rr")
         {

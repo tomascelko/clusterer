@@ -23,7 +23,8 @@ protected:
     buffer_type *ready_buffer_ = nullptr;
     bool paused_ = false;
     dataflow_controller *controller_;
-    const uint32_t PIPE_CHECK_INTERVAL = 1000000;
+    const uint32_t PIPE_MEMORY_CHECK_INTERVAL = 1000000;
+    
     //change open buffer and a full buffer
     void swap_buffers()
     {
@@ -55,7 +56,7 @@ protected:
         // std::cout << total_hits_read_ << std::endl;
         return processed_count == max_buffer_size_;
     }
-
+    
 public:
     data_reader(node_descriptor<data_type, data_type> *node_descriptor,
                 const std::string &file_name, const node_args &args) : input_stream_(std::move(std::make_unique<istream_type>(file_name))),
@@ -76,6 +77,10 @@ public:
     {
         paused_ = true;
     }
+    virtual uint64_t get_total_hit_count() override
+    {
+        return total_hits_read_;
+    }
     virtual void continue_production() override
     {
         paused_ = false;
@@ -91,7 +96,7 @@ public:
     //check if reading produces too much data to fit to memory
     void perform_memory_check()
     {
-        if (total_hits_read_ % PIPE_CHECK_INTERVAL == 0)
+        if (total_hits_read_ % PIPE_MEMORY_CHECK_INTERVAL == 0)
         {
             paused_ = controller_->is_full_memory();
             while (paused_)

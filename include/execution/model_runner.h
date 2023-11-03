@@ -244,6 +244,7 @@ public:
         std::string arch = base_arch;
         std::string output_node;
         std::string first_node = "r";
+        print = false;
         bool trigger = args.get_arg<bool>("trigger", "use_trigger");
         std::string clustering_node = get_clustering_str(clustering_alg_type);
         if (trigger)

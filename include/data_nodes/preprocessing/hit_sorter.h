@@ -86,6 +86,8 @@ public:
         }
         // write last (invalid) hit token and cose the stream
         this->writer_.close();
+        
+        
     }
 
     virtual ~hit_sorter() = default;

@@ -5,6 +5,9 @@
 #include <sstream>
 #include <cmath>
 #include <algorithm>
+#include <iostream>
+#include <boost/asio.hpp>
+#include <boost/array.hpp>
 #pragma once
 //utlility classes used across the whole project
 // for I/O and other are listed below
@@ -243,4 +246,14 @@ static typename std::vector<T>::iterator binary_find_impl(std::vector<T> &array,
     if (array[mid] < item)
         return binary_find_impl(array, item, mid, right);
     return binary_find_impl(array, item, left, mid);
+};
+
+std::string char_to_hex_str(char byte)
+{
+    throw not_implemented();
+    //TODO
 }
+
+
+
+

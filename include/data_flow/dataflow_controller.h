@@ -30,6 +30,8 @@ private:
     std::vector<i_controlable_source *> data_sources_;
     std::ostream &state_info_out_stream_ = std::cout;
     descriptor_map_type node_descriptor_map_;
+    uint64_t total_input_hit_count_ = 0;
+    const uint32_t DATAFLOW_CONTROL_TIME_INTERVAL_MS = 500.;
     bool debug_mode_;
     //taking ownership of the created node
     void register_node(i_data_node *item)
@@ -150,11 +152,20 @@ public:
         }
         state_info_out_stream_ << "----------------" << std::endl;
     }
+
+    void print_realtime_input_hit_frequency()
+    {
+        for (const auto data_source : data_sources_)
+        {
+            uint64_t new_hit_count =  data_source->get_total_hit_count() - total_input_hit_count_;
+            total_input_hit_count_ = data_source->get_total_hit_count();
+            state_info_out_stream_ << "Approx input hitrate: " << new_hit_count / (double)(DATAFLOW_CONTROL_TIME_INTERVAL_MS) << " kHit/s" << std::endl;
+        }
+    }
     //
-    void control_memory_usage(uint64_t min_memory = 2ull << 31, double max_pipe_memory = 2ull << 28) // 29
+    void control_memory_usage(uint64_t min_memory = 2ull << 31, double max_pipe_memory = 2ull << 29) // 29
     {
         uint64_t used_memory = get_used_memory();
-        // uint64_t free_memory = get_free_memory();
         const uint64_t EPSILON_MEMORY = 2ull << 27; // CHANGED FROM 27
         memory_control_counter_++;
         for (auto &node : nodes_)
@@ -240,10 +251,15 @@ public:
                                                     {
                 while(!is_done_)
                 {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(500));
-                    //control_memory_usage();
+                    std::this_thread::sleep_for(std::chrono::milliseconds(
+                        DATAFLOW_CONTROL_TIME_INTERVAL_MS
+                    ));
+                    // DO NOT USE control_memory_usage();
                     if(debug_mode_)
+                    {
                         print_pipe_state();
+                        print_realtime_input_hit_frequency();
+                    }
                     if(data_sources_.size() > 1)
                         control_lane_diff_memory(); 
                 } })));

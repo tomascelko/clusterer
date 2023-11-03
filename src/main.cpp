@@ -18,13 +18,18 @@
 
 int main(int argc, char **argv)
 {
+    //auto controller = udp_controller("192.168.1.153");
+    
+    //return 0;
     std::cout << "Starting the run..." << std::endl;
     std::cout << "Parsing the arguments..." << std::endl;
     const uint32_t TILE_SIZE = 2;
-    const uint32_t TIME_WINDOW_SIZE = 50000000; // 50ms
+    const uint32_t TIME_WINDOW_SIZE = 100000000; // 50ms
     std::vector<std::string> args(argv, argc + argv);
-    uint32_t core_count = 4; //args.size() > 1 ? std::stoi(args[1]) : 4;
-    //args = {"./clusterer", "--debug", "--mode", "benchmark", "--args", "../../../clusterer_data/parameters/node_params.txt", "../../../clusterer_data"};// "--calib", "../../../clusterer_data/calib/F4-W00076/", "../../../clusterer_data/lead/deg0_0.txt"};
+    
+    uint32_t core_count = 6; //args.size() > 1 ? std::stoi(args[1]) : 4;
+    args = {"./clusterer", "--debug", "--n_workers", "6", "--merge_type", "multioutput", "--args" , "../../../clusterer_data/parameters/node_params.txt", "--calib", 
+    "../../../clusterer_data/calib/K7/calib_coeffs/", "../../../clusterer_data/lead/deg0_0.txt"};
 
     argument_parser parser = argument_parser(args[0]);
     parser.try_parse_and_run(std::vector<std::string>(args.begin() + 1, args.end()));

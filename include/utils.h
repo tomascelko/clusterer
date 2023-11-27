@@ -69,7 +69,7 @@ class io_utils
 private:
     static bool is_separator(char character)
     {
-        const int SEPARATORS_ASCII_IDEX = 16;
+        const int SEPARATORS_ASCII_IDEX = 33;
         return character < SEPARATORS_ASCII_IDEX && character > 0;
     }
 
@@ -255,5 +255,32 @@ std::string char_to_hex_str(char byte)
 }
 
 
+template <typename T, template <typename> class template_type>
+struct is_instance_of_template {
+    template <typename U>
+    static std::true_type test(const template_type<U>*);
+    static std::false_type test(...);
+
+    static constexpr bool value = decltype(test(static_cast<T*>(nullptr)))::value;
+};
+
+template <bool B, typename data_type>
+typename std::enable_if<B, uint64_t>::type get_processed_count(const data_type & data) {
+    return data.hits().size();  
+    };
+
+template <bool B, typename data_type>
+typename std::enable_if<!B, uint64_t>::type get_processed_count(const data_type & obj) {
+    return 1ULL;
+}
+/*
+template <typename T>
+int GetValue(T& instance) {
+    if (IsInstanceOfATemplate<T, A>::value) {
+        return instance.hits().size();  // Call the instance method d() on A<T>
+    } else {
+        return 1;
+    }
+}*/
 
 

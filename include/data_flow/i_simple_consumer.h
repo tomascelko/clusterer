@@ -14,4 +14,5 @@ public:
     {
         reader_ = pipe_reader<data_type>(pipe);
     }
+    
 };

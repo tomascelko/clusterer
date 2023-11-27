@@ -30,7 +30,7 @@ public:
     }
     static constexpr uint32_t max_block_byte_size()
     {
-        return 2 << 17;
+        return 2 << 15;
     }
     static constexpr double closing_time()
     {
@@ -96,8 +96,8 @@ class default_pipe : public abstract_pipe
 private:
     const uint32_t CHECK_FULL_PIPE_INTERVAL = 500;
     const uint32_t HISTORY_LENGTH = 300;
-    const uint64_t MAX_QUEUE_SIZE = 2 << 28;
-    const uint64_t FULL_QUEUE_SLEEP_TIME = 100; // in miliseconds
+    const uint64_t MAX_QUEUE_SIZE = 2 << 25;
+    const uint64_t FULL_QUEUE_SLEEP_TIME = 200; // in miliseconds
     queue_type<data_block<data_type>> queue_;
     std::atomic<uint64_t> bytes_used_ = 0;
     std::string name_;
@@ -153,6 +153,10 @@ public:
         processed_counter += new_block.size(); // potentially rally condition
         bytes_used_ += new_block.byte_size();
         total_bytes_processed_ += new_block.byte_size();
+        /*while(bytes_used_ > MAX_QUEUE_SIZE)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100)); //a thread has
+        }*/
         emplace_impl(std::move(new_block), queue_); // TODO or call enqueue when using multi queue
     }
     //important (blocking) method for removing a block from queue
@@ -160,7 +164,7 @@ public:
     {
         while (!queue_.try_dequeue(out_block))
         {
-            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
         }
         bytes_used_ -= out_block.byte_size();
         return true;

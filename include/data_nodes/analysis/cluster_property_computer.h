@@ -1,5 +1,6 @@
 //computes the cluster properties and serializes them to a file
 //as an example, it computes cluster diameter and a timespan
+#pragma once
 template <template <typename> typename cluster_type, typename hit_type>
 class cluster_property_computer : public i_simple_consumer<cluster_type<hit_type>>
 {

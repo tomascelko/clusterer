@@ -17,7 +17,7 @@ protected:
     std::unique_ptr<buffer_type> buffer_a_;
     std::unique_ptr<buffer_type> buffer_b_;
     uint32_t max_buffer_size_;
-    uint64_t total_hits_read_;
+    //uint64_t total_hits_read_;
     std::unique_ptr<istream_type> input_stream_;
     buffer_type *reading_buffer_;
     buffer_type *ready_buffer_ = nullptr;
@@ -52,7 +52,7 @@ protected:
         {
             reading_buffer_->emplace_back(std::move(data));
         }
-        total_hits_read_ += processed_count;
+        total_hits_processed_ += processed_count;
         // std::cout << total_hits_read_ << std::endl;
         return processed_count == max_buffer_size_;
     }
@@ -77,10 +77,7 @@ public:
     {
         paused_ = true;
     }
-    virtual uint64_t get_total_hit_count() override
-    {
-        return total_hits_read_;
-    }
+
     virtual void continue_production() override
     {
         paused_ = false;
@@ -96,7 +93,7 @@ public:
     //check if reading produces too much data to fit to memory
     void perform_memory_check()
     {
-        if (total_hits_read_ % PIPE_MEMORY_CHECK_INTERVAL == 0)
+        if (this->total_hits_processed_ % PIPE_MEMORY_CHECK_INTERVAL == 0)
         {
             paused_ = controller_->is_full_memory();
             while (paused_)
@@ -131,7 +128,7 @@ public:
             // std::cout << "reading_next" << sstd::endl;
             this->writer_.write(std::move(data));
             *input_stream_ >> data;
-            ++total_hits_read_;
+            ++total_hits_processed_;
             perform_memory_check();
         }
         this->writer_.close();

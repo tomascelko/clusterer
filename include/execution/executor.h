@@ -6,7 +6,7 @@
 #include <functional>
 #include "../data_flow/dataflow_controller.h"
 #include "../mm_stream.h"
-#include "../benchmark/model_factory.h"
+#include "model_factory.h"
 #include "../data_structs/node_args.h"
 //class which loads inut data, creates the dataflow graph and runs the execution
 class model_executor

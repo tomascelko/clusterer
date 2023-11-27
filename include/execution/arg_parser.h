@@ -56,8 +56,8 @@ private:
                     throw std::invalid_argument("Invalid format of the node args file");
                 auto key_value_pair = stripped_line.substr(1);
                 auto delim_pos = stripped_line.find(key_value_separator);
-                auto key = io_utils::strip(key_value_pair.substr(0, delim_pos));
-                auto value = io_utils::strip(key_value_pair.substr(delim_pos + 1));
+                auto key = io_utils::strip(key_value_pair.substr(0, delim_pos - 1));
+                auto value = io_utils::strip(key_value_pair.substr(delim_pos));
                 args[current_node][key] = value;
             }
             //the line contains name of the node

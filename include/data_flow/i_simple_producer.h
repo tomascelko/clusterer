@@ -13,5 +13,6 @@ public:
     virtual void connect_output(default_pipe<data_type> *pipe) final override
     {
         writer_ = pipe_writer<data_type>(pipe);
+
     }
 };

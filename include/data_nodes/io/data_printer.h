@@ -19,15 +19,20 @@ public:
     {
         reader_.add_pipe(input_pipe);
     }
+    
+    
     virtual void start() override
     {
         data_type data;
         uint64_t processed = 0;
         this->reader_.read(data);
+        constexpr bool is_cluster = is_instance_of_template<data_type,cluster>::value;
         while (data.is_valid())
         {
+            uint64_t new_processed = this->newly_processed_count(data);
             this->writer_.write(std::move(data));
-            ++processed;
+            this->total_hits_processed_ += new_processed;
+
             (*out_stream_) << data;
             this->reader_.read(data);
         }

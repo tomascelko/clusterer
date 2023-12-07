@@ -6,7 +6,8 @@ class i_data_node
 protected:
     //identifier
     uint32_t id = 1;
-
+    uint64_t total_hits_processed_ = 0;
+    
 public:
     uint32_t get_id()
     {
@@ -30,6 +31,10 @@ public:
         return std::vector<abstract_pipe *>();
     }
     //return result of the node computation converted to string, if any
+    virtual uint64_t get_total_hit_count()
+    {
+        return total_hits_processed_;
+    }
     virtual std::string result()
     {
         return "";

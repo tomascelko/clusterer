@@ -1,3 +1,4 @@
+#pragma once
 #include "../utils.h"
 #include <string>
 #include <map>
@@ -9,9 +10,9 @@
 #include "../data_nodes/nodes_package.h"
 // #include "../mapped_mm_stream.h"
 #include "../mm_stream.h"
-#include "model_factory.h"
+#include "../execution/model_factory.h"
+#include "../execution/model_runner.h"
 
-#pragma once
 
 // class handles the run of the model, including the time measurement
 class benchmarker

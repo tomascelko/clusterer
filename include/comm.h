@@ -120,13 +120,15 @@ public:
 };
 
 class udp_controller {
+  // set RMEM MAX > 1 000 000 000, corresponding to
   const uint16_t CONTROL_PORT = 1555;
   const uint16_t DATA_PORT = 1556;
   const uint32_t CMD_BYTE_INDEX = 6;
   const uint32_t PACKET_LEN = 8;
-  const uint64_t ACQ_TIME = 20;
-  const uint64_t UDP_OS_BUFFER_SIZE = 2 << 26; // 2*8000ULL*65536ULL;
-  const uint64_t UDP_BOOST_BUFFER_SIZE = 2 << 17;
+  const uint64_t ACQ_TIME = 10;
+  const uint64_t UDP_OS_BUFFER_SIZE = 2 << 27; // 2 << 28; //
+
+  const uint64_t UDP_BOOST_BUFFER_SIZE = 2 << 18; // 18
   const float BIAS_VOLTAGE = 200.;
 
 public:

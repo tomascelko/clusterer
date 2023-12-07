@@ -115,9 +115,18 @@ class aggregator:
       aggregated_dict[key] = aggregated_value
     return aggregated_dict
       
-REPEATS = 10
-CURRENT = 19
-BASE_FILE_PATH = f"build/bin/benchmarking_xray_20sec/test_50kV_{CURRENT}muA_"
+REPEATS = 5
+CURRENT = 40
+OS_BUFFER = 22
+BASE_FILE_PATH = f"build/bin/benchmark_OS_buffer_size/OS_28_boost_17_50kV_65muA_Sn_"
+
+#f"build/bin/benchmark_standard_10s/test_50kV_{CURRENT}muA_Sn_"
+
+#f"build/bin/benchmark_two_step_unsorted/test_50kV_{CURRENT}muA_Sn_"
+#f"build/bin/benchmark_printing_10s/test_50kV_{CURRENT}muA_direct_"
+#f"build/bin/benchmark_printing_10s/test_50kV_{CURRENT}muA_Sn_"
+#f"build/bin/benchmark_two_step_unsorted/test_50kV_{CURRENT}muA_direct_" 
+# #f"build/bin/benchmarking_xray_20sec/test_50kV_{CURRENT}muA_"
 
 bench_parser = parser()
 agg = aggregator()
@@ -126,7 +135,7 @@ repeats_hitrates = []
 repeats_received_hits = []
 repeats_processed_hits = []
 for rep_index in range(REPEATS):
-  file_path = BASE_FILE_PATH  + str(rep_index + 1) + ".txt"
+  file_path = BASE_FILE_PATH  + str(rep_index + 1) #+ ".txt"
   
   result = bench_parser.parse_pipe_occupancies(file_path)
   repeats_pipe_occupancies.append(agg.aggregate_by_pipe_type(result))
@@ -145,6 +154,9 @@ plot_title = BASE_FILE_PATH[BASE_FILE_PATH.rfind("/") + 1:-1]
 bench_plotter.plot_dictionaries(pipe_occupancies_aggr_by_repeats, plot_title, "pipe_occupancy[MiB]")
 bench_plotter.plot_dictionaries(repeats_aggregated, plot_title, "hitrate[MHit/s]")
 
+print("Sent hits from Katherine:")
 print(repeats_received_hits)
+print("Received hits:")
 print(repeats_processed_hits)
+print("UDP transfer success rate:")
 print([str(100 * processed / received) + "%" if processed != 0 else float("inf") for received, processed in zip(repeats_received_hits, repeats_processed_hits)])

@@ -266,7 +266,7 @@ public:
                                                   unfinished_clusters_count_(0),
                                                   processed_hit_count_(0),
                                                   cluster_diff_dt(args.get_arg<double>(name(), "max_dt")),
-                                                  i_multi_producer<cluster<mm_hit>>(new trivial_split_descriptor<cluster<mm_hit>>())
+                                                  i_multi_producer<cluster<mm_hit>>()
     {
         return;
     }

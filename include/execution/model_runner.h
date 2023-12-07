@@ -7,7 +7,7 @@ public:
   static bool print;
   static bool recurring;
   static bool cluster_properties;
-  static bool avoid_concat;
+  static bool avoid_output_node;
   static std::vector<std::string> postprocessing_nodes;
   static std::vector<std::string> preprocessing_nodes;
   enum class model_name {
@@ -27,7 +27,13 @@ public:
     TRIG_BB_CLUSTERER,
     TILE_CLUSTERER
   };
-  enum class clustering_type { STANDARD, TILED, HALO_BB, TEMPORAL };
+  enum class clustering_type {
+    STANDARD,
+    TILED,
+    HALO_BB,
+    TEMPORAL,
+    TEMPORAL_FULL
+  };
 
 private:
   static constexpr const char *base_arch = "r1bm1,bm1s1";
@@ -42,6 +48,8 @@ private:
       return "bbc";
     case clustering_type::TILED:
       return "tic";
+    case clustering_type::TEMPORAL_FULL:
+      return "cs";
     default:
       throw std::invalid_argument("Invalid clustering type");
     }
@@ -162,6 +170,16 @@ private:
       auto default_merge_descr =
           new temporal_clustering_descriptor<mm_hit>(core_count);
       for (uint32_t i = 1; i <= core_count; ++i) {
+        auto trivial_cluster_split_descr =
+            new trivial_split_descriptor<cluster<mm_hit>>();
+        auto trivial_cluster_merge_descr =
+            new trivial_merge_descriptor<mm_hit>();
+
+        descriptors.insert(
+            {connecting_node + std::to_string(i),
+             new node_descriptor<mm_hit, cluster<mm_hit>>(
+                 trivial_cluster_merge_descr, trivial_cluster_split_descr,
+                 "clustering_" + std::to_string(i) + "_descriptor")});
         arch += "," + connecting_node + std::to_string(i) + "m1";
       }
       arch += ",m1" + output_node + "1";
@@ -169,6 +187,7 @@ private:
           "m1",
           new node_descriptor<cluster<mm_hit>, cluster<mm_hit>>(
               default_merge_descr, trivial_merger_split_descr, "merger_desc")));
+
     } else if (model_type == model_name::PAR_LINEAR_MERGER ||
                model_type == model_name::PAR_MULTIFILE_CLUSTERER) {
 
@@ -205,12 +224,12 @@ private:
                new node_descriptor<mm_hit, cluster<mm_hit>>(
                    trivial_hit_merge_descr, two_clustering_split_descriptor,
                    "clustering_" + str_index + "_descriptor")});
-        else
+        /*else
           descriptors.insert(
               {connecting_node + str_index,
                new node_descriptor<cluster<mm_hit>, cluster<mm_hit>>(
                    trivial_cluster_merge_descr, two_clustering_split_descriptor,
-                   "connecting_" + str_index + "_descriptor")});
+                   "connecting_" + str_index + "_descriptor")});*/
         descriptors.insert(
             {"m" + str_index,
              new node_descriptor<cluster<mm_hit>, cluster<mm_hit>>(
@@ -279,7 +298,7 @@ public:
     }
     if (print)
       output_node = "p";
-    else if (avoid_concat)
+    else if (avoid_output_node)
       output_node = "";
     else
       output_node = "co";
@@ -377,7 +396,7 @@ public:
 bool model_runner::print = false;
 bool model_runner::recurring = false;
 bool model_runner::cluster_properties = false;
-bool model_runner::avoid_concat = true;
+bool model_runner::avoid_output_node = true;
 
 std::vector<std::string> model_runner::preprocessing_nodes = {"bm"}; //, "s"};
-std::vector<std::string> model_runner::postprocessing_nodes = {"cs"};
+std::vector<std::string> model_runner::postprocessing_nodes = {};    // {"cs"};

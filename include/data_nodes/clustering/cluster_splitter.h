@@ -7,7 +7,7 @@
 #include <cstdint>
 #include <stack>
 #include <unistd.h>
-class cluster_splitter : public i_simple_consumer<cluster<mm_hit>>,
+class cluster_splitter : public i_simple_consumer<mm_hit>,
                          public i_multi_producer<cluster<mm_hit>> {
   using cluster_it = std::vector<cluster<mm_hit>>::iterator;
 
@@ -64,9 +64,10 @@ class cluster_splitter : public i_simple_consumer<cluster<mm_hit>>,
   std::vector<cluster<mm_hit>> temp_clusters_;
 
   void store_to_matrix(const cluster<mm_hit> &cluster) {
-
+    const uint64_t MAX_SAME_PIXEL_COUNT = 10;
     for (const auto &hit : cluster.hits()) {
-      pixel_matrix_.at(hit.x(), hit.y()).reserve(cluster.hits().size());
+      pixel_matrix_.at(hit.x(), hit.y())
+          .reserve(std::min(cluster.hits().size(), MAX_SAME_PIXEL_COUNT));
       pixel_matrix_.at(hit.x(), hit.y())
           .emplace_back(hit.toa(), hit.coordinates());
       timestamp_references_.push_back(pixel_matrix_.at(hit.x(), hit.y()).end() -
@@ -75,11 +76,12 @@ class cluster_splitter : public i_simple_consumer<cluster<mm_hit>>,
   }
 
   void remove_from_matrix() {
-    for (const auto &timestamp_reference : timestamp_references_) {
-      pixel_matrix_.at(timestamp_reference->x(), timestamp_reference->y())
-          .clear();
-    }
+    for (const auto &cluster : temp_clusters_)
+      for (const auto &hit : cluster.hits()) {
+        pixel_matrix_.at(hit.x(), hit.y()).clear();
+      }
     timestamp_references_.clear();
+    write_buffered();
     // temp_clusters_.clear();
   }
   std::stack<timestamp_it> open_nodes;
@@ -146,13 +148,13 @@ class cluster_splitter : public i_simple_consumer<cluster<mm_hit>>,
       temp_clusters_[current_cluster_index].add_hit(
           std::move(cluster.hits()[i]));
     }
-    /*if (temp_clusters_.size() > 1)
+    if (temp_clusters_.size() > 1)
       std::sort(temp_clusters_.begin(), temp_clusters_.end(),
                 [](const auto &left, const auto &right) {
                   return left.first_toa() < right.first_toa();
-                });*/
+                });
     clusters_procesed_ += temp_clusters_.size();
-    write_buffered();
+
     // result_clusters_.insert(result_clusters_.end(), temp_clusters_.begin(),
     //                         temp_clusters_.end());
   }
@@ -160,21 +162,23 @@ class cluster_splitter : public i_simple_consumer<cluster<mm_hit>>,
 public:
   void process_cluster(cluster<mm_hit> &&cluster) {
 
-    if (cluster.size() > 1 && bbox{cluster}.area() > 64) {
-
-      store_to_matrix(cluster);
-      label_components(cluster);
-      split_cluster(std::move(cluster));
-      remove_from_matrix();
-
+    if (cluster.size() > 1) {
+      bbox bb{cluster};
+      if (bb.area() > 25 || bb.area() / cluster.size() > 5) {
+        store_to_matrix(cluster);
+        label_components(cluster);
+        split_cluster(std::move(cluster));
+        remove_from_matrix();
+      } else {
+        writer_.write(std::move(cluster));
+      }
     } else {
       writer_.write(std::move(cluster));
     }
   }
 
-  std::string name() override { return "cluster_splitter"; }
-  cluster_splitter(
-      node_descriptor<cluster<mm_hit>, cluster<mm_hit>> *node_descr)
+  std::string name() override { return "two_step_clusterer"; }
+  cluster_splitter(node_descriptor<mm_hit, cluster<mm_hit>> *node_descr)
       : result_clusters_(),
         i_multi_producer<cluster<mm_hit>>(node_descr->split_descr){};
 
@@ -186,41 +190,36 @@ public:
     for (uint64_t i = 0; i < temp_clusters_.size(); ++i) {
       writer_.write(std::move(temp_clusters_[i]));
     }
-    // result_clusters_.clear();
     temp_clusters_.clear();
   }
   cluster<mm_hit> open_cluster;
   double last_hit_toa_ = 0;
-  bool udpate_open_cluster(mm_hit &&hit) {
+  bool should_create_new_cluster(const mm_hit &hit) {
     double dt = hit.toa() - last_hit_toa_;
     // add hit to currently open cluster
-    if (dt < MAX_JOIN_TIME) {
+    if (dt < MAX_JOIN_TIME && last_hit_toa_ > 0.001) {
       last_hit_toa_ = hit.toa();
-      open_cluster.add_hit(std::move(hit));
+      return false;
     }
-    // start a new cluster
-    else {
-      if (last_hit_toa_ > 0.001)
-        this->writer_.write(std::move(open_cluster));
-      open_cluster = cluster<mm_hit>();
-      last_hit_toa_ = hit.toa();
-      open_cluster.add_hit(std::move(hit));
-    }
+    last_hit_toa_ = hit.toa();
+    return true;
   }
 
   void start() {
-    cluster<mm_hit> cluster;
-    reader_.read(cluster);
-    while (cluster.is_valid()) {
-      process_cluster(std::move(cluster));
-      // if (clusters_procesed_ % QUEUE_CHECK_INTERVAL == 0) {
-      //  write_buffered();
-      //}
-      ++clusters_procesed_;
-      reader_.read(cluster);
+    mm_hit hit;
+    reader_.read(hit);
+    while (hit.is_valid()) {
+      if (should_create_new_cluster(hit)) {
+        process_cluster(std::move(open_cluster));
+        open_cluster = cluster<mm_hit>();
+        ++clusters_procesed_;
+      }
+      open_cluster.add_hit(std::move(hit));
+      reader_.read(hit);
     }
     // write_buffered();
     writer_.close();
+    std::cout << "Produced " << clusters_procesed_ << " clusters" << std::endl;
   }
 
   std::vector<cluster<mm_hit>> &result_clusters() { return result_clusters_; }

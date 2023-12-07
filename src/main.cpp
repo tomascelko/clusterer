@@ -22,14 +22,14 @@ int main(int argc, char **argv) {
   std::cout << "Starting the run..." << std::endl;
   std::cout << "Parsing the arguments..." << std::endl;
   std::vector<std::string> args(argv, argc + argv);
-  model_runner::print = false;
+  // model_runner::print = false;
 
   args = {"./clusterer",
           "--debug",
           "--n_workers",
           "8",
           "--clustering_type",
-          "temporal",
+          "standard",
           "--merge_type",
           "multioutput",
           "--args",

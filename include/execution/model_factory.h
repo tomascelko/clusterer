@@ -237,7 +237,7 @@ class model_factory {
       return new cluster_property_computer<cluster, mm_hit>();
     else if (node.type == "cs")
       return new cluster_splitter(
-          dynamic_cast<node_descriptor<cluster<mm_hit>, cluster<mm_hit>> *>(
+          dynamic_cast<node_descriptor<mm_hit, cluster<mm_hit>> *>(
               arch.node_descriptors()["cs" + std::to_string(node.id)]));
     else
       throw std::invalid_argument("node of given type was not implemented yet");

@@ -12,7 +12,7 @@
 #pragma once
 
 class online_data_reader : public data_reader<burda_hit, std::ifstream> {
-  std::string katherine_ip_ = "192.168.1.140";
+  std::string katherine_ip_ = "192.168.1.130";
   udp_controller katherine_controller;
 
 public:

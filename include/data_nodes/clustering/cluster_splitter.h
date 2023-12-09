@@ -1,3 +1,4 @@
+#pragma once
 #include "../../data_flow/dataflow_package.h"
 #include "../../data_structs/mm_hit.h"
 #include "../../data_structs/node_args.h"
@@ -6,7 +7,6 @@
 #include "cluster_merger.h"
 #include <cstdint>
 #include <stack>
-#include <unistd.h>
 class cluster_splitter : public i_simple_consumer<mm_hit>,
                          public i_multi_producer<cluster<mm_hit>> {
   using cluster_it = std::vector<cluster<mm_hit>>::iterator;
@@ -16,9 +16,9 @@ class cluster_splitter : public i_simple_consumer<mm_hit>,
     coord coordinates;
     uint32_t partition_index;
 
-    ushort x() { return coordinates.x(); }
+    unsigned short x() { return coordinates.x(); }
 
-    ushort y() { return coordinates.y(); }
+    unsigned short y() { return coordinates.y(); }
 
     partitioned_hit(double toa, const coord &coordinates)
         : toa(toa), partition_index(0), coordinates(coordinates) {}
@@ -57,7 +57,7 @@ class cluster_splitter : public i_simple_consumer<mm_hit>,
   pixel_matrix pixel_matrix_;
   std::vector<timestamp_it> timestamp_references_;
   std::vector<cluster<mm_hit>> result_clusters_;
-  u_int64_t clusters_procesed_ = 0;
+  uint64_t clusters_procesed_ = 0;
   const uint64_t QUEUE_CHECK_INTERVAL = 16;
   const double MAX_JOIN_TIME = 200.;
   // std::vector<partition_time_pair> partition_time_pairs_;

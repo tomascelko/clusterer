@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.0)
 
 # set the project name
 project(clusterer)
@@ -6,24 +6,32 @@ project(clusterer)
 # add the executable
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-set(CMAKE_CXX_FLAGS "-pthread -lstdc++fs")
+if(WIN32)
+	set(CMAKE_CXX_FLAGS "-pthread -lstdc++fs /EHsc")
+else()
+	set(CMAKE_CXX_FLAGS "-pthread -lstdc++fs ")
+endif()
 set(CMAKE_BUILD_TYPE "Release")
 
 set(Boost_USE_STATIC_LIBS OFF) 
 set(Boost_USE_MULTITHREADED ON)  
 set(Boost_USE_STATIC_RUNTIME OFF) 
-find_package(Boost 1.71.0 COMPONENTS iostreams) 
+
+find_package(Boost 1.72.0 REQUIRED COMPONENTS iostreams system date_time) 
 find_library(STDCPPFS_LIBRARY NAMES stdc++fs)
 if(Boost_FOUND)
-    include_directories(${Boost_INCLUDE_DIRS}) 
+    include_directories(${Boost_INCLUDE_DIRS})
 endif()
-
-set(onnx_lib_dirs ${CMAKE_CURRENT_SOURCE_DIR}/onnxruntime-linux-x64-1.14.1/lib/;${CMAKE_CURRENT_SOURCE_DIR}/build/packages/Microsoft.ML.OnnxRuntime.1.15.1/runtimes/win-x64/native/;${ONNX_LIBRARY_PATH})
+#message(FATAL_ERROR ${Boost_INCLUDE_DIRS})
+if(NOT Boost_FOUND)
+	message(WARNING "Boost was not found")
+endif()
+set(onnx_lib_dirs ${CMAKE_CURRENT_SOURCE_DIR}/onnxruntime-linux-x64-1.14.1/lib/;${CMAKE_CURRENT_SOURCE_DIR}/build/packages/Microsoft.ML.OnnxRuntime.1.16.3/runtimes/win-x64/native/;${ONNX_LIBRARY_PATH})
 set(onnx_include_path ${CMAKE_CURRENT_SOURCE_DIR}/onnxruntime-linux-x64-1.14.1/include/)
 find_library(onnx_lib_path onnxruntime
     PATHS ${onnx_lib_dirs})
 if(NOT onnx_lib_path)
-	message(FATAL_ERROR "onnx lib was not found")
+	message(WARNING "onnx lib was not found")
 endif()
 AUX_SOURCE_DIRECTORY(./src SOURCES)
 file(GLOB_RECURSE LIB_SRC_FILES
@@ -38,9 +46,8 @@ set_target_properties(lclusterer PROPERTIES LINKER_LANGUAGE CXX)
 set_target_properties(lclusterer PROPERTIES LIBRARY_OUTPUT_DIRECTORY "./lib")
 set_target_properties(lclusterer PROPERTIES LIBRARY_OUTPUT_DIRECTORY_RELEASE "./lib")
 set_target_properties(lclusterer PROPERTIES LIBRARY_OUTPUT_DIRECTORY_DEBUG "./lib")
-
-target_include_directories(lclusterer PUBLIC ${onnx_include_path})
-target_link_libraries(lclusterer PUBLIC ${onnx_lib_path})
+target_include_directories(lclusterer PUBLIC ${onnx_include_path} ${Boost_INCLUDE_DIRS})
+target_link_libraries(lclusterer PUBLIC ${onnx_lib_path} ${Boost_LIBRARIES})
 
 
 #clusterer executable 
@@ -50,8 +57,8 @@ set_target_properties(clusterer PROPERTIES RUNTIME_OUTPUT_DIRECTORY "./bin")
 set_target_properties(clusterer PROPERTIES RUNTIME_OUTPUT_DIRECTORY_DEBUG "./bin")
 set_target_properties(clusterer PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELEASE "./bin")
 
-target_include_directories(clusterer PUBLIC ${onnx_include_path})
-target_link_libraries(clusterer ${onnx_lib_path})
+target_include_directories(clusterer PUBLIC ${onnx_include_path} ${Boost_INCLUDE_DIRS})
+target_link_libraries(clusterer ${onnx_lib_path} ${Boost_LIBRARIES})
 
 #copy the dll to the binary if it was found
 find_file(onnx_dll_path "onnxruntime.dll" 

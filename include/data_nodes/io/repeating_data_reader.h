@@ -146,9 +146,10 @@ class repeating_data_reader : public data_reader<data_type, istream_type> {
   }
 
 public:
-  repeating_data_reader(node_descriptor<data_type, data_type> *node_descriptor,
-                        const std::string &filename, const node_args &args,
-                        const std::string &calib_folder = "")
+  repeating_data_reader(
+      temporal_hit_split_descriptor<burda_hit> *node_descriptor,
+      const std::string &filename, const node_args &args,
+      const std::string &calib_folder = "")
       : data_reader<data_type, istream_type>(node_descriptor, filename, args),
         buffer_size_(args.get_arg<int>(name(), "repetition_size")),
         freq_multiplier_(args.get_arg<double>(name(), "freq_multiplier")),

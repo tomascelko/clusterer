@@ -20,7 +20,7 @@ class dataflow_controller {
   using node_pointer = std::unique_ptr<i_data_node>;
   using pipe_pointer = std::unique_ptr<abstract_pipe>;
   using descriptor_map_type =
-      std::map<std::string, std::unique_ptr<abstract_node_descriptor>>;
+      std::map<std::string, std::unique_ptr<abstract_pipe_descriptor>>;
 
 private:
   std::vector<node_pointer> nodes_;
@@ -55,13 +55,13 @@ private:
 public:
   // intialize the class with node descriptors
   dataflow_controller(
-      std::map<std::string, abstract_node_descriptor *> &descriptors,
+      std::map<std::string, abstract_pipe_descriptor *> &descriptors,
       bool debug = false)
       : debug_mode_(debug) {
     for (const auto &id_and_descriptor : descriptors) {
       node_descriptor_map_.emplace(std::make_pair(
           id_and_descriptor.first,
-          std::unique_ptr<abstract_node_descriptor>(id_and_descriptor.second)));
+          std::unique_ptr<abstract_pipe_descriptor>(id_and_descriptor.second)));
     }
   };
   // access all available nodes

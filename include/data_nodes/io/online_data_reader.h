@@ -11,21 +11,24 @@
 #include <vector>
 #pragma once
 
-class online_data_reader : public data_reader<burda_hit, std::ifstream> {
-  std::string katherine_ip_ = "192.168.1.140";
+template <typename descriptor_type = temporal_hit_split_descriptor<burda_hit>>
+class online_data_reader
+    : public data_reader<burda_hit, std::ifstream, descriptor_type> {
+  std::string katherine_ip_ = "192.168.1.130";
   udp_controller katherine_controller;
 
 public:
-  online_data_reader(node_descriptor<burda_hit, burda_hit> *node_descriptor,
+  online_data_reader(descriptor_type *node_descriptor,
                      const std::string &filename, const node_args &args,
                      const std::string &calib_folder = "")
-      : data_reader<burda_hit, std::ifstream>(node_descriptor, filename, args),
-        katherine_controller(
+      : katherine_controller(
             katherine_ip_,
             [this](std::vector<burda_hit> &&hits) {
               this->process_packet(std::move(hits));
             },
-            [this]() { this->end_acq(); }) {
+            [this]() { this->end_acq(); }),
+        data_reader<burda_hit, std::ifstream, descriptor_type>(node_descriptor,
+                                                               filename, args) {
     // initialize_internal_clustering(calib_folder, args);
     // init_read_data();
   }

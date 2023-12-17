@@ -13,9 +13,11 @@
 #include <type_traits>
 // converts the burda hit to mm_hit
 // computes energy, and time in nanoseconds
-template <typename mm_hit_type>
-class burda_to_mm_hit_adapter : public i_simple_consumer<burda_hit>,
-                                public i_multi_producer<mm_hit_type> {
+template <typename mm_hit_type,
+          typename descriptor_type = temporal_hit_split_descriptor<mm_hit_type>>
+class burda_to_mm_hit_adapter
+    : public i_simple_consumer<burda_hit>,
+      public i_multi_producer<mm_hit_type, descriptor_type> {
   bool calibrate_;
   uint16_t chip_width_;
   uint16_t chip_height_;
@@ -73,14 +75,13 @@ public:
       assert((std::is_same<mm_hit_type, mm_hit_tot>::value));
   }*/
 
-  burda_to_mm_hit_adapter(
-      node_descriptor<burda_hit, mm_hit_type> *node_descriptor,
-      calibration &&calib, bool should_sort = false)
+  burda_to_mm_hit_adapter(descriptor_type *node_descriptor, calibration &&calib,
+                          bool should_sort = false)
       : chip_height_(current_chip::chip_type::size_x()),
         chip_width_(current_chip::chip_type::size_y()), calibrate_(true),
         calibrator_(std::make_unique<calibration>(std::move(calib))),
         should_sort(should_sort),
-        i_multi_producer<mm_hit_type>(node_descriptor->split_descr) {
+        i_multi_producer<mm_hit_type, descriptor_type>(node_descriptor) {
     assert((std::is_same<mm_hit_type, mm_hit>::value));
   }
 

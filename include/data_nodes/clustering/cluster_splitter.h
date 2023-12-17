@@ -7,8 +7,11 @@
 #include <cstdint>
 #include <stack>
 #include <unistd.h>
-class cluster_splitter : public i_simple_consumer<mm_hit>,
-                         public i_multi_producer<cluster<mm_hit>> {
+template <typename descriptor_type =
+              clustering_two_split_descriptor<cluster<mm_hit>>>
+class cluster_splitter
+    : public i_simple_consumer<mm_hit>,
+      public i_multi_producer<cluster<mm_hit>, descriptor_type> {
   using cluster_it = std::vector<cluster<mm_hit>>::iterator;
 
   struct partitioned_hit {
@@ -49,7 +52,7 @@ class cluster_splitter : public i_simple_consumer<mm_hit>,
     }
   };
 
-  using timestamp_it = std::vector<partitioned_hit>::iterator;
+  using timestamp_it = typename std::vector<partitioned_hit>::iterator;
 
   const std::vector<coord> EIGHT_NEIGHBORS = {{-1, -1}, {-1, 0}, {-1, 1},
                                               {0, -1},  {0, 0},  {0, 1},
@@ -170,25 +173,27 @@ public:
         split_cluster(std::move(cluster));
         remove_from_matrix();
       } else {
-        writer_.write(std::move(cluster));
+        this->writer_.write(std::move(cluster));
       }
     } else {
-      writer_.write(std::move(cluster));
+      this->writer_.write(std::move(cluster));
     }
   }
 
   std::string name() override { return "two_step_clusterer"; }
-  cluster_splitter(node_descriptor<mm_hit, cluster<mm_hit>> *node_descr)
+  cluster_splitter(descriptor_type *node_descr)
       : result_clusters_(),
-        i_multi_producer<cluster<mm_hit>>(node_descr->split_descr){};
-
+        i_multi_producer<cluster<mm_hit>, descriptor_type>(node_descr){};
+  cluster_splitter()
+      : result_clusters_(),
+        i_multi_producer<cluster<mm_hit>, descriptor_type>(){};
   std::vector<cluster<mm_hit>> process_remaining() {
     std::cout << "Processed clusters: " << clusters_procesed_ << std::endl;
     return result_clusters_;
   }
   void write_buffered() {
     for (uint64_t i = 0; i < temp_clusters_.size(); ++i) {
-      writer_.write(std::move(temp_clusters_[i]));
+      this->writer_.write(std::move(temp_clusters_[i]));
     }
     temp_clusters_.clear();
   }
@@ -207,7 +212,7 @@ public:
 
   void start() {
     mm_hit hit;
-    reader_.read(hit);
+    this->reader_.read(hit);
     while (hit.is_valid()) {
       if (should_create_new_cluster(hit)) {
         process_cluster(std::move(open_cluster));
@@ -215,10 +220,10 @@ public:
         ++clusters_procesed_;
       }
       open_cluster.add_hit(std::move(hit));
-      reader_.read(hit);
+      this->reader_.read(hit);
     }
     // write_buffered();
-    writer_.close();
+    this->writer_.close();
     std::cout << "Produced " << clusters_procesed_ << " clusters" << std::endl;
   }
 

@@ -3,15 +3,16 @@
 #include <functional>
 
 // based on the split descriptor, write data to the pipe with the correct index
-template <typename data_type> class multi_pipe_writer {
+template <typename data_type, typename descriptor_type>
+class multi_pipe_writer {
   using writer_type = pipe_writer<data_type>;
 
   std::vector<writer_type> writers_;
-  split_descriptor<data_type> *split_descriptor_;
+  descriptor_type *split_descriptor_;
   bool dynamic_;
 
 public:
-  multi_pipe_writer(split_descriptor<data_type> *split_descriptor = nullptr,
+  multi_pipe_writer(descriptor_type *split_descriptor = nullptr,
                     bool dynamic = false)
       : split_descriptor_(split_descriptor) {}
   uint32_t open_pipe_count() { return writers_.size(); }

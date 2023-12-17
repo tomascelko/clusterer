@@ -1,3 +1,9 @@
+
+// TODO: arch will store only single abstract pipe descriptor
+// update factory and model runner accordingly (SPLITTER ONLY)
+// merger will just recast the same object to mergingdescriptor
+// SET deafult template parameters of nodes to expected split decriptor type
+// then no type specification is needed
 #pragma once
 #include "../data_flow/dataflow_package.h"
 #include "../data_nodes/analysis/cluster_property_computer.h"
@@ -34,7 +40,7 @@ class architecture_type {
 
   std::vector<edge> edges_;
   std::vector<node> nodes_;
-  std::map<std::string, abstract_node_descriptor *> node_descriptors_;
+  std::map<std::string, abstract_pipe_descriptor *> node_descriptors_;
   uint32_t tile_size_ = 1;
   double window_size_ = 50000000.;
   bool is_letter(char ch) { return ch >= 'a' && ch <= 'z'; }
@@ -86,13 +92,13 @@ public:
 
   architecture_type(
       const std::string &arch_string,
-      std::map<std::string, abstract_node_descriptor *> node_descriptors,
+      std::map<std::string, abstract_pipe_descriptor *> node_descriptors,
       uint32_t tile_size = 1, double window_size = 50000000)
       : node_descriptors_(node_descriptors), window_size_(window_size),
         tile_size_(tile_size) {
     init_arch(arch_string);
   }
-  std::map<std::string, abstract_node_descriptor *> &node_descriptors() {
+  std::map<std::string, abstract_pipe_descriptor *> &node_descriptors() {
     return node_descriptors_;
   }
 
@@ -119,8 +125,13 @@ class model_factory {
   std::ofstream *window_print_stream;
   std::ostream *appending_output_stream;
   bool adapter_sorting = true;
+  using burda_hit_split_descriptor = temporal_hit_split_descriptor<burda_hit>;
+  using mm_hit_split_descriptor = temporal_hit_split_descriptor<mm_hit>;
+  using cluster_two_splitting_descriptor =
+      clustering_two_split_descriptor<cluster<mm_hit>>;
+  using merge_descriptor = temporal_clustering_descriptor<mm_hit>;
   using standard_reader_type =
-      std::conditional<use_online_reading, online_data_reader,
+      std::conditional<use_online_reading, online_data_reader<>,
                        data_reader<burda_hit, std::ifstream>>;
   // converts auxiliary node type to real i_data_node
   // the controller holds ownership of this node
@@ -132,7 +143,7 @@ class model_factory {
           arch.node_descriptors().end()) {
         // return new data_reader<burda_hit, std::ifstream>{
         return new standard_reader_type::type{
-            dynamic_cast<node_descriptor<burda_hit, burda_hit> *>(
+            dynamic_cast<burda_hit_split_descriptor *>(
                 arch.node_descriptors()["r" + std::to_string(node.id)]),
             *data_file_it, args};
       } else {
@@ -143,7 +154,7 @@ class model_factory {
       if (arch.node_descriptors().find(node.type + std::to_string(node.id)) !=
           arch.node_descriptors().end())
         return new repeating_data_reader<burda_hit, std::ifstream>{
-            dynamic_cast<node_descriptor<burda_hit, burda_hit> *>(
+            dynamic_cast<burda_hit_split_descriptor *>(
                 arch.node_descriptors()["rr" + std::to_string(node.id)]),
             *data_file_it, args, calib_file};
       else
@@ -156,7 +167,7 @@ class model_factory {
       if (arch.node_descriptors().find(node.type + std::to_string(node.id)) !=
           arch.node_descriptors().end())
         return new burda_to_mm_hit_adapter<mm_hit>(
-            dynamic_cast<node_descriptor<burda_hit, mm_hit> *>(
+            dynamic_cast<mm_hit_split_descriptor *>(
                 arch.node_descriptors()["bm" + std::to_string(node.id)]),
             calibration(*calib_file_it, current_chip::chip_type::size()),
             adapter_sorting); // only allow the sorting capability if no sorter
@@ -168,76 +179,78 @@ class model_factory {
     } else if (node.type == "s") {
       if (arch.node_descriptors().find(node.type + std::to_string(node.id)) !=
           arch.node_descriptors().end())
-        return new hit_sorter<mm_hit>(
-            dynamic_cast<node_descriptor<mm_hit, mm_hit> *>(
-                arch.node_descriptors()["s" + std::to_string(node.id)]));
+        return new hit_sorter<mm_hit>(dynamic_cast<mm_hit_split_descriptor *>(
+            arch.node_descriptors()["s" + std::to_string(node.id)]));
       else
         return new hit_sorter<mm_hit>();
     } else if (node.type == "p")
       return new data_printer<cluster<mm_hit>, mm_write_stream>(print_stream);
-    else if (node.type == "wp")
+    /*else if (node.type == "wp")
       return new data_printer<default_window_feature_vector<mm_hit>,
                               std::ofstream>(window_print_stream);
+    */
     else if (node.type == "m")
       return new cluster_merging<mm_hit>(
-          dynamic_cast<node_descriptor<cluster<mm_hit>, cluster<mm_hit>> *>(
+          dynamic_cast<merge_descriptor *>(
               arch.node_descriptors()["m" + std::to_string(node.id)]),
           args);
     else if (node.type == "sc") {
       if (arch.node_descriptors().find(node.type + std::to_string(node.id)) !=
           arch.node_descriptors().end())
         return new standard_clustering_type(
-            dynamic_cast<node_descriptor<mm_hit, cluster<mm_hit>> *>(
+            dynamic_cast<cluster_two_splitting_descriptor *>(
                 arch.node_descriptors()["sc" + std::to_string(node.id)]),
             args);
       return new standard_clustering_type(args);
-    } else if (node.type == "ec")
-      return new energy_filtering_clusterer<mm_hit>();
-    else if (node.type == "ppc")
-      return new parallel_clusterer_type(
-          dynamic_cast<node_descriptor<cluster<mm_hit>, mm_hit> *>(
-              arch.node_descriptors()["ppc" + std::to_string(node.id)]),
-          args);
-    // else if(node.type == "trc")
-    //     return new trigger_clusterer<mm_hit, standard_clustering_type,
-    //     frequency_diff_trigger<mm_hit>>();
-    else if (node.type == "tic")
-      return new standard_clustering_type(args);
-    else if (node.type == "bbc")
-      return new halo_buffer_clusterer<mm_hit, standard_clustering_type>(args);
-    else if (node.type == "tr") {
-      if (arch.node_descriptors().find(node.type + std::to_string(node.id)) !=
-          arch.node_descriptors().end())
-        return new trigger_node<mm_hit>(
-            dynamic_cast<node_descriptor<mm_hit, mm_hit> *>(
-                arch.node_descriptors()["tr" + std::to_string(node.id)]),
-            args);
-      else
-        return new trigger_node<mm_hit>(args);
-    } else if (node.type == "co")
+    } /* else if (node.type == "ec")
+       return new energy_filtering_clusterer<mm_hit>();
+     else if (node.type == "ppc")
+       return new parallel_clusterer_type(
+           dynamic_cast<node_descriptor<cluster<mm_hit>, mm_hit> *>(
+               arch.node_descriptors()["ppc" + std::to_string(node.id)]),
+           args);
+     // else if(node.type == "trc")
+     //     return new trigger_clusterer<mm_hit, standard_clustering_type,
+     //     frequency_diff_trigger<mm_hit>>();
+     else if (node.type == "tic")
+       return new standard_clustering_type(args);
+     else if (node.type == "bbc")
+       return new halo_buffer_clusterer<mm_hit, standard_clustering_type>(args);
+     else if (node.type == "tr") {
+       if (arch.node_descriptors().find(node.type + std::to_string(node.id)) !=
+           arch.node_descriptors().end())
+         return new trigger_node<mm_hit>(
+             dynamic_cast<node_descriptor<mm_hit, mm_hit> *>(
+                 arch.node_descriptors()["tr" + std::to_string(node.id)]),
+             args);
+       else
+         return new trigger_node<mm_hit>(args);
+     }*/
+    else if (node.type == "co")
       return new cluster_sorting_combiner<cluster<mm_hit>>();
     else if (node.type == "cow")
       return new cluster_sorting_combiner<
           default_window_feature_vector<mm_hit>>();
-    else if (node.type == "cv")
+    /*else if (node.type == "cv")
       return new clustering_validator<mm_hit>();
     else if (node.type == "wfc")
       return new window_feature_computer<default_window_feature_vector<mm_hit>,
-                                         mm_hit>(args);
+     mm_hit > (args);*/
     else if (node.type == "tc") {
       if (arch.node_descriptors().find(node.type + std::to_string(node.id)) !=
           arch.node_descriptors().end())
         return new temporal_clusterer<cluster>(
-            dynamic_cast<node_descriptor<mm_hit, cluster<mm_hit>> *>(
+            dynamic_cast<cluster_two_splitting_descriptor *>(
                 arch.node_descriptors()["tc" + std::to_string(node.id)]),
             args);
       else
         return new temporal_clusterer<cluster>(args);
-    } else if (node.type == "cp")
-      return new cluster_property_computer<cluster, mm_hit>();
+    } /* else if (node.type == "cp")
+       return new cluster_property_computer<cluster, mm_hit>();
+     */
     else if (node.type == "cs")
       return new cluster_splitter(
-          dynamic_cast<node_descriptor<mm_hit, cluster<mm_hit>> *>(
+          dynamic_cast<cluster_two_splitting_descriptor *>(
               arch.node_descriptors()["cs" + std::to_string(node.id)]));
     else
       throw std::invalid_argument("node of given type was not implemented yet");

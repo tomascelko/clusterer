@@ -4,9 +4,10 @@
 #include <algorithm>
 #include <queue>
 // uses heap sorting (priority queue) to guarantee temporal orderedness of hits
-template <typename data_type>
+template <typename data_type,
+          typename descriptor_type = temporal_hit_split_descriptor<data_type>>
 class hit_sorter : public i_simple_consumer<data_type>,
-                   public i_multi_producer<data_type> {
+                   public i_multi_producer<data_type, descriptor_type> {
   struct toa_comparer {
     auto operator()(const data_type &left, const data_type &right) const {
       if (left.toa() < right.toa())
@@ -47,8 +48,8 @@ public:
             less_comparer);
   }
   std::string name() override { return "hit_sorter"; }
-  hit_sorter(node_descriptor<data_type, data_type> *node_descriptor)
-      : i_multi_producer<data_type>(node_descriptor->split_descr) {
+  hit_sorter(descriptor_type *node_descriptor)
+      : i_multi_producer<data_type, descriptor_type>(node_descriptor) {
     // assert((std::is_same<data_type, mm_hit_tot>::value));
   }
   virtual void start() override {

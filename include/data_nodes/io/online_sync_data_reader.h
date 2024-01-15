@@ -13,7 +13,7 @@
 // reader capable of offsetting hits and modifying frequency of data stream
 using namespace std::chrono_literals;
 
-template <typename descriptor_type = temporal_hit_split_descriptor<mm_hit>>
+template <typename descriptor_type = temporal_hit_split_descriptor<burda_hit>>
 class online_sync_data_reader
     : public data_reader<burda_hit, std::ifstream, descriptor_type> {
   std::string katherine_ip_ = "192.168.1.130";
@@ -35,11 +35,12 @@ public:
   }
   online_sync_data_reader(const std::string &filename, const node_args &args,
                           const std::string &calib_folder = "")
-      : data_reader<burda_hit, std::ifstream>(filename, args),
+      : data_reader<burda_hit, std::ifstream, descriptor_type>(filename, args),
         katherine_controller(katherine_ip_, [this]() { this->end_acq(); }) {}
   std::string name() override { return "reader"; }
   void process_packet(std::vector<burda_hit> &&hits) {
     for (auto &&hit : hits) {
+      this->last_processed_timestamp_ = hit.time();
       this->writer_.write(std::move(hit));
       ++this->total_hits_processed_;
       this->perform_memory_check();

@@ -109,8 +109,8 @@ class cluster_splitter
                     MAX_JOIN_TIME) {
               // timestamp_it it_copy;
               // it_copy = neighbor_it;
-              open_nodes.push(neighbor_it);
               neighbor_it->partition_index = current_partition_index;
+              open_nodes.push(neighbor_it);
             }
           }
         }
@@ -151,11 +151,11 @@ class cluster_splitter
       temp_clusters_[current_cluster_index].add_hit(
           std::move(cluster.hits()[i]));
     }
-    if (temp_clusters_.size() > 1)
+    /*if (temp_clusters_.size() > 1)
       std::sort(temp_clusters_.begin(), temp_clusters_.end(),
                 [](const auto &left, const auto &right) {
                   return left.first_toa() < right.first_toa();
-                });
+                });*/
     clusters_procesed_ += temp_clusters_.size();
 
     // result_clusters_.insert(result_clusters_.end(), temp_clusters_.begin(),
@@ -167,7 +167,7 @@ public:
 
     if (cluster.size() > 1) {
       bbox bb{cluster};
-      if (bb.area() > 25 || bb.area() / cluster.size() > 5) {
+      if ((bb.area() > 25) || (bb.area() / cluster.size() > 5)) {
         store_to_matrix(cluster);
         label_components(cluster);
         split_cluster(std::move(cluster));
@@ -210,7 +210,7 @@ public:
     return true;
   }
 
-  void start() {
+  void start() final override {
     mm_hit hit;
     this->reader_.read(hit);
     while (hit.is_valid()) {

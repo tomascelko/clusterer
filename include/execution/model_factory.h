@@ -131,7 +131,7 @@ class model_factory {
       clustering_two_split_descriptor<cluster<mm_hit>>;
   using merge_descriptor = temporal_clustering_descriptor<mm_hit>;
   using standard_reader_type =
-      std::conditional<use_online_reading, online_data_reader<>,
+      std::conditional<use_online_reading, online_sync_data_reader<>,
                        data_reader<burda_hit, std::ifstream>>;
   // converts auxiliary node type to real i_data_node
   // the controller holds ownership of this node

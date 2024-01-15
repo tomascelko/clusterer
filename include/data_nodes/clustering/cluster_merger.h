@@ -311,6 +311,7 @@ public:
     reader_.read(new_cl);
     while (new_cl.is_valid()) {
       auto new_processed_count = this->newly_processed_count(new_cl);
+      this->last_processed_timestamp_ = new_cl.first_toa();
       process_cluster(std::move(new_cl));
       this->total_hits_processed_ += new_processed_count;
       reader_.read(new_cl);

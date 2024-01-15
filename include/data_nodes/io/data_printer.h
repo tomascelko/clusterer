@@ -26,7 +26,7 @@ public:
       uint64_t new_processed = this->newly_processed_count(data);
       this->writer_.write(std::move(data));
       this->total_hits_processed_ += new_processed;
-
+      this->last_processed_timestamp_ = data.time();
       (*out_stream_) << data;
       this->reader_.read(data);
     }

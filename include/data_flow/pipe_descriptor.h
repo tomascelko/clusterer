@@ -6,22 +6,22 @@
 // merging/splitting)
 class abstract_pipe_descriptor {
 public:
-  uint32_t pipe_count() { return 0; };
+  inline uint32_t pipe_count() { return 0; };
   virtual ~abstract_pipe_descriptor() = default;
 };
 // describes how to split the data (maps data to pipe index)
 template <typename data_type>
 class split_descriptor : public virtual abstract_pipe_descriptor {
 public:
-  uint32_t get_pipe_index(const data_type &data) { return 0; };
+  inline uint32_t get_pipe_index(const data_type &data) { return 0; };
   virtual ~split_descriptor() = default;
 };
 // describes if the data was close to border and if it can be processed
 template <typename data_type>
 class merge_descriptor : public virtual abstract_pipe_descriptor {
 public:
-  bool is_on_border(const data_type &data) { return false; };
-  bool should_be_forwarded(const data_type &data) { return false; };
+  inline bool is_on_border(const data_type &data) { return false; };
+  inline bool should_be_forwarded(const data_type &data) { return false; };
   virtual ~merge_descriptor() = default;
 };
 
@@ -59,7 +59,7 @@ protected:
   uint32_t pipe_count_;
 
 public:
-  uint32_t pipe_count() { return pipe_count_; }
+  inline uint32_t pipe_count() { return pipe_count_; }
 
   merge_split_descriptor(uint32_t pipe_count) : pipe_count_(pipe_count) {}
 
@@ -82,12 +82,12 @@ public:
   temporal_clustering_descriptor(uint32_t pipe_count)
       : merge_split_descriptor<cluster<hit_type>, hit_type>(pipe_count),
         full_rotation_interval_(pipe_count * SWITCH_INTERVAL_LEN) {}
-  uint32_t get_pipe_index(const hit_type &hit) {
+  inline uint32_t get_pipe_index(const hit_type &hit) {
     return (std::llround(hit.time()) % full_rotation_interval_) /
            SWITCH_INTERVAL_LEN;
   }
 
-  bool is_on_border(const cluster<hit_type> &cl) {
+  inline bool is_on_border(const cluster<hit_type> &cl) {
     const uint32_t depth = 1;
     double first_remainder = std::abs(
         (std::llround(cl.first_toa()) % (SWITCH_INTERVAL_LEN)) - offset_);
@@ -99,7 +99,7 @@ public:
            last_remainder > SWITCH_INTERVAL_LEN - EPSILON_BORDER_TIME ||
            cl.last_toa() - cl.first_toa() > SWITCH_INTERVAL_LEN;
   }
-  bool should_be_forwarded(const cluster<hit_type> &cl) { return false; }
+  inline bool should_be_forwarded(const cluster<hit_type> &cl) { return false; }
 
   virtual ~temporal_clustering_descriptor() = default;
 };
@@ -109,8 +109,8 @@ template <typename data_type>
 class trivial_split_descriptor : public split_descriptor<data_type> {
 public:
   trivial_split_descriptor() {}
-  uint32_t get_pipe_index(const data_type &hit) { return 0; }
-  uint32_t pipe_count() { return 1; }
+  inline uint32_t get_pipe_index(const data_type &hit) { return 0; }
+  inline uint32_t pipe_count() { return 1; }
   virtual ~trivial_split_descriptor() = default;
 };
 
@@ -126,11 +126,11 @@ public:
   temporal_hit_split_descriptor(uint32_t pipe_count)
       : pipe_count_(pipe_count),
         full_rotation_interval_(pipe_count * SWITCH_INTERVAL_LEN) {}
-  uint32_t get_pipe_index(const data_type &hit) {
+  inline uint32_t get_pipe_index(const data_type &hit) {
     return (std::llround(hit.time()) % full_rotation_interval_) /
            SWITCH_INTERVAL_LEN;
   }
-  uint32_t pipe_count() { return pipe_count_; }
+  inline uint32_t pipe_count() { return pipe_count_; }
   ~temporal_hit_split_descriptor() = default;
 };
 
@@ -139,9 +139,9 @@ template <typename data_type>
 class trivial_merge_descriptor : public merge_descriptor<data_type> {
 public:
   trivial_merge_descriptor() {}
-  bool is_on_border(const data_type &cl) { return false; }
-  bool should_be_forwarded(const data_type &cl) { return false; }
-  uint32_t pipe_count() { return 1; }
+  inline bool is_on_border(const data_type &cl) { return false; }
+  inline bool should_be_forwarded(const data_type &cl) { return false; }
+  inline uint32_t pipe_count() { return 1; }
   virtual ~trivial_merge_descriptor() = default;
 };
 
@@ -154,7 +154,7 @@ class temporal_merge_descriptor
   uint32_t full_rotation_interval_;
   uint32_t depth_;
   bool inner_node_;
-  bool is_on_border_multiple(const cluster_type &cl, uint32_t multiple) {
+  inline bool is_on_border_multiple(const cluster_type &cl, uint32_t multiple) {
     uint32_t switch_interval_len = multiple * depth_ * SWITCH_INTERVAL_LEN;
     double first_remainder =
         std::abs((std::llround(cl.first_toa()) % (switch_interval_len)));
@@ -173,15 +173,15 @@ public:
       : merge_split_descriptor<cluster_type, cluster_type>(pipe_count),
         depth_(depth), inner_node_(inner_node),
         full_rotation_interval_(pipe_count * SWITCH_INTERVAL_LEN) {}
-  uint32_t get_pipe_index(const cluster_type &cl) {
+  inline uint32_t get_pipe_index(const cluster_type &cl) {
     if (inner_node_ && should_be_forwarded(cl))
       return 1;
     return 0;
   }
-  bool is_on_border(const cluster_type &cl) {
+  inline bool is_on_border(const cluster_type &cl) {
     return is_on_border_multiple(cl, 1);
   }
-  bool should_be_forwarded(const cluster_type &cl) {
+  inline bool should_be_forwarded(const cluster_type &cl) {
     return inner_node_ && is_on_border_multiple(cl, 2);
   }
   virtual ~temporal_merge_descriptor() = default;
@@ -194,13 +194,13 @@ class clustering_two_split_descriptor : public split_descriptor<cl_type> {
   const double EPSILON_BORDER_TIME = 200;
 
 public:
-  uint32_t get_pipe_index(const cl_type &cl) {
+  inline uint32_t get_pipe_index(const cl_type &cl) {
     uint32_t remainder =
         std::abs(std::llround(cl.first_toa()) % SWITCH_INTERVAL_LEN);
     if (remainder < SWITCH_INTERVAL_LEN / 2)
       return 0;
     return 1;
   }
-  uint32_t pipe_count() { return 2; }
+  inline uint32_t pipe_count() { return 2; }
   virtual ~clustering_two_split_descriptor() = default;
 };

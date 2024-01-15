@@ -44,6 +44,7 @@ public:
   std::string name() override { return "reader"; }
   void process_packet(std::vector<burda_hit> &&hits) {
     for (auto &&hit : hits) {
+      this->last_processed_timestamp_ = hit.time();
       this->writer_.write(std::move(hit));
       ++this->total_hits_processed_;
     }

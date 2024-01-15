@@ -38,7 +38,7 @@ public:
     bool read(data_type &cl)
     {
         double min_toa = std::numeric_limits<double>::max();
-        uint32_t argmin_toa = -1;
+        int32_t argmin_toa = -1;
 
         for (uint32_t i = 0; i < readers_.size(); ++i)
         {

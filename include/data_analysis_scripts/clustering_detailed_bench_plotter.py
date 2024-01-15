@@ -1,6 +1,15 @@
 import numpy as np
 import plotly
 import plotly.graph_objects as go
+
+NO_MARKER_STYLE = dict(
+            #color='LightSkyBlue',
+            size=20,
+            line = dict()
+)
+
+PLOT_COLORS = ["blue", "red", "green", "black"]
+
 class parser:
   PIPE_NAME_SEPARATOR = "---->"
   PIPE_OCCUPANCY_SEPARATOR = ":"
@@ -67,13 +76,21 @@ class parser:
     return pipe_hitrates
 
 class plotter:
-  def plot_dictionaries(self, pipe_dict, title, y_label, x_label = "time[ms]"):
+  def plot_dictionaries(self, pipe_dict, title, y_label, print_median = False, udp_success_rate = None, x_label = "time[ms]"):
+    
     data_arrays = []
-    for key, value in pipe_dict.items():
+    for index, (key, value) in enumerate(pipe_dict.items()):
+      sample_count = value.shape[0]
       x_values = np.arange(value.shape[0]) * 500
-      trace = go.Scatter(x=x_values, y=value, mode='lines', name=key)
+      trace = go.Scatter(x=x_values, y=value, mode='lines', name=key, line=dict(width=2, color = PLOT_COLORS[index]))
       data_arrays.append(trace)
-
+      if(print_median):
+        median_line = go.Scatter(x= x_values, y = np.repeat(np.median(value[MEDIAN_RELEVANT_SAMPLE_START:MEDIAN_RELEVANT_SAMPLE_END]), sample_count), mode = 'lines', name = 'median ' + key, line = dict(color=PLOT_COLORS[index], width=2, dash='dash'))
+        data_arrays.append(median_line)
+    if(udp_success_rate != None):
+      udp_success_rate_ys = np.repeat(np.median(pipe_dict["Approx input hitrate"]) / udp_success_rate,  sample_count)
+      data_arrays.append(go.Scatter(x = np.arange(sample_count) * 500, y = udp_success_rate_ys, mode = 'lines', name = 'Estimated source hit rate',
+                                    ))
     
     fig = go.Figure(data = data_arrays)
     # Update the layout for better readability
@@ -81,7 +98,8 @@ class plotter:
         title=title,
         xaxis_title=x_label,
         yaxis_title=y_label,
-        template='plotly_white'  # You can choose different templates for the plot's appearance
+        template='plotly_white',
+         font=dict(size=18)
     )
 
       # Show the plot
@@ -89,7 +107,7 @@ class plotter:
 
 class aggregator:
   def remove_numbers(self, line):
-    return ''.join(char for char in line if not char.isnumeric())
+    return ''.join(char for char in line if not char.isnumeric())[:-1]
     
   def aggregate_by_pipe_type(self, pipe_dict):
     aggregated_results = {}
@@ -116,9 +134,15 @@ class aggregator:
     return aggregated_dict
       
 REPEATS = 5
-CURRENT = 40
+CURRENT = 65
 OS_BUFFER = 22
-BASE_FILE_PATH = f"build/bin/benchmark_OS_buffer_size/OS_28_boost_17_50kV_65muA_Sn_"
+MEDIAN_RELEVANT_SAMPLE_START = 4
+MEDIAN_RELEVANT_SAMPLE_END= 24
+BASE_FILE_PATH = "build/bin/benchmark_standard_vs_temporal/standard_50kV_65muA_Sn_"
+#"build/bin/benchmark_OS_buffer_size/OS_28_boost_17_50kV_65muA_Sn_"
+#"build/bin/benchmark_standard_vs_temporal/test_two_step_50kV_65muA_Sn_"
+#f"../clusterer_data/benchmark_standard_10s/test_50kV_{CURRENT}muA_Sn_"
+#f"build/bin/benchmark_OS_buffer_size/OS_28_boost_17_50kV_65muA_Sn_"
 
 #f"build/bin/benchmark_standard_10s/test_50kV_{CURRENT}muA_Sn_"
 
@@ -151,8 +175,9 @@ repeats_aggregated = agg.aggregate_by_repeats(repeats_hitrates)
 
 bench_plotter = plotter()
 plot_title = BASE_FILE_PATH[BASE_FILE_PATH.rfind("/") + 1:-1]
+udp_transfer_rates = [(processed / received) if received!= 0 else float("inf") for received, processed in zip(repeats_received_hits, repeats_processed_hits)]
 bench_plotter.plot_dictionaries(pipe_occupancies_aggr_by_repeats, plot_title, "pipe_occupancy[MiB]")
-bench_plotter.plot_dictionaries(repeats_aggregated, plot_title, "hitrate[MHit/s]")
+bench_plotter.plot_dictionaries(repeats_aggregated, plot_title, "hitrate[kHit/s]", True) # np.array(udp_transfer_rates).mean())
 
 print("Sent hits from Katherine:")
 print(repeats_received_hits)

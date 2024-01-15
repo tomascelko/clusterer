@@ -126,7 +126,7 @@ class udp_controller {
   const uint32_t CMD_BYTE_INDEX = 6;
   const uint32_t PACKET_LEN = 8;
   const uint64_t ACQ_TIME = 10;
-  const uint64_t UDP_OS_BUFFER_SIZE = 2 << 27; // 2 << 28; //
+  const uint64_t UDP_OS_BUFFER_SIZE = 2 << 28; // 2 << 28; //
 
   const uint64_t UDP_BOOST_BUFFER_SIZE = 2 << 18; // 18
   const float BIAS_VOLTAGE = 200.;
@@ -180,10 +180,10 @@ public:
   void async_send_command(char *command) {
     // std::cout << "sending... ";
     // std::this_thread::sleep_for(500ms);
-    for (int i = 0; i < 8; ++i) {
-      // std::cout << std::setw(2) << std::setfill('0') << std::hex <<
-      // (int)(command[i]) << "|";
-    }
+    // for (int i = 0; i < 8; ++i) {
+    // std::cout << std::setw(2) << std::setfill('0') << std::hex <<
+    // (int)(command[i]) << "|";
+    //}
     // std::cout << std::endl;
     local_control_socket.async_send_to(
         boost::asio::buffer(command, 8), remote_control_endpoint,
@@ -251,17 +251,17 @@ public:
       };
   int32_t waiting_handlers_count = 0;
   uint32_t waiting_handlers_expected_count = 1000;
+
   void on_data_receive(const boost::system::error_code &error,
                        std::size_t bytes_transferred,
                        boost::asio::ip::udp::endpoint sender_endpoint) {
     bool acq_end = false;
-    auto hits =
-        parser.parse_udp_data_packet(data_response, bytes_transferred, acq_end);
     // for (uint32_t byte_offset = 0; byte_offset < bytes_transferred;
     // ++byte_offset)
     //         std::cout << std::setw(2) << std::setfill('0') << std::hex <<
     //         static_cast<uint>(data_response[byte_offset]) << "/";
-    process_packet_callback(std::move(hits));
+    process_packet_callback(parser.parse_udp_data_packet(
+        data_response, bytes_transferred, acq_end));
     boost::asio::ip::udp::endpoint sender_endpoint1;
     --waiting_handlers_count;
     if (!acq_end) {

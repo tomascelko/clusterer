@@ -9,7 +9,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 if(WIN32)
 	set(CMAKE_CXX_FLAGS "-pthread -lstdc++fs /EHsc")
 else()
-	set(CMAKE_CXX_FLAGS "-pthread -lstdc++fs ")
+	set(CMAKE_CXX_FLAGS "-pthread -lstdc++fs")
 endif()
 set(CMAKE_BUILD_TYPE "Release")
 

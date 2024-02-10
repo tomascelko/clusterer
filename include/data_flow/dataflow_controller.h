@@ -70,9 +70,9 @@ private:
         dynamic_cast<i_controlable_source *>(item);
     if (controlable_source_opt) {
       input_speed_samples_.emplace_back(
-          0, 0); /*static_cast<double>(std::chrono::high_resolution_clock::now()
+          0, static_cast<double>(std::chrono::high_resolution_clock::now()
                                      .time_since_epoch()
-                                     .count()));*/
+                                     .count()));
       data_sources_.push_back(controlable_source_opt);
     }
     nodes_.emplace_back(std::move(std::unique_ptr<i_data_node>(item)));
@@ -200,10 +200,9 @@ public:
       auto data_source = data_sources_[i];
       processing_speed_sample new_speed_sample = {
           data_source->get_total_hit_count(),
-          input_speed_samples_[i].timestamp() + 500000000};
-      // static_cast<double>(
-      //     std::chrono::high_resolution_clock::now().time_since_epoch().count())
-      //};
+          static_cast<double>(std::chrono::high_resolution_clock::now()
+                                  .time_since_epoch()
+                                  .count())};
       /*processing_speed_sample new_speed_sample = {
           data_source->get_total_hit_count(),
           data_source->get_last_timestamp()};*/
@@ -222,10 +221,10 @@ public:
       auto data_sink = data_sinks_[i];
       processing_speed_sample new_speed_sample = {
           data_sink->get_total_hit_count(),
-          output_speed_samples_[i].timestamp() + 500000000}; /*
-           static_cast<double>(std::chrono::high_resolution_clock::now()
-                                   .time_since_epoch()
-                                   .count())};*/
+          // output_speed_samples_[i].timestamp() + 500000000}; /*
+          static_cast<double>(std::chrono::high_resolution_clock::now()
+                                  .time_since_epoch()
+                                  .count())};
       //  data_sink->get_last_timestamp()};
       auto speed = (new_speed_sample - output_speed_samples_[i]).speed();
       output_speed_samples_[i] = new_speed_sample;
@@ -311,10 +310,9 @@ public:
       if (node->is_sink()) {
         data_sinks_.push_back(node);
         output_speed_samples_.emplace_back(
-            0,
-            0); /*static_cast<double>(std::chrono::high_resolution_clock::now()
-                                     .time_since_epoch()
-                                     .count()));*/
+            0, static_cast<double>(std::chrono::high_resolution_clock::now()
+                                       .time_since_epoch()
+                                       .count()));
       }
 
     for (uint32_t i = 0; i < nodes_.size(); i++) {

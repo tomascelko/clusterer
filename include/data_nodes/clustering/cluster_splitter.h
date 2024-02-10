@@ -62,7 +62,7 @@ class cluster_splitter
   std::vector<cluster<mm_hit>> result_clusters_;
   u_int64_t clusters_procesed_ = 0;
   const uint64_t QUEUE_CHECK_INTERVAL = 16;
-  const double MAX_JOIN_TIME = 200.;
+  const double MAX_JOIN_TIME = 30.;
   // std::vector<partition_time_pair> partition_time_pairs_;
   std::vector<cluster<mm_hit>> temp_clusters_;
 
@@ -217,7 +217,7 @@ public:
       if (should_create_new_cluster(hit)) {
         process_cluster(std::move(open_cluster));
         open_cluster = cluster<mm_hit>();
-        ++clusters_procesed_;
+        //++clusters_procesed_;
       }
       open_cluster.add_hit(std::move(hit));
       this->reader_.read(hit);

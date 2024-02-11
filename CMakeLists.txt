@@ -11,11 +11,12 @@ if(WIN32)
 else()
 	set(CMAKE_CXX_FLAGS "-pthread -lstdc++fs")
 endif()
+
 set(CMAKE_BUILD_TYPE "Release")
 
-set(Boost_USE_STATIC_LIBS OFF) 
+set(Boost_USE_STATIC_LIBS ON) 
 set(Boost_USE_MULTITHREADED ON)  
-set(Boost_USE_STATIC_RUNTIME OFF) 
+set(Boost_USE_STATIC_RUNTIME ON) 
 
 find_package(Boost 1.72.0 REQUIRED COMPONENTS iostreams system date_time) 
 find_library(STDCPPFS_LIBRARY NAMES stdc++fs)
@@ -25,11 +26,13 @@ endif()
 #message(FATAL_ERROR ${Boost_INCLUDE_DIRS})
 if(NOT Boost_FOUND)
 	message(WARNING "Boost was not found")
+
 endif()
 set(onnx_lib_dirs ${CMAKE_CURRENT_SOURCE_DIR}/onnxruntime-linux-x64-1.14.1/lib/;${CMAKE_CURRENT_SOURCE_DIR}/build/packages/Microsoft.ML.OnnxRuntime.1.16.3/runtimes/win-x64/native/;${ONNX_LIBRARY_PATH})
 set(onnx_include_path ${CMAKE_CURRENT_SOURCE_DIR}/onnxruntime-linux-x64-1.14.1/include/)
 find_library(onnx_lib_path onnxruntime
     PATHS ${onnx_lib_dirs})
+
 if(NOT onnx_lib_path)
 	message(WARNING "onnx lib was not found")
 endif()

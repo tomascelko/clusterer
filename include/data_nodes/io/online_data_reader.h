@@ -14,6 +14,7 @@
 template <typename descriptor_type = temporal_hit_split_descriptor<burda_hit>>
 class online_data_reader
     : public data_reader<burda_hit, std::ifstream, descriptor_type> {
+
   std::string katherine_ip_ = "192.168.1.130";
   udp_controller katherine_controller;
 

@@ -24,19 +24,19 @@ int main(int argc, char **argv) {
   std::vector<std::string> args(argv, argc + argv);
   // model_runner::print = false;
 
-  args = {"./clusterer",
+  /*args = {"./clusterer",
           "--debug",
           "--n_workers",
           "8",
           "--clustering_type",
-          "standard",
+          "temporal_full",
           "--merge_type",
           "multioutput",
           "--args",
           "../../../clusterer_data/parameters/node_params.txt",
           "--calib",
           "../../../clusterer_data/calib/k07_CALIB/calib_coeffs/",
-          "/home/celko/Work/repos/clusterer_data/pion/pions_180GeV_deg_0.txt"};
+          "/home/celko/Work/repos/clusterer_data/pion/pions_180GeV_deg_0.txt"};*/
 
   argument_parser parser = argument_parser(args[0]);
   parser.try_parse_and_run(

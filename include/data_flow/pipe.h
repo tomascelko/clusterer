@@ -38,12 +38,12 @@ public:
     }*/
     return is_wide;
   }
-  bool try_add_hit(data_type &&data) {
+  inline bool try_add_hit(data_type &&data) {
     data_block_.emplace_back(data);
     byte_size_ += data.size();
     return byte_size_ < max_block_byte_size() || is_temporally_wide();
   }
-  bool try_remove_hit(data_type &hit) {
+  inline bool try_remove_hit(data_type &hit) {
     if (to_delete_index_ == data_block_.size()) {
       return false;
     }

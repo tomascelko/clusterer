@@ -6,7 +6,12 @@ project(clusterer)
 # add the executable
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-set(CMAKE_CXX_FLAGS "-pthread -lstdc++fs /EHsc")
+if(WIN32)
+	set(CMAKE_CXX_FLAGS "-pthread -lstdc++fs /EHsc")
+else()
+	set(CMAKE_CXX_FLAGS "-pthread -lstdc++fs")
+endif()
+
 set(CMAKE_BUILD_TYPE "Release")
 
 set(Boost_USE_STATIC_LIBS ON) 
@@ -20,15 +25,17 @@ if(Boost_FOUND)
 endif()
 #message(FATAL_ERROR ${Boost_INCLUDE_DIRS})
 if(NOT Boost_FOUND)
-	message(FATAL_ERROR "Boost was not found")
+	message(WARNING "Boost was not found")
+
 endif()
 set(onnx_lib_dirs ${CMAKE_CURRENT_SOURCE_DIR}/onnxruntime-linux-x64-1.14.1/lib/;${CMAKE_CURRENT_SOURCE_DIR}/build/packages/Microsoft.ML.OnnxRuntime.1.16.3/runtimes/win-x64/native/;${ONNX_LIBRARY_PATH})
 set(onnx_include_path ${CMAKE_CURRENT_SOURCE_DIR}/onnxruntime-linux-x64-1.14.1/include/)
 find_library(onnx_lib_path onnxruntime
     PATHS ${onnx_lib_dirs})
-#if(NOT onnx_lib_path)
-#	message(FATAL_ERROR "onnx lib was not found")
-#endif()
+
+if(NOT onnx_lib_path)
+	message(WARNING "onnx lib was not found")
+endif()
 AUX_SOURCE_DIRECTORY(./src SOURCES)
 file(GLOB_RECURSE LIB_SRC_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/include/*.h
@@ -42,7 +49,6 @@ set_target_properties(lclusterer PROPERTIES LINKER_LANGUAGE CXX)
 set_target_properties(lclusterer PROPERTIES LIBRARY_OUTPUT_DIRECTORY "./lib")
 set_target_properties(lclusterer PROPERTIES LIBRARY_OUTPUT_DIRECTORY_RELEASE "./lib")
 set_target_properties(lclusterer PROPERTIES LIBRARY_OUTPUT_DIRECTORY_DEBUG "./lib")
-#message(FATAL_ERROR ${Boost_LIBRARIES})
 target_include_directories(lclusterer PUBLIC ${onnx_include_path} ${Boost_INCLUDE_DIRS})
 target_link_libraries(lclusterer PUBLIC ${onnx_lib_path} ${Boost_LIBRARIES})
 

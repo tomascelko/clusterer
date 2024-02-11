@@ -121,9 +121,10 @@ struct bb_cluster {
 };
 
 // a node which implements the merging
-template <typename hit_type>
+template <typename hit_type,
+          typename descriptor_type = temporal_clustering_descriptor<hit_type>>
 class cluster_merging : public i_data_consumer<cluster<hit_type>>,
-                        public i_multi_producer<cluster<hit_type>>,
+                        public i_simple_producer<cluster<hit_type>>,
                         public i_time_measurable {
   const uint32_t DEQUEUE_CHECK_INTERVAL =
       10; // time when to check for dequeing from sorting queue
@@ -142,7 +143,7 @@ class cluster_merging : public i_data_consumer<cluster<hit_type>>,
   std::deque<bb_cluster<hit_type>>
       unfinished_border_clusters_; // we could keep here unbordering clusters as
                                    // well in order to preserve time orderedness
-  node_descriptor<cluster<hit_type>, cluster<hit_type>> *node_descr_;
+  descriptor_type *node_descr_;
   using bitmap_type = std::vector<std::vector<double>>;
   bitmap_type neighboring_matrix_;
   uint64_t processed_non_border_count = 0;
@@ -237,8 +238,8 @@ class cluster_merging : public i_data_consumer<cluster<hit_type>>,
   std::vector<cluster<hit_type>> cls_;
   void process_cluster(cluster<hit_type> &&new_cl) {
     double recent_dequeued_ftoa = new_cl.first_toa();
-    if (node_descr_->merge_descr->is_on_border(new_cl) &&
-        !node_descr_->merge_descr->should_be_forwarded(new_cl)) {
+    if (node_descr_->is_on_border(new_cl)) { //&&
+      //! node_descr_->should_be_forwarded(new_cl)) {
       process_border_cluster(new_cl);
       bordering_offset = 1;
     } else {
@@ -283,16 +284,13 @@ class cluster_merging : public i_data_consumer<cluster<hit_type>>,
   const double EMPTY_TIME_VALUE_ = -1.;
 
 public:
-  cluster_merging(
-      node_descriptor<cluster<hit_type>, cluster<hit_type>> *node_descr,
-      const node_args &args)
+  cluster_merging(descriptor_type *node_descr, const node_args &args)
       : node_descr_(node_descr),
         neighboring_matrix_(
             current_chip::chip_type::size_x(),
             std::vector<double>(current_chip::chip_type::size_y(),
                                 EMPTY_TIME_VALUE_)),
-        merge_time(args.get_arg<double>("clusterer", "max_dt")),
-        i_multi_producer<cluster<hit_type>>(node_descr->split_descr) {
+        merge_time(args.get_arg<double>("clusterer", "max_dt")) {
     typename cluster<hit_type>::first_toa_comparer first_toa_comp;
     priority_queue_ =
         std::priority_queue<cluster<hit_type>, std::vector<cluster<hit_type>>,
@@ -313,6 +311,7 @@ public:
     reader_.read(new_cl);
     while (new_cl.is_valid()) {
       auto new_processed_count = this->newly_processed_count(new_cl);
+      this->last_processed_timestamp_ = new_cl.first_toa();
       process_cluster(std::move(new_cl));
       this->total_hits_processed_ += new_processed_count;
       reader_.read(new_cl);

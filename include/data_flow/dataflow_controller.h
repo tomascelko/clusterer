@@ -9,18 +9,42 @@
 #include "i_data_producer.h"
 #include "pipe.h"
 #include "pipe_descriptor.h"
+#include <cstdint>
 #include <iostream>
 #include <memory>
 #include <thread>
 #include <vector>
 
 #pragma once
+
+class processing_speed_sample {
+  static constexpr double epsilon = 0.00001;
+
+private:
+  uint64_t hits_processed_;
+  double timestamp_;
+
+public:
+  processing_speed_sample(uint64_t hits_processed, double timestamp)
+      : hits_processed_(hits_processed), timestamp_(timestamp) {}
+
+  processing_speed_sample operator-(const processing_speed_sample &other) {
+    return processing_speed_sample{hits_processed_ - other.hits_processed_,
+                                   timestamp_ - other.timestamp_};
+  }
+  double speed() const {
+    return timestamp_ > epsilon ? hits_processed_ / timestamp_ : 0.;
+  }
+  uint64_t hits_processed() const { return hits_processed_; }
+  double timestamp() const { return timestamp_; }
+};
 // organizes the dataflow of all nodes in a dataflow graph
 class dataflow_controller {
   using node_pointer = std::unique_ptr<i_data_node>;
   using pipe_pointer = std::unique_ptr<abstract_pipe>;
   using descriptor_map_type =
-      std::map<std::string, std::unique_ptr<abstract_node_descriptor>>;
+      std::map<std::string, std::unique_ptr<abstract_pipe_descriptor>>;
+  static constexpr uint64_t ns_in_s = 1000000000;
 
 private:
   std::vector<node_pointer> nodes_;
@@ -34,18 +58,24 @@ private:
   uint64_t total_input_hit_count_ = 0;
   uint64_t total_output_hit_count_ = 0;
   const uint32_t DATAFLOW_CONTROL_TIME_INTERVAL_MS = 500.;
-  std::vector<double> output_hitrates_;
+  std::vector<processing_speed_sample> output_speed_samples_;
+  std::vector<processing_speed_sample> input_speed_samples_;
   std::vector<double> input_hitrates_;
+  std::vector<double> output_hitrates_;
   uint64_t zero_count = 0;
   bool debug_mode_;
   // taking ownership of the created node
   void register_node(i_data_node *item) {
     i_controlable_source *controlable_source_opt =
         dynamic_cast<i_controlable_source *>(item);
-    if (controlable_source_opt)
+    if (controlable_source_opt) {
+      input_speed_samples_.emplace_back(
+          0, static_cast<double>(std::chrono::high_resolution_clock::now()
+                                     .time_since_epoch()
+                                     .count()));
       data_sources_.push_back(controlable_source_opt);
+    }
     nodes_.emplace_back(std::move(std::unique_ptr<i_data_node>(item)));
-    data_sinks_.push_back(nodes_.back().get());
   }
   // taking ownership of the created pipe
   void register_pipe(abstract_pipe *pipe) {
@@ -55,13 +85,13 @@ private:
 public:
   // intialize the class with node descriptors
   dataflow_controller(
-      std::map<std::string, abstract_node_descriptor *> &descriptors,
+      std::map<std::string, abstract_pipe_descriptor *> &descriptors,
       bool debug = false)
-      : debug_mode_(debug) {
+      : debug_mode_(debug), input_hitrates_() {
     for (const auto &id_and_descriptor : descriptors) {
       node_descriptor_map_.emplace(std::make_pair(
           id_and_descriptor.first,
-          std::unique_ptr<abstract_node_descriptor>(id_and_descriptor.second)));
+          std::unique_ptr<abstract_pipe_descriptor>(id_and_descriptor.second)));
     }
   };
   // access all available nodes
@@ -97,11 +127,9 @@ public:
   }
 
   void connect_nodes(i_data_node *producer, i_data_node *consumer) {
-    // TODO create workflow where we can find
-    // std::cout << "entering" << std::endl;
-    auto node_pos = std::find(data_sinks_.begin(), data_sinks_.end(), producer);
-    if (node_pos != data_sinks_.end())
-      data_sinks_.erase(node_pos);
+    // auto node_pos = std::find(data_sinks_.begin(), data_sinks_.end(),
+    // producer); if (node_pos != data_sinks_.end())
+    //  data_sinks_.erase(node_pos);
     if (dynamic_cast<i_data_producer<mm_hit> *>(producer) != nullptr)
       connect_nodes(dynamic_cast<i_data_producer<mm_hit> *>(producer),
                     dynamic_cast<i_data_consumer<mm_hit> *>(consumer));
@@ -167,34 +195,45 @@ public:
   }
 
   void print_realtime_input_hit_frequency() {
-    for (const auto data_source : data_sources_) {
-      uint64_t new_hit_count =
-          data_source->get_total_hit_count() - total_input_hit_count_;
-      total_input_hit_count_ += new_hit_count;
-      state_info_out_stream_
-          << "Approx input hitrate: "
-          << new_hit_count / (double)(DATAFLOW_CONTROL_TIME_INTERVAL_MS)
-          << " kHit/s" << std::endl;
+    double total_througput = 0.;
+    for (uint32_t i = 0; i < data_sources_.size(); ++i) {
+      auto data_source = data_sources_[i];
+      processing_speed_sample new_speed_sample = {
+          data_source->get_total_hit_count(),
+          static_cast<double>(std::chrono::high_resolution_clock::now()
+                                  .time_since_epoch()
+                                  .count())};
+      /*processing_speed_sample new_speed_sample = {
+          data_source->get_total_hit_count(),
+          data_source->get_last_timestamp()};*/
+      auto speed = (new_speed_sample - input_speed_samples_[i]).speed();
+      input_speed_samples_[i] = new_speed_sample;
+      total_througput += speed;
     }
+    state_info_out_stream_ << "Approx input hitrate: "
+                           << total_througput * ns_in_s / 1000 << " kHit/s"
+                           << std::endl;
+    input_hitrates_.push_back(total_througput * ns_in_s / 1000);
   }
   void print_realtime_output_hit_frequency() {
-    uint64_t total_new_hit_count = 0;
-    for (const auto data_sink : data_sinks_) {
-      total_new_hit_count += data_sink->get_total_hit_count();
+    double total_througput = 0.;
+    for (uint32_t i = 0; i < data_sinks_.size(); ++i) {
+      auto data_sink = data_sinks_[i];
+      processing_speed_sample new_speed_sample = {
+          data_sink->get_total_hit_count(),
+          // output_speed_samples_[i].timestamp() + 500000000}; /*
+          static_cast<double>(std::chrono::high_resolution_clock::now()
+                                  .time_since_epoch()
+                                  .count())};
+      //  data_sink->get_last_timestamp()};
+      auto speed = (new_speed_sample - output_speed_samples_[i]).speed();
+      output_speed_samples_[i] = new_speed_sample;
+      total_througput += speed;
     }
-    uint64_t new_hit_count = total_new_hit_count - total_output_hit_count_;
     state_info_out_stream_ << "Approx output hitrate: "
-                           << new_hit_count /
-                                  (double)(DATAFLOW_CONTROL_TIME_INTERVAL_MS)
-                           << " kHit/s" << std::endl;
-    total_output_hit_count_ = total_new_hit_count;
-    if (new_hit_count == 0)
-      zero_count++;
-    else
-      zero_count = 0;
-    if (output_hitrates_.size() > 0 || new_hit_count > 0)
-      output_hitrates_.push_back(new_hit_count /
-                                 (double)(DATAFLOW_CONTROL_TIME_INTERVAL_MS));
+                           << total_througput * ns_in_s / 1000 << " kHit/s"
+                           << std::endl;
+    output_hitrates_.push_back(total_througput * ns_in_s / 1000);
   }
 
   //
@@ -267,6 +306,15 @@ public:
   // additionally check the memory state
   void start_all() {
     is_done_ = false;
+    for (auto node : nodes())
+      if (node->is_sink()) {
+        data_sinks_.push_back(node);
+        output_speed_samples_.emplace_back(
+            0, static_cast<double>(std::chrono::high_resolution_clock::now()
+                                       .time_since_epoch()
+                                       .count()));
+      }
+
     for (uint32_t i = 0; i < nodes_.size(); i++) {
       threads_.emplace_back(
           std::move(std::thread([this, i]() { nodes_[i]->start(); })));

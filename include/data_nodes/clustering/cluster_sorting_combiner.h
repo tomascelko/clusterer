@@ -26,7 +26,7 @@ public:
       this->writer_.write(std::move(cl));
       ++processed;
       this->total_hits_processed_ += new_processed;
-
+      this->last_processed_timestamp_ = cl.time();
       this->reader_.read(cl);
     }
     this->writer_.close();

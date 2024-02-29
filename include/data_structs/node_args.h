@@ -51,7 +51,7 @@ public:
         {"sorter", node_args_type({{"split", "false"}})},
         {"clusterer",
          node_args_type(
-             {{"tile_size", "1"}, {"max_dt", "50"}, {"type", "standard"}})},
+             {{"tile_size", "1"}, {"max_dt", "200"}, {"type", "standard"}})},
         {"trigger",
          node_args_type(
              {{"window_size", "200000000"},

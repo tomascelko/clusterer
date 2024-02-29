@@ -57,7 +57,7 @@ private:
   descriptor_map_type node_descriptor_map_;
   uint64_t total_input_hit_count_ = 0;
   uint64_t total_output_hit_count_ = 0;
-  const uint32_t DATAFLOW_CONTROL_TIME_INTERVAL_MS = 500.;
+  const uint32_t DATAFLOW_CONTROL_TIME_INTERVAL_MS = 300.;
   std::vector<processing_speed_sample> output_speed_samples_;
   std::vector<processing_speed_sample> input_speed_samples_;
   std::vector<double> input_hitrates_;

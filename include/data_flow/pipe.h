@@ -124,7 +124,7 @@ public:
   // important (blocking) method for removing a block from queue
   bool blocking_dequeue(data_block<data_type> &out_block) {
     while (!queue_.try_dequeue(out_block)) {
-      std::this_thread::sleep_for(std::chrono::milliseconds(500));
+      std::this_thread::sleep_for(std::chrono::milliseconds(150));
     }
     bytes_used_ -= out_block.byte_size();
     return true;

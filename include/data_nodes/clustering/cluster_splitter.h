@@ -152,15 +152,9 @@ class cluster_splitter
       temp_clusters_[current_cluster_index].add_hit(
           std::move(cluster.hits()[i]));
     }
-    /*if (temp_clusters_.size() > 1)
-      std::sort(temp_clusters_.begin(), temp_clusters_.end(),
-                [](const auto &left, const auto &right) {
-                  return left.first_toa() < right.first_toa();
-                });*/
+
     clusters_procesed_ += temp_clusters_.size();
 
-    // result_clusters_.insert(result_clusters_.end(), temp_clusters_.begin(),
-    //                         temp_clusters_.end());
   }
 
 public:

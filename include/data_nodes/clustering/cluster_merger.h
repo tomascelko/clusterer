@@ -1,4 +1,3 @@
-#include "../../benchmark/i_time_measurable.h"
 #include "../../data_flow/dataflow_package.h"
 #include "../../data_structs/cluster.h"
 #include "../../devices/current_device.h"
@@ -85,7 +84,7 @@ struct bb_cluster {
   bool bordering() { return bordering_; }
   uint32_t bordering_offset() { return bordering_offset_; }
   void invalidate() { valid = false; }
-  void set_bb(bbox &&bb) { this.bb = bb; }
+  void set_bb(bbox &&bb) { this->bb = bb; }
   void compute_bb() {
     for (auto &hit : cl.hits()) {
       if (hit.x() > bb.right_bot.x())
@@ -124,8 +123,7 @@ struct bb_cluster {
 template <typename hit_type,
           typename descriptor_type = temporal_clustering_descriptor<hit_type>>
 class cluster_merging : public i_data_consumer<cluster<hit_type>>,
-                        public i_simple_producer<cluster<hit_type>>,
-                        public i_time_measurable {
+                        public i_simple_producer<cluster<hit_type>> {
   const uint32_t DEQUEUE_CHECK_INTERVAL =
       10; // time when to check for dequeing from sorting queue
   double merge_time = 200.; // max time difference between cluster to be merged
@@ -149,7 +147,6 @@ class cluster_merging : public i_data_consumer<cluster<hit_type>>,
   uint64_t processed_non_border_count = 0;
   uint64_t processed_border_count = 0;
   uint32_t bordering_offset = 1;
-  measuring_clock *clock_;
   bool are_spatially_neighboring(const bb_cluster<hit_type> &bb_cl_1,
                                  const bb_cluster<hit_type> &bb_cl_2) {
     const bb_cluster<hit_type> &bigger_bb_cl =
@@ -303,7 +300,6 @@ public:
     reader_.add_pipe(input_pipe);
   }
   uint64_t sorting_queue_size() { return priority_queue_.size(); }
-  void prepare_clock(measuring_clock *clock) { clock_ = clock; }
   virtual void start() override {
     uint64_t processed = 0;
     cluster<hit_type> new_cl;

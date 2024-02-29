@@ -28,14 +28,34 @@ if(NOT Boost_FOUND)
 	message(WARNING "Boost was not found")
 
 endif()
-set(onnx_lib_dirs ${CMAKE_CURRENT_SOURCE_DIR}/onnxruntime-linux-x64-1.14.1/lib/;${CMAKE_CURRENT_SOURCE_DIR}/build/packages/Microsoft.ML.OnnxRuntime.1.16.3/runtimes/win-x64/native/;${ONNX_LIBRARY_PATH})
-set(onnx_include_path ${CMAKE_CURRENT_SOURCE_DIR}/onnxruntime-linux-x64-1.14.1/include/)
+
+
+
+if(WIN32)
+    file(GLOB WIN_ONNX_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/build/packages/Microsoft.ML.OnnxRuntime*")
+    message(STATUS "Found following ONNX dirs: ${WIN_ONNX_DIRS}")
+    if(WIN_ONNX_DIRS)
+        # Get the first file found
+        list(GET WIN_ONNX_DIRS 0 WIN_ONNX_DIR)
+        
+        # Set your variable to the full name of the file
+        set(onnx_lib_dirs ${WIN_ONNX_DIR}/runtimes/win-x64/native/)
+        set(onnx_include_path ${WIN_ONNX_DIR}/build/native/include/)
+        message(STATUS "Found ONNX: ${WIN_ONNX_DIR}")
+    else()
+        message(STATUS "ONNX not found in build/packages, please add the corresponding Nuget package")
+    endif()
+else()
+    set(onnx_lib_dirs ${CMAKE_CURRENT_SOURCE_DIR}/onnxruntime-linux-x64-1.14.1/lib/)    
+    set(onnx_include_path ${CMAKE_CURRENT_SOURCE_DIR}/onnxruntime-linux-x64-1.14.1/include/)
+    endif()
 find_library(onnx_lib_path onnxruntime
     PATHS ${onnx_lib_dirs})
 
 if(NOT onnx_lib_path)
 	message(WARNING "onnx lib was not found")
 endif()
+
 AUX_SOURCE_DIRECTORY(./src SOURCES)
 file(GLOB_RECURSE LIB_SRC_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/include/*.h
